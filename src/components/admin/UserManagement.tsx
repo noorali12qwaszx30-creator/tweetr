@@ -28,7 +28,7 @@ import {
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
 import { toast } from 'sonner';
-import { UserPlus, Trash2, Edit, User, Shield, Loader2 } from 'lucide-react';
+import { UserPlus, Trash2, Edit, User, Shield, Loader2, Key } from 'lucide-react';
 import { ROLE_LABELS, UserRole } from '@/types';
 
 interface Profile {
@@ -60,6 +60,9 @@ export function UserManagement() {
   const [deleteUserId, setDeleteUserId] = useState<string | null>(null);
   const [selectedUser, setSelectedUser] = useState<UserWithRole | null>(null);
   const [submitting, setSubmitting] = useState(false);
+  const [isPasswordDialogOpen, setIsPasswordDialogOpen] = useState(false);
+  const [passwordUser, setPasswordUser] = useState<UserWithRole | null>(null);
+  const [newPassword, setNewPassword] = useState('');
 
   // Form state for new user
   const [newUser, setNewUser] = useState({
@@ -282,6 +285,53 @@ export function UserManagement() {
     setIsEditDialogOpen(true);
   };
 
+  const openPasswordDialog = (user: UserWithRole) => {
+    setPasswordUser(user);
+    setNewPassword('');
+    setIsPasswordDialogOpen(true);
+  };
+
+  const handleChangePassword = async () => {
+    if (!passwordUser || !newPassword) {
+      toast.error('يرجى إدخال كلمة المرور الجديدة');
+      return;
+    }
+
+    if (newPassword.length < 6) {
+      toast.error('كلمة المرور يجب أن تكون 6 أحرف على الأقل');
+      return;
+    }
+
+    setSubmitting(true);
+    try {
+      const response = await supabase.functions.invoke('update-password', {
+        body: {
+          user_id: passwordUser.user_id,
+          new_password: newPassword,
+        },
+      });
+
+      if (response.error) {
+        throw new Error(response.error.message || 'Failed to update password');
+      }
+
+      if (response.data?.error) {
+        toast.error(response.data.error);
+        return;
+      }
+
+      toast.success('تم تغيير كلمة المرور بنجاح');
+      setIsPasswordDialogOpen(false);
+      setPasswordUser(null);
+      setNewPassword('');
+    } catch (error: any) {
+      console.error('Error changing password:', error);
+      toast.error(error.message || 'حدث خطأ في تغيير كلمة المرور');
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
   if (loading) {
     return (
       <div className="flex items-center justify-center py-12">
@@ -410,7 +460,16 @@ export function UserManagement() {
                   <Button
                     variant="outline"
                     size="sm"
+                    onClick={() => openPasswordDialog(user)}
+                    title="تغيير كلمة المرور"
+                  >
+                    <Key className="w-3 h-3" />
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
                     onClick={() => openEditDialog(user)}
+                    title="تعديل"
                   >
                     <Edit className="w-3 h-3" />
                   </Button>
@@ -418,6 +477,7 @@ export function UserManagement() {
                     variant="destructive"
                     size="sm"
                     onClick={() => setDeleteUserId(user.user_id)}
+                    title="حذف"
                   >
                     <Trash2 className="w-3 h-3" />
                   </Button>
@@ -514,6 +574,37 @@ export function UserManagement() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* Password Change Dialog */}
+      <Dialog open={isPasswordDialogOpen} onOpenChange={setIsPasswordDialogOpen}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>تغيير كلمة المرور</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <p className="text-sm text-muted-foreground">
+              تغيير كلمة المرور للمستخدم: <strong>{passwordUser?.username}</strong>
+            </p>
+            <div className="space-y-2">
+              <Label htmlFor="new_password">كلمة المرور الجديدة</Label>
+              <Input
+                id="new_password"
+                type="password"
+                placeholder="أدخل كلمة المرور الجديدة"
+                value={newPassword}
+                onChange={(e) => setNewPassword(e.target.value)}
+              />
+              <p className="text-xs text-muted-foreground">
+                يجب أن تكون 6 أحرف على الأقل
+              </p>
+            </div>
+            <Button onClick={handleChangePassword} className="w-full" disabled={submitting}>
+              {submitting ? <Loader2 className="w-4 h-4 animate-spin ml-2" /> : null}
+              تغيير كلمة المرور
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
