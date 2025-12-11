@@ -34,9 +34,9 @@ export function OrderCard({
   return (
     <div
       className={`
-        bg-card rounded-xl border shadow-soft p-4 transition-all duration-200
+        bg-card rounded-xl border shadow-soft transition-all duration-200
         ${order.type === 'takeaway' ? 'border-warning/50 bg-warning/5' : 'border-border'}
-        ${hasNotes ? 'animate-shake-flip' : ''}
+        ${hasNotes ? 'order-has-notes' : ''}
         ${compact ? 'p-3' : 'p-4'}
       `}
     >
