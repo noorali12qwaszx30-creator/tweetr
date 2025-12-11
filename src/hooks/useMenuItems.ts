@@ -121,6 +121,17 @@ export function useMenuItems() {
   const getItemsByCategory = (category: string) => 
     menuItems.filter(item => item.category === category && item.is_available);
 
+  const updateDisplayOrder = async (items: MenuItem[]) => {
+    // Update display_order for multiple items
+    for (const item of items) {
+      await supabase
+        .from('menu_items')
+        .update({ display_order: item.display_order })
+        .eq('id', item.id);
+    }
+    fetchMenuItems();
+  };
+
   return {
     menuItems,
     categories,
@@ -131,6 +142,7 @@ export function useMenuItems() {
     toggleAvailability,
     getAvailableItems,
     getItemsByCategory,
+    updateDisplayOrder,
     refetch: fetchMenuItems,
   };
 }

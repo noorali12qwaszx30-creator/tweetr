@@ -1,10 +1,11 @@
 import { useState } from 'react';
 import { useRole } from '@/contexts/RoleContext';
 import { useSupabaseOrders, DbMenuItem } from '@/hooks/useSupabaseOrders';
-import { useMenuItems } from '@/hooks/useMenuItems';
+import { useMenuItems, MenuItem } from '@/hooks/useMenuItems';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { OrderCard } from '@/components/OrderCard';
+import { SortableMenu } from '@/components/SortableMenu';
 import { toast } from 'sonner';
 import { ROLE_LABELS } from '@/types';
 import {
@@ -33,23 +34,18 @@ interface CartItem {
 export default function TakeawayDashboard() {
   const { role, clearRole } = useRole();
   const { orders, addOrder, updateOrderStatus, loading } = useSupabaseOrders();
-  const { menuItems, categories, loading: menuLoading } = useMenuItems();
+  const { menuItems, categories, loading: menuLoading, updateDisplayOrder } = useMenuItems();
   const [activeTab, setActiveTab] = useState<TabType>('menu');
   const [cart, setCart] = useState<CartItem[]>([]);
   const [orderNotes, setOrderNotes] = useState('');
-  const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
-
-  const filteredItems = selectedCategory 
-    ? menuItems.filter(item => item.category === selectedCategory && item.is_available)
-    : menuItems.filter(item => item.is_available);
 
   const takeawayOrders = orders.filter(o => o.type === 'takeaway');
   const activeOrders = takeawayOrders.filter(o => !['delivered', 'cancelled'].includes(o.status));
   const completedOrders = takeawayOrders.filter(o => o.status === 'delivered');
   const cancelledOrders = takeawayOrders.filter(o => o.status === 'cancelled');
 
-  const addToCart = (item: DbMenuItem) => {
+  const addToCart = (item: MenuItem) => {
     setCart(prev => {
       const existing = prev.find(i => i.menuItem.id === item.id);
       if (existing) {
@@ -121,6 +117,10 @@ export default function TakeawayDashboard() {
     toast.info('تم إلغاء الطلب');
   };
 
+  const handleReorderItems = async (items: MenuItem[]) => {
+    await updateDisplayOrder(items);
+  };
+
   const totalSales = completedOrders.reduce((sum, o) => sum + Number(o.total_price), 0);
 
   const tabs: { id: TabType; label: string; icon: React.ReactNode; count?: number }[] = [
@@ -163,44 +163,14 @@ export default function TakeawayDashboard() {
         {activeTab === 'menu' && (
           <div className="grid lg:grid-cols-3 gap-6">
             {/* Menu Section */}
-            <div className="lg:col-span-2 space-y-4">
-              {/* Categories */}
-              <div className="flex gap-2 overflow-x-auto pb-2">
-                <Button
-                  variant={selectedCategory === null ? 'default' : 'outline'}
-                  size="sm"
-                  onClick={() => setSelectedCategory(null)}
-                >
-                  الكل
-                </Button>
-                {categories.map(cat => (
-                  <Button
-                    key={cat}
-                    variant={selectedCategory === cat ? 'default' : 'outline'}
-                    size="sm"
-                    onClick={() => setSelectedCategory(cat)}
-                  >
-                    {cat}
-                  </Button>
-                ))}
-              </div>
-
-              {/* Menu Grid */}
-              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
-                {filteredItems.map(item => (
-                  <button
-                    key={item.id}
-                    onClick={() => addToCart(item)}
-                    className="bg-card border border-border rounded-xl p-3 hover:border-warning hover:shadow-elevated transition-all duration-200 text-right"
-                  >
-                    <div className="aspect-square bg-muted rounded-lg mb-2 flex items-center justify-center">
-                      <MenuIcon className="w-8 h-8 text-muted-foreground" />
-                    </div>
-                    <h3 className="font-semibold text-sm text-foreground truncate">{item.name}</h3>
-                    <p className="text-warning font-bold text-sm">{item.price.toLocaleString()} د.ع</p>
-                  </button>
-                ))}
-              </div>
+            <div className="lg:col-span-2">
+              <SortableMenu
+                items={menuItems}
+                categories={categories}
+                onSelectItem={addToCart}
+                onReorder={handleReorderItems}
+                accentColor="warning"
+              />
             </div>
 
             {/* Cart Section */}
