@@ -1,1 +1,13 @@
 project_id = "qmpkpwlscrquwmbqaemr"
+
+[functions.create-user]
+verify_jwt = false
+
+[functions.delete-user]
+verify_jwt = false
+
+[functions.update-password]
+verify_jwt = false
+
+[functions.create-order]
+verify_jwt = false

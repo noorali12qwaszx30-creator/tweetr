@@ -161,7 +161,7 @@ export function useSupabaseOrders() {
     };
   }, [fetchMenuItems, fetchOrders, playNotificationSound]);
 
-  // Add new order
+  // Add new order via server-side edge function for price validation
   const addOrder = async (orderData: {
     customer_name: string;
     customer_phone: string;
@@ -172,53 +172,30 @@ export function useSupabaseOrders() {
     cashier_name?: string;
     items: { menu_item_id?: string; menu_item_name: string; menu_item_price: number; quantity: number; notes?: string }[];
   }) => {
-    const totalPrice = orderData.items.reduce(
-      (sum, item) => sum + item.menu_item_price * item.quantity,
-      0
-    );
+    try {
+      const { data, error } = await supabase.functions.invoke('create-order', {
+        body: orderData,
+      });
 
-    const { data: newOrder, error: orderError } = await supabase
-      .from('orders')
-      .insert({
-        customer_name: orderData.customer_name,
-        customer_phone: orderData.customer_phone,
-        customer_address: orderData.customer_address || null,
-        type: orderData.type,
-        notes: orderData.notes || null,
-        total_price: totalPrice,
-        cashier_id: orderData.cashier_id || null,
-        cashier_name: orderData.cashier_name || null,
-        status: 'pending',
-      })
-      .select()
-      .single();
+      if (error) {
+        console.error('Error creating order:', error);
+        toast.error('حدث خطأ في إنشاء الطلب');
+        return null;
+      }
 
-    if (orderError) {
-      console.error('Error creating order:', orderError);
-      toast.error('حدث خطأ في إنشاء الطلب');
+      if (data?.error) {
+        console.error('Server error:', data.error);
+        toast.error(data.error);
+        return null;
+      }
+
+      toast.success(`تم إنشاء الطلب #${data.order.order_number}`);
+      return data.order;
+    } catch (err) {
+      console.error('Unexpected error creating order:', err);
+      toast.error('حدث خطأ غير متوقع');
       return null;
     }
-
-    // Insert order items
-    const orderItems = orderData.items.map(item => ({
-      order_id: newOrder.id,
-      menu_item_id: item.menu_item_id || null,
-      menu_item_name: item.menu_item_name,
-      menu_item_price: item.menu_item_price,
-      quantity: item.quantity,
-      notes: item.notes || null,
-    }));
-
-    const { error: itemsError } = await supabase
-      .from('order_items')
-      .insert(orderItems);
-
-    if (itemsError) {
-      console.error('Error creating order items:', itemsError);
-    }
-
-    toast.success(`تم إنشاء الطلب #${newOrder.order_number}`);
-    return newOrder;
   };
 
   // Update order status
