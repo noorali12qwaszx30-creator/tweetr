@@ -41,6 +41,11 @@ export default function FieldDashboard() {
     toast.info('تم إلغاء الطلب');
   };
 
+  const handleMarkReady = (orderId: string) => {
+    updateOrderStatus(orderId, 'ready');
+    toast.success('تم نقل الطلب إلى الجاهز');
+  };
+
   const tabs: { id: TabType; label: string; icon: React.ReactNode; count?: number }[] = [
     { id: 'orders', label: 'الطلبات', icon: <ClipboardList className="w-5 h-5" />, count: incomingOrders.length },
     { id: 'ready', label: 'الجاهز', icon: <CheckCircle className="w-5 h-5" />, count: readyOrders.length },
@@ -87,6 +92,10 @@ export default function FieldDashboard() {
                     order={order}
                     actions={
                       <>
+                        <Button variant="success" size="sm" onClick={() => handleMarkReady(order.id)}>
+                          <CheckCircle className="w-3 h-3 ml-1" />
+                          نقل للجاهز
+                        </Button>
                         <Button variant="destructive" size="sm" onClick={() => handleCancelOrder(order.id)}>
                           <XCircle className="w-3 h-3 ml-1" />
                           إلغاء
