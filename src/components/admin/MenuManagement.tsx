@@ -35,7 +35,18 @@ import {
   UtensilsCrossed,
   Search,
   Edit3,
+  Trash2,
 } from 'lucide-react';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 
 // Sortable Menu Item Component
 function SortableMenuItem({
@@ -43,11 +54,13 @@ function SortableMenuItem({
   onToggleAvailability,
   onUpdateField,
   onImageClick,
+  onDelete,
 }: {
   item: MenuItem;
   onToggleAvailability: (id: string, available: boolean) => void;
   onUpdateField: (id: string, field: 'name' | 'price', value: string | number) => void;
   onImageClick: (item: MenuItem) => void;
+  onDelete: (item: MenuItem) => void;
 }) {
   const {
     attributes,
@@ -207,6 +220,15 @@ function SortableMenuItem({
           onCheckedChange={(checked) => onToggleAvailability(item.id, checked)}
         />
       </div>
+
+      {/* Delete Button */}
+      <button
+        onClick={() => onDelete(item)}
+        className="p-2 text-muted-foreground hover:text-destructive hover:bg-destructive/10 rounded-lg transition-colors"
+        title="حذف الصنف"
+      >
+        <Trash2 className="w-4 h-4" />
+      </button>
     </div>
   );
 }
@@ -472,11 +494,13 @@ function ImageUpdateModal({
 
 // Main Component
 export function MenuManagement() {
-  const { menuItems, categories, loading, addMenuItem, updateMenuItem, toggleAvailability, refetch } = useMenuItems();
+  const { menuItems, categories, loading, addMenuItem, updateMenuItem, deleteMenuItem, toggleAvailability, refetch } = useMenuItems();
   const [activeCategory, setActiveCategory] = useState<string>('');
   const [searchQuery, setSearchQuery] = useState('');
   const [addModalOpen, setAddModalOpen] = useState(false);
   const [imageUpdateItem, setImageUpdateItem] = useState<MenuItem | null>(null);
+  const [deleteItem, setDeleteItem] = useState<MenuItem | null>(null);
+  const [deleting, setDeleting] = useState(false);
 
   const sensors = useSensors(
     useSensor(PointerSensor, {
@@ -547,6 +571,14 @@ export function MenuManagement() {
 
   const handleImageUpdate = async (id: string, image: string) => {
     await updateMenuItem(id, { image });
+  };
+
+  const handleDeleteItem = async () => {
+    if (!deleteItem) return;
+    setDeleting(true);
+    await deleteMenuItem(deleteItem.id);
+    setDeleting(false);
+    setDeleteItem(null);
   };
 
   if (loading) {
@@ -623,6 +655,7 @@ export function MenuManagement() {
                         onToggleAvailability={handleToggleAvailability}
                         onUpdateField={handleUpdateField}
                         onImageClick={setImageUpdateItem}
+                        onDelete={setDeleteItem}
                       />
                     ))
                   )}
@@ -657,6 +690,29 @@ export function MenuManagement() {
         onClose={() => setImageUpdateItem(null)}
         onUpdate={handleImageUpdate}
       />
+
+      {/* Delete Confirmation Dialog */}
+      <AlertDialog open={!!deleteItem} onOpenChange={() => setDeleteItem(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>تأكيد حذف الصنف</AlertDialogTitle>
+            <AlertDialogDescription>
+              هل أنت متأكد من حذف "{deleteItem?.name}"؟ لا يمكن التراجع عن هذا الإجراء.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter className="gap-2 sm:gap-0">
+            <AlertDialogCancel disabled={deleting}>إلغاء</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleDeleteItem}
+              disabled={deleting}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              {deleting ? <Loader2 className="w-4 h-4 animate-spin ml-2" /> : null}
+              حذف
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
