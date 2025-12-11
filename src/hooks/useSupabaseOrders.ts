@@ -108,7 +108,8 @@ export function useSupabaseOrders() {
     fetchMenuItems();
     fetchOrders();
 
-    const channel = supabase
+    // Subscribe to orders changes
+    const ordersChannel = supabase
       .channel('orders-realtime')
       .on(
         'postgres_changes',
@@ -127,6 +128,12 @@ export function useSupabaseOrders() {
             } else if (newOrder.status === 'cancelled') {
               playNotificationSound();
               toast.error(`تم إلغاء الطلب #${newOrder.order_number}`);
+            } else if (newOrder.status === 'delivering') {
+              playNotificationSound();
+              toast.info(`الطلب #${newOrder.order_number} في الطريق!`);
+            } else if (newOrder.status === 'delivered') {
+              playNotificationSound();
+              toast.success(`تم تسليم الطلب #${newOrder.order_number}`);
             }
           }
           
@@ -135,8 +142,22 @@ export function useSupabaseOrders() {
       )
       .subscribe();
 
+    // Subscribe to order_items changes
+    const itemsChannel = supabase
+      .channel('order-items-realtime')
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'order_items' },
+        (payload) => {
+          console.log('Order items change:', payload);
+          fetchOrders();
+        }
+      )
+      .subscribe();
+
     return () => {
-      supabase.removeChannel(channel);
+      supabase.removeChannel(ordersChannel);
+      supabase.removeChannel(itemsChannel);
     };
   }, [fetchMenuItems, fetchOrders, playNotificationSound]);
 
