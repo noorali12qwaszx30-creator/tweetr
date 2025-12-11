@@ -1,60 +1,143 @@
-import React, { createContext, useContext, useState, ReactNode } from 'react';
-import { User, UserRole } from '@/types';
+import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+import { User, Session } from '@supabase/supabase-js';
+import { supabase } from '@/integrations/supabase/client';
+import { UserRole } from '@/types';
+
+interface AuthUser {
+  id: string;
+  email: string;
+  username: string;
+  fullName: string | null;
+  role: UserRole | null;
+}
 
 interface AuthContextType {
-  user: User | null;
-  login: (username: string, password: string, role: UserRole) => boolean;
-  logout: () => void;
+  user: AuthUser | null;
+  session: Session | null;
+  loading: boolean;
+  login: (email: string, password: string) => Promise<{ error: string | null }>;
+  logout: () => Promise<void>;
   isAuthenticated: boolean;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-// Demo users for testing
-const DEMO_USERS: Record<string, { password: string; role: UserRole }> = {
-  'cashier': { password: '1234', role: 'cashier' },
-  'field': { password: '1234', role: 'field' },
-  'delivery': { password: '1234', role: 'delivery' },
-  'takeaway': { password: '1234', role: 'takeaway' },
-  'kitchen': { password: '1234', role: 'kitchen' },
-  'admin': { password: 'admin', role: 'admin' },
-};
-
 export function AuthProvider({ children }: { children: ReactNode }) {
-  const [user, setUser] = useState<User | null>(null);
+  const [user, setUser] = useState<AuthUser | null>(null);
+  const [session, setSession] = useState<Session | null>(null);
+  const [loading, setLoading] = useState(true);
 
-  const login = (username: string, password: string, role: UserRole): boolean => {
-    // For demo purposes, accept any credentials with the selected role
-    // In production, this would validate against the backend
-    const demoUser = DEMO_USERS[username];
-    if (demoUser && demoUser.password === password && demoUser.role === role) {
-      setUser({
-        id: `user-${Date.now()}`,
-        username,
-        role,
-      });
-      return true;
+  const fetchUserProfile = async (userId: string) => {
+    try {
+      // Fetch profile
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('username, full_name')
+        .eq('user_id', userId)
+        .maybeSingle();
+
+      // Fetch role
+      const { data: roleData } = await supabase
+        .from('user_roles')
+        .select('role')
+        .eq('user_id', userId)
+        .maybeSingle();
+
+      return {
+        username: profile?.username || '',
+        fullName: profile?.full_name || null,
+        role: roleData?.role as UserRole | null,
+      };
+    } catch (error) {
+      console.error('Error fetching user profile:', error);
+      return { username: '', fullName: null, role: null };
     }
-    
-    // Allow any user with password "1234" for demo
-    if (password === '1234') {
-      setUser({
-        id: `user-${Date.now()}`,
-        username,
-        role,
-      });
-      return true;
-    }
-    
-    return false;
   };
 
-  const logout = () => {
+  useEffect(() => {
+    // Set up auth state listener FIRST
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(
+      (event, session) => {
+        setSession(session);
+        
+        if (session?.user) {
+          // Defer Supabase calls with setTimeout to avoid deadlock
+          setTimeout(async () => {
+            const profile = await fetchUserProfile(session.user.id);
+            setUser({
+              id: session.user.id,
+              email: session.user.email || '',
+              username: profile.username,
+              fullName: profile.fullName,
+              role: profile.role,
+            });
+            setLoading(false);
+          }, 0);
+        } else {
+          setUser(null);
+          setLoading(false);
+        }
+      }
+    );
+
+    // THEN check for existing session
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setSession(session);
+      
+      if (session?.user) {
+        fetchUserProfile(session.user.id).then(profile => {
+          setUser({
+            id: session.user.id,
+            email: session.user.email || '',
+            username: profile.username,
+            fullName: profile.fullName,
+            role: profile.role,
+          });
+          setLoading(false);
+        });
+      } else {
+        setLoading(false);
+      }
+    });
+
+    return () => subscription.unsubscribe();
+  }, []);
+
+  const login = async (email: string, password: string): Promise<{ error: string | null }> => {
+    try {
+      const { error } = await supabase.auth.signInWithPassword({
+        email,
+        password,
+      });
+
+      if (error) {
+        if (error.message.includes('Invalid login credentials')) {
+          return { error: 'البريد الإلكتروني أو كلمة المرور غير صحيحة' };
+        }
+        return { error: error.message };
+      }
+
+      return { error: null };
+    } catch (error: any) {
+      return { error: error.message || 'حدث خطأ غير متوقع' };
+    }
+  };
+
+  const logout = async () => {
+    await supabase.auth.signOut();
     setUser(null);
+    setSession(null);
   };
 
   return (
-    <AuthContext.Provider value={{ user, login, logout, isAuthenticated: !!user }}>
+    <AuthContext.Provider value={{ 
+      user, 
+      session, 
+      loading, 
+      login, 
+      logout, 
+      isAuthenticated: !!session 
+    }}>
       {children}
     </AuthContext.Provider>
   );
