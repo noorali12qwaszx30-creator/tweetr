@@ -242,28 +242,30 @@ export function UserManagement() {
 
     setSubmitting(true);
     try {
-      // Note: Deleting from auth.users requires admin privileges
-      // For now, we'll just remove the role and profile (user won't be able to do anything)
-      const { error: roleError } = await supabase
-        .from('user_roles')
-        .delete()
-        .eq('user_id', deleteUserId);
+      // Call edge function to completely delete user
+      const response = await supabase.functions.invoke('delete-user', {
+        body: { user_id: deleteUserId },
+      });
 
-      if (roleError) throw roleError;
+      if (response.error) {
+        throw new Error(response.error.message || 'Failed to delete user');
+      }
 
-      const { error: profileError } = await supabase
-        .from('profiles')
-        .delete()
-        .eq('user_id', deleteUserId);
+      if (response.data?.error) {
+        if (response.data.error.includes('own account')) {
+          toast.error('لا يمكنك حذف حسابك الشخصي');
+        } else {
+          toast.error(response.data.error);
+        }
+        return;
+      }
 
-      if (profileError) throw profileError;
-
-      toast.success('تم حذف المستخدم بنجاح');
+      toast.success('تم حذف المستخدم بالكامل');
       setDeleteUserId(null);
       fetchUsers();
     } catch (error: any) {
       console.error('Error deleting user:', error);
-      toast.error('حدث خطأ في حذف المستخدم');
+      toast.error(error.message || 'حدث خطأ في حذف المستخدم');
     } finally {
       setSubmitting(false);
     }
