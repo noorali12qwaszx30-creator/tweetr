@@ -18,10 +18,11 @@ import {
   ClipboardList,
   BarChart3,
   Menu as MenuIcon,
-  Loader2
+  Loader2,
+  Settings
 } from 'lucide-react';
 
-type TabType = 'menu' | 'tracking' | 'stats';
+type TabType = 'menu' | 'tracking' | 'stats' | 'settings';
 
 interface CartItem {
   menuItem: DbMenuItem;
@@ -126,6 +127,7 @@ export default function TakeawayDashboard() {
     { id: 'menu', label: 'المنيو', icon: <MenuIcon className="w-5 h-5" /> },
     { id: 'tracking', label: 'التتبع', icon: <ClipboardList className="w-5 h-5" />, count: activeOrders.length },
     { id: 'stats', label: 'الإحصائيات', icon: <BarChart3 className="w-5 h-5" /> },
+    { id: 'settings', label: 'الإعدادات', icon: <Settings className="w-5 h-5" /> },
   ];
 
   if (loading || menuLoading) {
@@ -342,6 +344,26 @@ export default function TakeawayDashboard() {
                 <p className="text-muted-foreground text-sm">إجمالي المبيعات</p>
                 <p className="text-3xl font-bold text-primary">{totalSales.toLocaleString()} د.ع</p>
               </div>
+            </div>
+          </div>
+        )}
+
+        {activeTab === 'settings' && (
+          <div className="space-y-4">
+            <h2 className="text-xl font-bold">الإعدادات</h2>
+            <div className="grid gap-4">
+              <Button 
+                variant="destructive" 
+                size="lg" 
+                className="w-full justify-start h-auto py-4"
+                onClick={clearRole}
+              >
+                <LogOut className="w-5 h-5 ml-3" />
+                <div className="text-right">
+                  <p className="font-semibold">تسجيل الخروج</p>
+                  <p className="text-sm text-destructive-foreground/70">العودة لاختيار الدور</p>
+                </div>
+              </Button>
             </div>
           </div>
         )}

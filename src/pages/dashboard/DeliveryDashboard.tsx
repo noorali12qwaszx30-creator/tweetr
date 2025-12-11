@@ -16,10 +16,11 @@ import {
   Phone,
   MessageCircle,
   Undo2,
-  Loader2
+  Loader2,
+  Settings
 } from 'lucide-react';
 
-type TabType = 'orders' | 'delivering' | 'stats' | 'ready';
+type TabType = 'orders' | 'delivering' | 'stats' | 'ready' | 'settings';
 
 export default function DeliveryDashboard() {
   const { role, clearRole } = useRole();
@@ -54,6 +55,7 @@ export default function DeliveryDashboard() {
     { id: 'delivering', label: 'التوصيل', icon: <Truck className="w-5 h-5" />, count: deliveringOrders.length },
     { id: 'stats', label: 'الإحصائيات', icon: <BarChart3 className="w-5 h-5" /> },
     { id: 'ready', label: 'الجاهز', icon: <Package className="w-5 h-5" />, count: readyOrders.length },
+    { id: 'settings', label: 'الإعدادات', icon: <Settings className="w-5 h-5" /> },
   ];
 
   if (loading) {
@@ -207,6 +209,26 @@ export default function DeliveryDashboard() {
                 ))}
               </div>
             )}
+          </div>
+        )}
+
+        {activeTab === 'settings' && (
+          <div className="space-y-4">
+            <h2 className="text-xl font-bold">الإعدادات</h2>
+            <div className="grid gap-4">
+              <Button 
+                variant="destructive" 
+                size="lg" 
+                className="w-full justify-start h-auto py-4"
+                onClick={clearRole}
+              >
+                <LogOut className="w-5 h-5 ml-3" />
+                <div className="text-right">
+                  <p className="font-semibold">تسجيل الخروج</p>
+                  <p className="text-sm text-destructive-foreground/70">العودة لاختيار الدور</p>
+                </div>
+              </Button>
+            </div>
           </div>
         )}
       </main>
