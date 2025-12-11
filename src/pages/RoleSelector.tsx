@@ -23,6 +23,7 @@ import {
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
+import SplashScreen from '@/components/SplashScreen';
 
 const ROLE_ICONS: Record<UserRole, React.ReactNode> = {
   cashier: <Calculator className="w-8 h-8" />,
@@ -56,10 +57,20 @@ export default function RoleSelector() {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [mounted, setMounted] = useState(false);
+  const [showSplash, setShowSplash] = useState(() => {
+    // Show splash only once per session
+    const hasSeenSplash = sessionStorage.getItem('hasSeenSplash');
+    return !hasSeenSplash;
+  });
 
   useEffect(() => {
     setMounted(true);
   }, []);
+
+  const handleSplashComplete = () => {
+    sessionStorage.setItem('hasSeenSplash', 'true');
+    setShowSplash(false);
+  };
 
   const handleSelectRole = (role: UserRole) => {
     setSelectedRole(role);
@@ -96,6 +107,11 @@ export default function RoleSelector() {
     toast.success('تم تسجيل الدخول بنجاح');
     navigate('/dashboard', { replace: true });
   };
+
+  // Show splash screen first
+  if (showSplash) {
+    return <SplashScreen onComplete={handleSplashComplete} />;
+  }
 
   // Login form after role selection
   if (selectedRole) {
