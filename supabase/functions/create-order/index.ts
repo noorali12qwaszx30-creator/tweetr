@@ -204,6 +204,7 @@ serve(async (req) => {
     console.log('Server calculated total:', serverCalculatedTotal);
 
     // Create the order with server-calculated total
+    // Use authenticated user's ID as cashier_id for RLS policies
     const { data: newOrder, error: orderError } = await supabaseAdmin
       .from('orders')
       .insert({
@@ -213,7 +214,7 @@ serve(async (req) => {
         type: orderData.type,
         notes: orderData.notes?.trim().slice(0, 500) || null,
         total_price: serverCalculatedTotal, // Use server-calculated total
-        cashier_id: orderData.cashier_id || null,
+        cashier_id: user.id, // Always use the authenticated user's ID
         cashier_name: orderData.cashier_name?.trim().slice(0, 100) || null,
         status: 'pending',
       })
