@@ -19,6 +19,7 @@ import {
   Sparkles,
   Sun,
   Moon,
+  UtensilsCrossed,
 } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
@@ -245,8 +246,9 @@ export default function RoleSelector() {
           {/* Logo/Brand */}
           <div className="inline-flex items-center justify-center mb-6">
             <div className="relative">
-              <div className="w-24 h-24 bg-gradient-to-br from-primary via-primary to-primary/80 rounded-3xl flex items-center justify-center shadow-2xl shadow-primary/30 rotate-3 hover:rotate-0 transition-transform duration-500">
-                <span className="text-4xl font-black text-primary-foreground">ج</span>
+              <div className="w-24 h-24 bg-gradient-to-br from-primary via-primary to-primary/80 rounded-3xl flex flex-col items-center justify-center shadow-2xl shadow-primary/30 rotate-3 hover:rotate-0 transition-transform duration-500 gap-1">
+                <ChefHat className="w-8 h-8 text-primary-foreground" />
+                <UtensilsCrossed className="w-6 h-6 text-primary-foreground" />
               </div>
               <div className="absolute -top-2 -right-2 w-8 h-8 bg-gradient-to-br from-yellow-400 to-orange-500 rounded-full flex items-center justify-center shadow-lg animate-float">
                 <Sparkles className="w-4 h-4 text-white" />
