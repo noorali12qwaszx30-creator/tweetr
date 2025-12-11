@@ -57,11 +57,7 @@ export default function RoleSelector() {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [mounted, setMounted] = useState(false);
-  const [showSplash, setShowSplash] = useState(() => {
-    // Show splash only once per session
-    const hasSeenSplash = sessionStorage.getItem('hasSeenSplash');
-    return !hasSeenSplash;
-  });
+  const [showSplash, setShowSplash] = useState(true); // Always show for testing
 
   useEffect(() => {
     setMounted(true);
