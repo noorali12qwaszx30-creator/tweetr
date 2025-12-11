@@ -1,11 +1,10 @@
 import { useState } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
-import { useOrders } from '@/contexts/OrderContext';
+import { useSupabaseOrders, OrderWithItems } from '@/hooks/useSupabaseOrders';
 import { OrderCard } from '@/components/OrderCard';
 import { DeliveryPersonSelector } from '@/components/DeliveryPersonSelector';
 import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
-import { Order } from '@/types';
 import {
   Users,
   LogOut,
@@ -15,48 +14,46 @@ import {
   XCircle,
   Settings,
   Calculator,
-  Clock
+  Clock,
+  Loader2
 } from 'lucide-react';
 
 type TabType = 'orders' | 'ready' | 'delivering' | 'cancelled' | 'admin';
 
 export default function FieldDashboard() {
   const { user, logout } = useAuth();
-  const { orders, updateOrderStatus, assignDelivery } = useOrders();
+  const { orders, updateOrderStatus, assignDelivery, cancelOrder, loading } = useSupabaseOrders();
   const [activeTab, setActiveTab] = useState<TabType>('orders');
   const [selectorOpen, setSelectorOpen] = useState(false);
-  const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
+  const [selectedOrder, setSelectedOrder] = useState<OrderWithItems | null>(null);
 
   const pendingOrders = orders.filter(o => o.status === 'pending');
   const preparingOrders = orders.filter(o => o.status === 'preparing');
-  const readyOrders = orders.filter(o => o.status === 'ready' && !o.pendingDeliveryAcceptance);
-  const pendingAcceptanceOrders = orders.filter(o => o.status === 'ready' && o.pendingDeliveryAcceptance);
+  const readyOrders = orders.filter(o => o.status === 'ready' && !o.pending_delivery_acceptance);
+  const pendingAcceptanceOrders = orders.filter(o => o.status === 'ready' && o.pending_delivery_acceptance);
   const deliveringOrders = orders.filter(o => o.status === 'delivering');
   const cancelledOrders = orders.filter(o => o.status === 'cancelled');
 
   const incomingOrders = [...pendingOrders, ...preparingOrders];
 
-  const handleOpenSelector = (order: Order) => {
+  const handleOpenSelector = (order: OrderWithItems) => {
     setSelectedOrder(order);
     setSelectorOpen(true);
   };
 
-  const handleAssignDelivery = (deliveryPersonId: string, deliveryPersonName: string) => {
+  const handleAssignDelivery = async (deliveryPersonId: string, deliveryPersonName: string) => {
     if (selectedOrder) {
-      assignDelivery(selectedOrder.id, deliveryPersonId, deliveryPersonName);
-      toast.success(`تم إرسال الطلب إلى ${deliveryPersonName}`);
+      await assignDelivery(selectedOrder.id, deliveryPersonId, deliveryPersonName);
       setSelectedOrder(null);
     }
   };
 
-  const handleCancelOrder = (orderId: string) => {
-    updateOrderStatus(orderId, 'cancelled');
-    toast.info('تم إلغاء الطلب');
+  const handleCancelOrder = async (orderId: string) => {
+    await cancelOrder(orderId);
   };
 
-  const handleMarkReady = (orderId: string) => {
-    updateOrderStatus(orderId, 'ready');
-    toast.success('تم نقل الطلب إلى الجاهز');
+  const handleMarkReady = async (orderId: string) => {
+    await updateOrderStatus(orderId, 'ready');
   };
 
   const tabs: { id: TabType; label: string; icon: React.ReactNode; count?: number }[] = [
@@ -66,6 +63,14 @@ export default function FieldDashboard() {
     { id: 'cancelled', label: 'الملغية', icon: <XCircle className="w-5 h-5" />, count: cancelledOrders.length },
     { id: 'admin', label: 'الإدارة', icon: <Settings className="w-5 h-5" /> },
   ];
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <Loader2 className="w-8 h-8 animate-spin text-primary" />
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-background">
@@ -139,7 +144,7 @@ export default function FieldDashboard() {
                       actions={
                         <div className="w-full p-2 bg-warning/10 border border-warning/30 rounded-lg text-center">
                           <p className="text-sm text-warning">
-                            بانتظار قبول {order.deliveryPersonName}
+                            بانتظار قبول {order.delivery_person_name}
                           </p>
                         </div>
                       }
@@ -267,7 +272,7 @@ export default function FieldDashboard() {
         open={selectorOpen}
         onOpenChange={setSelectorOpen}
         onSelect={handleAssignDelivery}
-        orderNumber={selectedOrder?.orderNumber || 0}
+        orderNumber={selectedOrder?.order_number || 0}
       />
     </div>
   );

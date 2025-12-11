@@ -1,12 +1,11 @@
 import { useState } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
-import { useOrders, MENU_ITEMS } from '@/contexts/OrderContext';
-import { OrderItem, MenuItem, Order } from '@/types';
+import { useSupabaseOrders, DbMenuItem, OrderWithItems } from '@/hooks/useSupabaseOrders';
+import { useMenuItems } from '@/hooks/useMenuItems';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { OrderCard } from '@/components/OrderCard';
-import { EditOrderDialog } from '@/components/EditOrderDialog';
 import { CancelOrderDialog } from '@/components/CancelOrderDialog';
 import { toast } from 'sonner';
 import { 
@@ -24,30 +23,37 @@ import {
   MapPin,
   MessageSquare,
   CheckCircle,
-  XCircle
+  XCircle,
+  Loader2
 } from 'lucide-react';
 
 type TabType = 'menu' | 'orders';
 
+interface CartItem {
+  menuItem: DbMenuItem;
+  quantity: number;
+  notes?: string;
+}
+
 export default function CashierDashboard() {
   const { user, logout } = useAuth();
-  const { orders, addOrder, updateOrderStatus, updateOrder, cancelOrder } = useOrders();
+  const { orders, addOrder, updateOrderStatus, cancelOrder, loading } = useSupabaseOrders();
+  const { menuItems, categories, loading: menuLoading } = useMenuItems();
   const [activeTab, setActiveTab] = useState<TabType>('menu');
-  const [cart, setCart] = useState<OrderItem[]>([]);
+  const [cart, setCart] = useState<CartItem[]>([]);
   const [customerName, setCustomerName] = useState('');
   const [customerPhone, setCustomerPhone] = useState('');
   const [customerAddress, setCustomerAddress] = useState('');
   const [orderNotes, setOrderNotes] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
-  const [editingOrder, setEditingOrder] = useState<Order | null>(null);
-  const [cancellingOrder, setCancellingOrder] = useState<Order | null>(null);
+  const [cancellingOrder, setCancellingOrder] = useState<OrderWithItems | null>(null);
+  const [submitting, setSubmitting] = useState(false);
 
-  const categories = [...new Set(MENU_ITEMS.map(item => item.category))];
   const filteredItems = selectedCategory 
-    ? MENU_ITEMS.filter(item => item.category === selectedCategory)
-    : MENU_ITEMS;
+    ? menuItems.filter(item => item.category === selectedCategory && item.is_available)
+    : menuItems.filter(item => item.is_available);
 
-  const addToCart = (item: MenuItem) => {
+  const addToCart = (item: DbMenuItem) => {
     setCart(prev => {
       const existing = prev.find(i => i.menuItem.id === item.id);
       if (existing) {
@@ -87,7 +93,7 @@ export default function CashierDashboard() {
 
   const totalPrice = cart.reduce((sum, item) => sum + item.menuItem.price * item.quantity, 0);
 
-  const submitOrder = () => {
+  const submitOrder = async () => {
     if (cart.length === 0) {
       toast.error('السلة فارغة');
       return;
@@ -98,30 +104,47 @@ export default function CashierDashboard() {
       return;
     }
 
-    addOrder({
-      customer: {
-        name: customerName,
-        phone: customerPhone,
-        address: customerAddress,
-      },
-      items: cart,
-      status: 'pending',
+    setSubmitting(true);
+    const result = await addOrder({
+      customer_name: customerName,
+      customer_phone: customerPhone,
+      customer_address: customerAddress,
       type: 'delivery',
       notes: orderNotes || undefined,
-      totalPrice,
-      cashierName: user?.username || 'كاشير',
+      cashier_name: user?.username || 'كاشير',
+      items: cart.map(item => ({
+        menu_item_id: item.menuItem.id,
+        menu_item_name: item.menuItem.name,
+        menu_item_price: item.menuItem.price,
+        quantity: item.quantity,
+        notes: item.notes,
+      })),
     });
 
-    toast.success('تم إرسال الطلب بنجاح');
-    clearCart();
+    setSubmitting(false);
+    if (result) {
+      clearCart();
+    }
   };
 
-  const handleMarkReady = (orderId: string) => {
-    updateOrderStatus(orderId, 'ready');
-    toast.success('تم نقل الطلب إلى الجاهز');
+  const handleMarkReady = async (orderId: string) => {
+    await updateOrderStatus(orderId, 'ready');
+  };
+
+  const handleCancelOrder = async (orderId: string, reason?: string) => {
+    await cancelOrder(orderId, reason);
+    setCancellingOrder(null);
   };
 
   const activeOrders = orders.filter(o => !['delivered', 'cancelled'].includes(o.status));
+
+  if (loading || menuLoading) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <Loader2 className="w-8 h-8 animate-spin text-primary" />
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-background">
@@ -301,9 +324,13 @@ export default function CashierDashboard() {
                 <Button
                   className="flex-1"
                   onClick={submitOrder}
-                  disabled={cart.length === 0}
+                  disabled={cart.length === 0 || submitting}
                 >
-                  <Send className="w-4 h-4 ml-2" />
+                  {submitting ? (
+                    <Loader2 className="w-4 h-4 ml-2 animate-spin" />
+                  ) : (
+                    <Send className="w-4 h-4 ml-2" />
+                  )}
                   إرسال الطلب
                 </Button>
               </div>
@@ -327,15 +354,6 @@ export default function CashierDashboard() {
                     order={order}
                     actions={
                       <>
-                        <Button 
-                          variant="outline" 
-                          size="sm"
-                          disabled={order.status === 'delivering'}
-                          onClick={() => setEditingOrder(order)}
-                        >
-                          <Edit className="w-3 h-3 ml-1" />
-                          تعديل
-                        </Button>
                         {order.status !== 'ready' && order.status !== 'delivering' && (
                           <Button 
                             variant="success" 
@@ -363,23 +381,32 @@ export default function CashierDashboard() {
           </div>
         )}
 
-        {/* Edit Order Dialog */}
-        {editingOrder && (
-          <EditOrderDialog
-            order={editingOrder}
-            open={!!editingOrder}
-            onOpenChange={(open) => !open && setEditingOrder(null)}
-            onSave={updateOrder}
-          />
-        )}
-
         {/* Cancel Order Dialog */}
         {cancellingOrder && (
           <CancelOrderDialog
-            order={cancellingOrder}
+            order={{
+              id: cancellingOrder.id,
+              orderNumber: cancellingOrder.order_number,
+              customer: {
+                name: cancellingOrder.customer_name,
+                phone: cancellingOrder.customer_phone,
+                address: cancellingOrder.customer_address || '',
+              },
+              items: cancellingOrder.items.map(i => ({
+                menuItem: { id: i.menu_item_id || '', name: i.menu_item_name, price: Number(i.menu_item_price), image: '', category: '' },
+                quantity: i.quantity,
+                notes: i.notes || undefined,
+              })),
+              status: cancellingOrder.status,
+              type: cancellingOrder.type,
+              notes: cancellingOrder.notes || undefined,
+              totalPrice: Number(cancellingOrder.total_price),
+              createdAt: new Date(cancellingOrder.created_at),
+              cashierName: cancellingOrder.cashier_name || '',
+            }}
             open={!!cancellingOrder}
             onOpenChange={(open) => !open && setCancellingOrder(null)}
-            onCancel={cancelOrder}
+            onCancel={handleCancelOrder}
           />
         )}
       </main>

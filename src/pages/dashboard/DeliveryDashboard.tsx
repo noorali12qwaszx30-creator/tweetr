@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
-import { useOrders } from '@/contexts/OrderContext';
+import { useSupabaseOrders } from '@/hooks/useSupabaseOrders';
 import { OrderCard } from '@/components/OrderCard';
 import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
@@ -14,35 +14,34 @@ import {
   XCircle,
   Phone,
   MessageCircle,
-  Undo2
+  Undo2,
+  Loader2
 } from 'lucide-react';
 
 type TabType = 'orders' | 'delivering' | 'stats' | 'ready';
 
 export default function DeliveryDashboard() {
   const { user, logout } = useAuth();
-  const { orders, updateOrderStatus, acceptDelivery, rejectDelivery } = useOrders();
+  const { orders, updateOrderStatus, acceptDelivery, rejectDelivery, loading } = useSupabaseOrders();
   const [activeTab, setActiveTab] = useState<TabType>('orders');
 
   // Orders assigned to this delivery person (pending acceptance)
-  const pendingAcceptanceOrders = orders.filter(o => o.status === 'ready' && o.pendingDeliveryAcceptance);
+  const pendingAcceptanceOrders = orders.filter(o => o.status === 'ready' && o.pending_delivery_acceptance);
   const deliveringOrders = orders.filter(o => o.status === 'delivering');
   const deliveredOrders = orders.filter(o => o.status === 'delivered');
   const cancelledByDelivery = orders.filter(o => o.status === 'cancelled');
-  const readyOrders = orders.filter(o => o.status === 'ready' && !o.pendingDeliveryAcceptance);
+  const readyOrders = orders.filter(o => o.status === 'ready' && !o.pending_delivery_acceptance);
 
-  const handleAcceptOrder = (orderId: string) => {
-    acceptDelivery(orderId);
-    toast.success('تم قبول الطلب');
+  const handleAcceptOrder = async (orderId: string) => {
+    await acceptDelivery(orderId);
   };
 
-  const handleRejectOrder = (orderId: string) => {
-    rejectDelivery(orderId);
-    toast.info('تم رفض الطلب وإرسال إشعار للميدان');
+  const handleRejectOrder = async (orderId: string) => {
+    await rejectDelivery(orderId);
   };
 
-  const handleDelivered = (orderId: string) => {
-    updateOrderStatus(orderId, 'delivered');
+  const handleDelivered = async (orderId: string) => {
+    await updateOrderStatus(orderId, 'delivered');
     toast.success('تم التسليم بنجاح!');
   };
 
@@ -55,6 +54,14 @@ export default function DeliveryDashboard() {
     { id: 'stats', label: 'الإحصائيات', icon: <BarChart3 className="w-5 h-5" /> },
     { id: 'ready', label: 'الجاهز', icon: <Package className="w-5 h-5" />, count: readyOrders.length },
   ];
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <Loader2 className="w-8 h-8 animate-spin text-primary" />
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-background">
@@ -128,13 +135,13 @@ export default function DeliveryDashboard() {
                     actions={
                       <div className="flex flex-wrap gap-2 w-full">
                         <Button variant="outline" size="sm" asChild>
-                          <a href={`tel:${order.customer.phone}`}>
+                          <a href={`tel:${order.customer_phone}`}>
                             <Phone className="w-3 h-3 ml-1" />
                             اتصال
                           </a>
                         </Button>
                         <Button variant="success" size="sm" asChild>
-                          <a href={`https://wa.me/${order.customer.phone}`} target="_blank" rel="noopener noreferrer">
+                          <a href={`https://wa.me/${order.customer_phone}`} target="_blank" rel="noopener noreferrer">
                             <MessageCircle className="w-3 h-3 ml-1" />
                             واتساب
                           </a>

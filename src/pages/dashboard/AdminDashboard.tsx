@@ -1,12 +1,10 @@
 import { useState } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
-import { useOrders, MENU_ITEMS } from '@/contexts/OrderContext';
+import { useSupabaseOrders, OrderWithItems } from '@/hooks/useSupabaseOrders';
 import { useShift } from '@/contexts/ShiftContext';
-import { Order } from '@/types';
 import { Button } from '@/components/ui/button';
 import { CancellationReasonsManager } from '@/components/CancellationReasonsManager';
 import { UserManagement } from '@/components/admin/UserManagement';
-import { OrderDetailsDialog } from '@/components/OrderDetailsDialog';
 import { KPICard } from '@/components/admin/KPICard';
 import { OrdersChart, WeeklyChart } from '@/components/admin/OrdersChart';
 import { DriverPerformance } from '@/components/admin/DriverPerformance';
@@ -24,26 +22,19 @@ import {
   Users,
   BarChart3,
   RefreshCcw,
-  UserPlus,
-  Trash2,
   ShieldCheck,
   XCircle,
   CheckCircle,
   ClipboardList,
-  Eye,
   TrendingUp,
   DollarSign,
-  ShoppingBag,
-  Clock,
   Truck,
-  Activity,
-  PieChart,
   Timer,
   Zap,
   AlertTriangle,
   Home,
   Package,
-  ChevronLeft
+  Loader2
 } from 'lucide-react';
 
 // Main navigation tabs (5 only)
@@ -56,14 +47,14 @@ type SettingsSubTab = 'general' | 'users' | 'reasons';
 
 export default function AdminDashboard() {
   const { user, logout } = useAuth();
-  const { orders } = useOrders();
+  const { orders, loading, refetch } = useSupabaseOrders();
   const { currentShift, previousShift, activityLogs, lastUpdated, resetShift, addActivityLog } = useShift();
   
   const [activeTab, setActiveTab] = useState<MainTab>('home');
   const [ordersSubTab, setOrdersSubTab] = useState<OrdersSubTab>('completed');
   const [statsSubTab, setStatsSubTab] = useState<StatsSubTab>('overview');
   const [settingsSubTab, setSettingsSubTab] = useState<SettingsSubTab>('general');
-  const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
+  const [selectedOrder, setSelectedOrder] = useState<OrderWithItems | null>(null);
 
   // Statistics calculations
   const totalOrders = orders.length;
@@ -72,8 +63,8 @@ export default function AdminDashboard() {
   const pendingOrders = orders.filter(o => o.status === 'pending');
   const inProgressOrders = orders.filter(o => ['preparing', 'ready', 'delivering'].includes(o.status));
   
-  const totalRevenue = completedOrders.reduce((sum, o) => sum + o.totalPrice, 0);
-  const cancelledRevenue = cancelledOrders.reduce((sum, o) => sum + o.totalPrice, 0);
+  const totalRevenue = completedOrders.reduce((sum, o) => sum + Number(o.total_price), 0);
+  const cancelledRevenue = cancelledOrders.reduce((sum, o) => sum + Number(o.total_price), 0);
   const averageOrderValue = completedOrders.length > 0 ? totalRevenue / completedOrders.length : 0;
 
   // Simulated time stats
@@ -86,12 +77,12 @@ export default function AdminDashboard() {
   const itemsStats: Record<string, { quantity: number; revenue: number; price: number; category: string }> = {};
   completedOrders.forEach(order => {
     order.items.forEach(item => {
-      const key = item.menuItem.name;
+      const key = item.menu_item_name;
       if (!itemsStats[key]) {
-        itemsStats[key] = { quantity: 0, revenue: 0, price: item.menuItem.price, category: item.menuItem.category };
+        itemsStats[key] = { quantity: 0, revenue: 0, price: Number(item.menu_item_price), category: '' };
       }
       itemsStats[key].quantity += item.quantity;
-      itemsStats[key].revenue += item.menuItem.price * item.quantity;
+      itemsStats[key].revenue += Number(item.menu_item_price) * item.quantity;
     });
   });
 
@@ -100,14 +91,14 @@ export default function AdminDashboard() {
   // Cancellation reasons stats
   const cancellationReasonStats: Record<string, number> = {};
   cancelledOrders.forEach(order => {
-    const reason = order.cancellationReason || 'بدون سبب';
+    const reason = order.cancellation_reason || 'بدون سبب';
     cancellationReasonStats[reason] = (cancellationReasonStats[reason] || 0) + 1;
   });
 
   // Unique customers
-  const uniqueCustomers = new Set(orders.map(o => o.customer.phone)).size;
+  const uniqueCustomers = new Set(orders.map(o => o.customer_phone)).size;
   const newCustomers = orders.filter((o, idx, arr) => 
-    arr.findIndex(x => x.customer.phone === o.customer.phone) === idx
+    arr.findIndex(x => x.customer_phone === o.customer_phone) === idx
   ).length;
 
   const handleResetShift = () => {
@@ -117,6 +108,7 @@ export default function AdminDashboard() {
   };
 
   const handleRefresh = () => {
+    refetch();
     toast.success('تم تحديث البيانات');
   };
 
@@ -133,6 +125,33 @@ export default function AdminDashboard() {
     { id: 'delivery', label: 'الدلفري', icon: <Truck className="w-5 h-5" /> },
     { id: 'settings', label: 'الإعدادات', icon: <Settings className="w-5 h-5" /> },
   ];
+
+  // Transform orders for charts (compatibility)
+  const ordersForCharts = orders.map(o => ({
+    ...o,
+    orderNumber: o.order_number,
+    totalPrice: Number(o.total_price),
+    createdAt: new Date(o.created_at),
+    customer: {
+      name: o.customer_name,
+      phone: o.customer_phone,
+      address: o.customer_address || '',
+    },
+    items: o.items.map(i => ({
+      menuItem: { id: i.menu_item_id || '', name: i.menu_item_name, price: Number(i.menu_item_price), image: '', category: '' },
+      quantity: i.quantity,
+      notes: i.notes || undefined,
+    })),
+    cashierName: o.cashier_name || '',
+  }));
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <Loader2 className="w-8 h-8 animate-spin text-primary" />
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-background">
@@ -157,9 +176,7 @@ export default function AdminDashboard() {
       {/* Main Content */}
       <main className="container py-4 pb-24">
         
-        {/* ═══════════════════════════════════════════════════════════════════ */}
         {/* HOME TAB - Dashboard Overview */}
-        {/* ═══════════════════════════════════════════════════════════════════ */}
         {activeTab === 'home' && (
           <div className="space-y-4">
             {/* Shift Header */}
@@ -203,7 +220,7 @@ export default function AdminDashboard() {
             </div>
 
             {/* Charts */}
-            <OrdersChart orders={orders} />
+            <OrdersChart orders={ordersForCharts} />
 
             {/* Top Items Quick View */}
             <div className="bg-card border border-border rounded-xl p-4 shadow-soft">
@@ -233,9 +250,7 @@ export default function AdminDashboard() {
           </div>
         )}
 
-        {/* ═══════════════════════════════════════════════════════════════════ */}
         {/* ORDERS TAB - Completed & Cancelled Orders */}
-        {/* ═══════════════════════════════════════════════════════════════════ */}
         {activeTab === 'orders' && (
           <div className="space-y-4">
             {/* Sub-tabs */}
@@ -271,13 +286,13 @@ export default function AdminDashboard() {
                     >
                       <div className="flex items-center justify-between mb-2">
                         <div className="flex items-center gap-2">
-                          <span className="text-lg font-bold text-primary">#{order.orderNumber}</span>
+                          <span className="text-lg font-bold text-primary">#{order.order_number}</span>
                           <span className="px-2 py-0.5 rounded-full text-xs bg-success/10 text-success">مكتمل</span>
                         </div>
-                        <span className="font-bold text-success">{order.totalPrice.toLocaleString()} د.ع</span>
+                        <span className="font-bold text-success">{Number(order.total_price).toLocaleString()} د.ع</span>
                       </div>
                       <div className="text-sm text-muted-foreground">
-                        {order.customer.name} • {format(new Date(order.createdAt), 'HH:mm', { locale: ar })}
+                        {order.customer_name} • {format(new Date(order.created_at), 'HH:mm', { locale: ar })}
                       </div>
                     </div>
                   ))
@@ -313,16 +328,16 @@ export default function AdminDashboard() {
                     >
                       <div className="flex items-center justify-between mb-2">
                         <div className="flex items-center gap-2">
-                          <span className="text-lg font-bold text-primary">#{order.orderNumber}</span>
+                          <span className="text-lg font-bold text-primary">#{order.order_number}</span>
                           <span className="px-2 py-0.5 rounded-full text-xs bg-destructive/10 text-destructive">ملغي</span>
                         </div>
-                        <span className="font-bold text-destructive">{order.totalPrice.toLocaleString()} د.ع</span>
+                        <span className="font-bold text-destructive">{Number(order.total_price).toLocaleString()} د.ع</span>
                       </div>
-                      {order.cancellationReason && (
-                        <p className="text-sm text-destructive mb-1">السبب: {order.cancellationReason}</p>
+                      {order.cancellation_reason && (
+                        <p className="text-sm text-destructive mb-1">السبب: {order.cancellation_reason}</p>
                       )}
                       <div className="text-sm text-muted-foreground">
-                        {order.customer.name} • {format(new Date(order.createdAt), 'HH:mm', { locale: ar })}
+                        {order.customer_name} • {format(new Date(order.created_at), 'HH:mm', { locale: ar })}
                       </div>
                     </div>
                   ))
@@ -332,9 +347,7 @@ export default function AdminDashboard() {
           </div>
         )}
 
-        {/* ═══════════════════════════════════════════════════════════════════ */}
         {/* STATS TAB - Statistics & Analytics */}
-        {/* ═══════════════════════════════════════════════════════════════════ */}
         {activeTab === 'stats' && (
           <div className="space-y-4">
             {/* Sub-tabs */}
@@ -356,7 +369,7 @@ export default function AdminDashboard() {
                   <KPICard title="متوسط الطلب" value={Math.round(averageOrderValue)} suffix="د.ع" icon={<TrendingUp className="w-5 h-5" />} variant="info" />
                   <KPICard title="العملاء" value={uniqueCustomers} icon={<Users className="w-5 h-5" />} />
                 </div>
-                <WeeklyChart orders={orders} />
+                <WeeklyChart orders={ordersForCharts} />
               </TabsContent>
 
               <TabsContent value="items" className="space-y-4 mt-4">
@@ -364,90 +377,101 @@ export default function AdminDashboard() {
                 <div className="grid grid-cols-2 gap-3">
                   <div className="bg-card border border-border rounded-xl p-3 shadow-soft">
                     <p className="text-muted-foreground text-xs">إجمالي المباع</p>
-                    <p className="text-xl font-bold text-primary">
+                    <p className="text-2xl font-bold text-primary">
                       {sortedItems.reduce((sum, [, s]) => sum + s.quantity, 0)}
                     </p>
                   </div>
                   <div className="bg-card border border-border rounded-xl p-3 shadow-soft">
-                    <p className="text-muted-foreground text-xs">أنواع الأصناف</p>
-                    <p className="text-xl font-bold text-info">{sortedItems.length}</p>
+                    <p className="text-muted-foreground text-xs">إجمالي الإيرادات</p>
+                    <p className="text-2xl font-bold text-success">
+                      {sortedItems.reduce((sum, [, s]) => sum + s.revenue, 0).toLocaleString()}
+                    </p>
                   </div>
                 </div>
 
-                {/* Items Table */}
-                <div className="bg-card border border-border rounded-xl shadow-soft overflow-hidden">
-                  <div className="overflow-x-auto">
-                    <table className="w-full text-sm">
-                      <thead className="bg-muted/50">
-                        <tr>
-                          <th className="text-right p-3 font-semibold">#</th>
-                          <th className="text-right p-3 font-semibold">الصنف</th>
-                          <th className="text-right p-3 font-semibold">الكمية</th>
-                          <th className="text-right p-3 font-semibold">الإيراد</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {sortedItems.map(([name, stats], idx) => (
-                          <tr key={name} className="border-t border-border">
-                            <td className="p-3">{idx + 1}</td>
-                            <td className="p-3 font-medium">{name}</td>
-                            <td className="p-3 text-success">{stats.quantity}</td>
-                            <td className="p-3 font-bold text-primary">{stats.revenue.toLocaleString()}</td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
+                {/* Top Items */}
+                <div className="bg-card border border-border rounded-xl p-4 shadow-soft">
+                  <h3 className="font-bold mb-3 text-success">الأكثر مبيعاً</h3>
+                  <div className="space-y-2">
+                    {sortedItems.slice(0, 5).map(([name, stats], idx) => (
+                      <div key={name} className="flex items-center justify-between p-2 bg-muted/50 rounded-lg">
+                        <div className="flex items-center gap-2">
+                          <span className="w-6 h-6 flex items-center justify-center bg-success/10 text-success rounded font-bold text-xs">
+                            {idx + 1}
+                          </span>
+                          <span className="font-medium text-sm">{name}</span>
+                        </div>
+                        <div className="text-left">
+                          <p className="text-sm font-bold">{stats.quantity}</p>
+                          <p className="text-xs text-muted-foreground">{stats.revenue.toLocaleString()} د.ع</p>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Worst Items */}
+                <div className="bg-card border border-border rounded-xl p-4 shadow-soft">
+                  <h3 className="font-bold mb-3 text-destructive">الأقل مبيعاً</h3>
+                  <div className="space-y-2">
+                    {sortedItems.slice(-3).reverse().map(([name, stats], idx) => (
+                      <div key={name} className="flex items-center justify-between p-2 bg-muted/50 rounded-lg">
+                        <div className="flex items-center gap-2">
+                          <span className="w-6 h-6 flex items-center justify-center bg-destructive/10 text-destructive rounded font-bold text-xs">
+                            {sortedItems.length - idx}
+                          </span>
+                          <span className="font-medium text-sm">{name}</span>
+                        </div>
+                        <div className="text-left">
+                          <p className="text-sm font-bold">{stats.quantity}</p>
+                          <p className="text-xs text-muted-foreground">{stats.revenue.toLocaleString()} د.ع</p>
+                        </div>
+                      </div>
+                    ))}
                   </div>
                 </div>
               </TabsContent>
 
               <TabsContent value="customers" className="mt-4">
-                <CustomerAnalytics orders={orders} />
+                <CustomerAnalytics
+                  totalCustomers={uniqueCustomers}
+                  newCustomers={newCustomers}
+                  returningCustomers={uniqueCustomers - newCustomers}
+                />
               </TabsContent>
 
               <TabsContent value="finance" className="mt-4">
-                <FinanceBreakdown orders={orders} />
+                <FinanceBreakdown
+                  totalRevenue={totalRevenue}
+                  cancelledRevenue={cancelledRevenue}
+                  averageOrderValue={averageOrderValue}
+                  ordersCount={completedOrders.length}
+                />
               </TabsContent>
             </Tabs>
           </div>
         )}
 
-        {/* ═══════════════════════════════════════════════════════════════════ */}
-        {/* DELIVERY TAB - Drivers Performance */}
-        {/* ═══════════════════════════════════════════════════════════════════ */}
+        {/* DELIVERY TAB - Driver Performance */}
         {activeTab === 'delivery' && (
           <div className="space-y-4">
-            <h2 className="text-xl font-bold flex items-center gap-2">
-              <Truck className="w-6 h-6 text-primary" />
-              أداء السائقين
-            </h2>
-            <DriverPerformance orders={orders} />
+            <h2 className="text-xl font-bold">أداء الدلفري</h2>
+            <DriverPerformance orders={ordersForCharts} />
           </div>
         )}
 
-        {/* ═══════════════════════════════════════════════════════════════════ */}
-        {/* SETTINGS TAB - Settings, Users, Cancellation Reasons */}
-        {/* ═══════════════════════════════════════════════════════════════════ */}
+        {/* SETTINGS TAB - Configuration & Management */}
         {activeTab === 'settings' && (
           <div className="space-y-4">
             {/* Sub-tabs */}
             <Tabs value={settingsSubTab} onValueChange={(v) => setSettingsSubTab(v as SettingsSubTab)}>
               <TabsList className="grid w-full grid-cols-3">
-                <TabsTrigger value="general" className="gap-1">
-                  <Settings className="w-4 h-4" />
-                  عام
-                </TabsTrigger>
-                <TabsTrigger value="users" className="gap-1">
-                  <Users className="w-4 h-4" />
-                  المستخدمين
-                </TabsTrigger>
-                <TabsTrigger value="reasons" className="gap-1">
-                  <ClipboardList className="w-4 h-4" />
-                  الأسباب
-                </TabsTrigger>
+                <TabsTrigger value="general">عام</TabsTrigger>
+                <TabsTrigger value="users">المستخدمين</TabsTrigger>
+                <TabsTrigger value="reasons">أسباب الإلغاء</TabsTrigger>
               </TabsList>
 
-              <TabsContent value="general" className="space-y-3 mt-4">
+              <TabsContent value="general" className="space-y-4 mt-4">
                 <Button variant="outline" size="lg" className="w-full justify-start h-auto py-4">
                   <Settings className="w-5 h-5 ml-3" />
                   <div className="text-right">
@@ -495,9 +519,7 @@ export default function AdminDashboard() {
         )}
       </main>
 
-      {/* ═══════════════════════════════════════════════════════════════════ */}
       {/* BOTTOM NAVIGATION - 5 Main Tabs Only */}
-      {/* ═══════════════════════════════════════════════════════════════════ */}
       <nav className="fixed bottom-0 left-0 right-0 bg-card border-t border-border shadow-elevated safe-area-pb">
         <div className="container">
           <div className="flex justify-around items-center">
@@ -524,11 +546,45 @@ export default function AdminDashboard() {
       </nav>
 
       {/* Order Details Dialog */}
-      <OrderDetailsDialog
-        order={selectedOrder}
-        open={!!selectedOrder}
-        onOpenChange={(open) => !open && setSelectedOrder(null)}
-      />
+      {selectedOrder && (
+        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4" onClick={() => setSelectedOrder(null)}>
+          <div className="bg-card rounded-xl p-6 max-w-md w-full max-h-[80vh] overflow-auto" onClick={e => e.stopPropagation()}>
+            <h2 className="text-xl font-bold mb-4">تفاصيل الطلب #{selectedOrder.order_number}</h2>
+            <div className="space-y-3">
+              <div>
+                <p className="text-sm text-muted-foreground">الزبون</p>
+                <p className="font-semibold">{selectedOrder.customer_name}</p>
+              </div>
+              <div>
+                <p className="text-sm text-muted-foreground">العنوان</p>
+                <p className="font-semibold">{selectedOrder.customer_address || '-'}</p>
+              </div>
+              <div>
+                <p className="text-sm text-muted-foreground">الهاتف</p>
+                <p className="font-semibold">{selectedOrder.customer_phone || '-'}</p>
+              </div>
+              <div>
+                <p className="text-sm text-muted-foreground">الأصناف</p>
+                <div className="space-y-1 mt-1">
+                  {selectedOrder.items.map((item, idx) => (
+                    <div key={idx} className="flex justify-between text-sm">
+                      <span>{item.menu_item_name} × {item.quantity}</span>
+                      <span>{(Number(item.menu_item_price) * item.quantity).toLocaleString()} د.ع</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+              <div className="pt-2 border-t">
+                <div className="flex justify-between font-bold">
+                  <span>المجموع</span>
+                  <span className="text-primary">{Number(selectedOrder.total_price).toLocaleString()} د.ع</span>
+                </div>
+              </div>
+            </div>
+            <Button className="w-full mt-4" onClick={() => setSelectedOrder(null)}>إغلاق</Button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

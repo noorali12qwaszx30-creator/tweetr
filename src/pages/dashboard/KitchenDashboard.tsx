@@ -1,5 +1,5 @@
 import { useAuth } from '@/contexts/AuthContext';
-import { useOrders } from '@/contexts/OrderContext';
+import { useSupabaseOrders, DbOrderItem } from '@/hooks/useSupabaseOrders';
 import { OrderTimer } from '@/components/OrderTimer';
 import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
@@ -15,22 +15,30 @@ import {
 
 export default function KitchenDashboard() {
   const { user, logout } = useAuth();
-  const { orders, updateOrderStatus } = useOrders();
+  const { orders, updateOrderStatus, loading } = useSupabaseOrders();
 
   const preparingOrders = orders.filter(o => o.status === 'preparing');
   const pendingOrders = orders.filter(o => o.status === 'pending');
 
-  const handleStartPreparing = (orderId: string) => {
-    updateOrderStatus(orderId, 'preparing');
+  const handleStartPreparing = async (orderId: string) => {
+    await updateOrderStatus(orderId, 'preparing');
     toast.info('بدأ التحضير');
   };
 
-  const handleReady = (orderId: string) => {
-    updateOrderStatus(orderId, 'ready');
+  const handleReady = async (orderId: string) => {
+    await updateOrderStatus(orderId, 'ready');
     toast.success('الطلب جاهز!');
   };
 
   const allKitchenOrders = [...pendingOrders, ...preparingOrders];
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <Loader2 className="w-8 h-8 animate-spin text-primary" />
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-background">
@@ -68,7 +76,7 @@ export default function KitchenDashboard() {
         ) : (
           <div className="grid sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
             {allKitchenOrders.map(order => {
-              const hasNotes = !!order.notes || order.items.some(item => !!item.notes);
+              const hasNotes = !!order.notes || order.items.some((item: DbOrderItem) => !!item.notes);
               const isPreparing = order.status === 'preparing';
 
               return (
@@ -82,8 +90,8 @@ export default function KitchenDashboard() {
                 >
                   {/* Header */}
                   <div className="flex items-center justify-between mb-4">
-                    <span className="text-3xl font-bold text-primary">#{order.orderNumber}</span>
-                    <OrderTimer startTime={order.createdAt} />
+                    <span className="text-3xl font-bold text-primary">#{order.order_number}</span>
+                    <OrderTimer startTime={new Date(order.created_at)} />
                   </div>
 
                   {/* Status Badge */}
@@ -113,7 +121,7 @@ export default function KitchenDashboard() {
 
                   {/* Items - Kitchen View (no prices, no customer info) */}
                   <div className="space-y-2 mb-4">
-                    {order.items.map((item, idx) => (
+                    {order.items.map((item: DbOrderItem, idx: number) => (
                       <div
                         key={idx}
                         className={`
@@ -125,7 +133,7 @@ export default function KitchenDashboard() {
                           <span className="w-10 h-10 flex items-center justify-center bg-primary text-primary-foreground rounded-lg text-lg font-bold">
                             {item.quantity}
                           </span>
-                          <span className="font-semibold text-foreground">{item.menuItem.name}</span>
+                          <span className="font-semibold text-foreground">{item.menu_item_name}</span>
                         </div>
                         {item.notes && (
                           <MessageSquare className="w-5 h-5 text-warning" />
@@ -135,11 +143,11 @@ export default function KitchenDashboard() {
                   </div>
 
                   {/* Item Notes */}
-                  {order.items.some(item => item.notes) && (
+                  {order.items.some((item: DbOrderItem) => item.notes) && (
                     <div className="mb-4 space-y-2">
-                      {order.items.filter(item => item.notes).map((item, idx) => (
+                      {order.items.filter((item: DbOrderItem) => item.notes).map((item: DbOrderItem, idx: number) => (
                         <div key={idx} className="p-2 bg-warning/10 border border-warning/30 rounded-lg">
-                          <p className="text-xs text-warning font-medium mb-1">{item.menuItem.name}:</p>
+                          <p className="text-xs text-warning font-medium mb-1">{item.menu_item_name}:</p>
                           <p className="text-sm text-warning">{item.notes}</p>
                         </div>
                       ))}
