@@ -9,7 +9,7 @@ import { Loader2, LogIn, Utensils } from 'lucide-react';
 import { toast } from 'sonner';
 
 export default function Auth() {
-  const [email, setEmail] = useState('');
+  const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const { login, isAuthenticated, loading: authLoading } = useAuth();
@@ -25,13 +25,13 @@ export default function Auth() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (!email || !password) {
+    if (!username || !password) {
       toast.error('يرجى ملء جميع الحقول');
       return;
     }
 
     setLoading(true);
-    const { error } = await login(email, password);
+    const { error } = await login(username, password);
     setLoading(false);
 
     if (error) {
@@ -63,15 +63,14 @@ export default function Auth() {
         <CardContent>
           <form onSubmit={handleSubmit} className="space-y-4">
             <div className="space-y-2">
-              <Label htmlFor="email">البريد الإلكتروني</Label>
+              <Label htmlFor="username">اسم المستخدم</Label>
               <Input
-                id="email"
-                type="email"
-                placeholder="example@email.com"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
+                id="username"
+                type="text"
+                placeholder="اسم المستخدم"
+                value={username}
+                onChange={(e) => setUsername(e.target.value)}
                 className="text-right"
-                dir="ltr"
               />
             </div>
             <div className="space-y-2">
