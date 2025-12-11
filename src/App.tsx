@@ -5,7 +5,6 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { AuthProvider } from "@/contexts/AuthContext";
 import { RoleProvider } from "@/contexts/RoleContext";
-import { OrderProvider } from "@/contexts/OrderContext";
 import { CancellationReasonsProvider } from "@/contexts/CancellationReasonsContext";
 import { ShiftProvider } from "@/contexts/ShiftContext";
 import RoleSelector from "./pages/RoleSelector";
@@ -19,21 +18,19 @@ const App = () => (
     <BrowserRouter>
       <AuthProvider>
         <RoleProvider>
-          <OrderProvider>
-            <CancellationReasonsProvider>
-              <ShiftProvider>
-                <TooltipProvider>
-                  <Toaster />
-                  <Sonner />
-                  <Routes>
-                    <Route path="/" element={<RoleSelector />} />
-                    <Route path="/dashboard" element={<Dashboard />} />
-                    <Route path="*" element={<NotFound />} />
-                  </Routes>
-                </TooltipProvider>
-              </ShiftProvider>
-            </CancellationReasonsProvider>
-          </OrderProvider>
+          <CancellationReasonsProvider>
+            <ShiftProvider>
+              <TooltipProvider>
+                <Toaster />
+                <Sonner />
+                <Routes>
+                  <Route path="/" element={<RoleSelector />} />
+                  <Route path="/dashboard" element={<Dashboard />} />
+                  <Route path="*" element={<NotFound />} />
+                </Routes>
+              </TooltipProvider>
+            </ShiftProvider>
+          </CancellationReasonsProvider>
         </RoleProvider>
       </AuthProvider>
     </BrowserRouter>

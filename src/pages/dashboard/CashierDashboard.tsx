@@ -18,7 +18,6 @@ import {
   ClipboardList,
   Menu as MenuIcon,
   LogOut,
-  Edit,
   User,
   Phone,
   Settings,
