@@ -28,8 +28,9 @@ import {
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
 import { toast } from 'sonner';
-import { UserPlus, Trash2, Edit, User, Shield, Loader2, Key, Eye, EyeOff } from 'lucide-react';
+import { UserPlus, Trash2, Edit, User, Shield, Loader2, Key, Eye, EyeOff, UserCheck, UserX } from 'lucide-react';
 import { ROLE_LABELS, UserRole } from '@/types';
+import { Switch } from '@/components/ui/switch';
 
 interface Profile {
   id: string;
@@ -38,6 +39,7 @@ interface Profile {
   full_name: string | null;
   phone: string | null;
   created_at: string;
+  is_active: boolean;
 }
 
 interface UserRoleRecord {
@@ -110,6 +112,7 @@ export function UserManagement() {
         const userRole = roles?.find(r => r.user_id === profile.user_id);
         return {
           ...profile,
+          is_active: profile.is_active ?? true,
           role: userRole?.role as UserRole | undefined,
         };
       });
@@ -120,6 +123,29 @@ export function UserManagement() {
       toast.error('حدث خطأ في جلب المستخدمين');
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleToggleActive = async (user: UserWithRole) => {
+    try {
+      const newStatus = !user.is_active;
+      
+      const { error } = await supabase
+        .from('profiles')
+        .update({ is_active: newStatus })
+        .eq('user_id', user.user_id);
+
+      if (error) throw error;
+
+      // Update local state
+      setUsers(prev => prev.map(u => 
+        u.user_id === user.user_id ? { ...u, is_active: newStatus } : u
+      ));
+
+      toast.success(newStatus ? 'تم تفعيل الحساب' : 'تم تعطيل الحساب');
+    } catch (error: any) {
+      console.error('Error toggling user status:', error);
+      toast.error('حدث خطأ في تحديث حالة المستخدم');
     }
   };
 
@@ -441,46 +467,71 @@ export function UserManagement() {
           {users.map((user) => (
             <div
               key={user.id}
-              className="bg-card border border-border rounded-xl p-4 shadow-soft"
+              className={`bg-card border rounded-xl p-4 shadow-soft transition-opacity ${
+                user.is_active ? 'border-border' : 'border-destructive/30 opacity-60'
+              }`}
             >
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center">
-                    <User className="w-5 h-5 text-primary" />
+                  <div className={`w-10 h-10 rounded-full flex items-center justify-center ${
+                    user.is_active ? 'bg-primary/10' : 'bg-destructive/10'
+                  }`}>
+                    {user.is_active ? (
+                      <UserCheck className="w-5 h-5 text-primary" />
+                    ) : (
+                      <UserX className="w-5 h-5 text-destructive" />
+                    )}
                   </div>
                   <div>
-                    <p className="font-semibold">{user.username}</p>
+                    <div className="flex items-center gap-2">
+                      <p className="font-semibold">{user.username}</p>
+                      {!user.is_active && (
+                        <span className="text-xs bg-destructive/10 text-destructive px-2 py-0.5 rounded-full">
+                          معطّل
+                        </span>
+                      )}
+                    </div>
                     <div className="flex items-center gap-2 text-sm text-muted-foreground">
                       <Shield className="w-3 h-3" />
                       <span>{user.role ? ROLE_LABELS[user.role] : 'بدون دور'}</span>
                     </div>
                   </div>
                 </div>
-                <div className="flex gap-2">
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => openPasswordDialog(user)}
-                    title="تغيير كلمة المرور"
-                  >
-                    <Key className="w-3 h-3" />
-                  </Button>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => openEditDialog(user)}
-                    title="تعديل"
-                  >
-                    <Edit className="w-3 h-3" />
-                  </Button>
-                  <Button
-                    variant="destructive"
-                    size="sm"
-                    onClick={() => setDeleteUserId(user.user_id)}
-                    title="حذف"
-                  >
-                    <Trash2 className="w-3 h-3" />
-                  </Button>
+                <div className="flex items-center gap-3">
+                  {/* Toggle Active Status */}
+                  <div className="flex items-center gap-2">
+                    <Switch
+                      checked={user.is_active}
+                      onCheckedChange={() => handleToggleActive(user)}
+                      className="data-[state=checked]:bg-green-500"
+                    />
+                  </div>
+                  <div className="flex gap-2">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => openPasswordDialog(user)}
+                      title="تغيير كلمة المرور"
+                    >
+                      <Key className="w-3 h-3" />
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => openEditDialog(user)}
+                      title="تعديل"
+                    >
+                      <Edit className="w-3 h-3" />
+                    </Button>
+                    <Button
+                      variant="destructive"
+                      size="sm"
+                      onClick={() => setDeleteUserId(user.user_id)}
+                      title="حذف"
+                    >
+                      <Trash2 className="w-3 h-3" />
+                    </Button>
+                  </div>
                 </div>
               </div>
               {user.full_name && (

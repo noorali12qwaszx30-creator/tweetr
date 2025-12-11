@@ -108,7 +108,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       // Convert username to email format for Supabase auth
       const email = `${username.toLowerCase().trim()}@restaurant.local`;
       
-      const { error } = await supabase.auth.signInWithPassword({
+      const { data, error } = await supabase.auth.signInWithPassword({
         email,
         password,
       });
@@ -118,6 +118,21 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           return { error: 'اسم المستخدم أو كلمة المرور غير صحيحة' };
         }
         return { error: error.message };
+      }
+
+      // Check if user is active
+      if (data.user) {
+        const { data: profile } = await supabase
+          .from('profiles')
+          .select('is_active')
+          .eq('user_id', data.user.id)
+          .maybeSingle();
+
+        if (profile && profile.is_active === false) {
+          // Sign out the user immediately
+          await supabase.auth.signOut();
+          return { error: 'هذا الحساب معطّل. تواصل مع المدير التنفيذي' };
+        }
       }
 
       return { error: null };
