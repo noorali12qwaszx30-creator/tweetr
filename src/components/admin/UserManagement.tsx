@@ -28,7 +28,7 @@ import {
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
 import { toast } from 'sonner';
-import { UserPlus, Trash2, Edit, User, Shield, Loader2, Key } from 'lucide-react';
+import { UserPlus, Trash2, Edit, User, Shield, Loader2, Key, Eye, EyeOff } from 'lucide-react';
 import { ROLE_LABELS, UserRole } from '@/types';
 
 interface Profile {
@@ -63,6 +63,8 @@ export function UserManagement() {
   const [isPasswordDialogOpen, setIsPasswordDialogOpen] = useState(false);
   const [passwordUser, setPasswordUser] = useState<UserWithRole | null>(null);
   const [newPassword, setNewPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
+  const [showNewPassword, setShowNewPassword] = useState(false);
 
   // Form state for new user
   const [newUser, setNewUser] = useState({
@@ -364,13 +366,24 @@ export function UserManagement() {
               </div>
               <div className="space-y-2">
                 <Label htmlFor="password">كلمة المرور *</Label>
-                <Input
-                  id="password"
-                  type="password"
-                  placeholder="••••••••"
-                  value={newUser.password}
-                  onChange={(e) => setNewUser({ ...newUser, password: e.target.value })}
-                />
+                <div className="relative">
+                  <Input
+                    id="password"
+                    type={showPassword ? "text" : "password"}
+                    placeholder="••••••••"
+                    value={newUser.password}
+                    onChange={(e) => setNewUser({ ...newUser, password: e.target.value })}
+                    className="pl-10"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword(!showPassword)}
+                    className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                  >
+                    {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                  </button>
+                </div>
+                <p className="text-xs text-muted-foreground">6 أحرف على الأقل</p>
               </div>
               <div className="space-y-2">
                 <Label htmlFor="full_name">الاسم الكامل</Label>
@@ -574,13 +587,23 @@ export function UserManagement() {
             </p>
             <div className="space-y-2">
               <Label htmlFor="new_password">كلمة المرور الجديدة</Label>
-              <Input
-                id="new_password"
-                type="password"
-                placeholder="أدخل كلمة المرور الجديدة"
-                value={newPassword}
-                onChange={(e) => setNewPassword(e.target.value)}
-              />
+              <div className="relative">
+                <Input
+                  id="new_password"
+                  type={showNewPassword ? "text" : "password"}
+                  placeholder="أدخل كلمة المرور الجديدة"
+                  value={newPassword}
+                  onChange={(e) => setNewPassword(e.target.value)}
+                  className="pl-10"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowNewPassword(!showNewPassword)}
+                  className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                >
+                  {showNewPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                </button>
+              </div>
               <p className="text-xs text-muted-foreground">
                 يجب أن تكون 6 أحرف على الأقل
               </p>
