@@ -433,20 +433,11 @@ export default function AdminDashboard() {
               </TabsContent>
 
               <TabsContent value="customers" className="mt-4">
-                <CustomerAnalytics
-                  totalCustomers={uniqueCustomers}
-                  newCustomers={newCustomers}
-                  returningCustomers={uniqueCustomers - newCustomers}
-                />
+                <CustomerAnalytics orders={ordersForCharts} />
               </TabsContent>
 
               <TabsContent value="finance" className="mt-4">
-                <FinanceBreakdown
-                  totalRevenue={totalRevenue}
-                  cancelledRevenue={cancelledRevenue}
-                  averageOrderValue={averageOrderValue}
-                  ordersCount={completedOrders.length}
-                />
+                <FinanceBreakdown orders={ordersForCharts} />
               </TabsContent>
             </Tabs>
           </div>
