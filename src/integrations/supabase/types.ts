@@ -14,6 +14,194 @@ export type Database = {
   }
   public: {
     Tables: {
+      customers: {
+        Row: {
+          address: string | null
+          created_at: string
+          id: string
+          name: string
+          notes: string | null
+          phone: string
+          updated_at: string
+        }
+        Insert: {
+          address?: string | null
+          created_at?: string
+          id?: string
+          name: string
+          notes?: string | null
+          phone: string
+          updated_at?: string
+        }
+        Update: {
+          address?: string | null
+          created_at?: string
+          id?: string
+          name?: string
+          notes?: string | null
+          phone?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      menu_items: {
+        Row: {
+          category: string
+          created_at: string
+          id: string
+          image: string | null
+          is_available: boolean | null
+          name: string
+          price: number
+          updated_at: string
+        }
+        Insert: {
+          category: string
+          created_at?: string
+          id?: string
+          image?: string | null
+          is_available?: boolean | null
+          name: string
+          price: number
+          updated_at?: string
+        }
+        Update: {
+          category?: string
+          created_at?: string
+          id?: string
+          image?: string | null
+          is_available?: boolean | null
+          name?: string
+          price?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      order_items: {
+        Row: {
+          created_at: string
+          id: string
+          menu_item_id: string | null
+          menu_item_name: string
+          menu_item_price: number
+          notes: string | null
+          order_id: string
+          quantity: number
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          menu_item_id?: string | null
+          menu_item_name: string
+          menu_item_price: number
+          notes?: string | null
+          order_id: string
+          quantity?: number
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          menu_item_id?: string | null
+          menu_item_name?: string
+          menu_item_price?: number
+          notes?: string | null
+          order_id?: string
+          quantity?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "order_items_menu_item_id_fkey"
+            columns: ["menu_item_id"]
+            isOneToOne: false
+            referencedRelation: "menu_items"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "order_items_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "orders"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      orders: {
+        Row: {
+          cancellation_reason: string | null
+          cancelled_at: string | null
+          cashier_id: string | null
+          cashier_name: string | null
+          created_at: string
+          customer_address: string | null
+          customer_id: string | null
+          customer_name: string
+          customer_phone: string
+          delivered_at: string | null
+          delivery_person_id: string | null
+          delivery_person_name: string | null
+          id: string
+          notes: string | null
+          order_number: number
+          pending_delivery_acceptance: boolean | null
+          status: Database["public"]["Enums"]["order_status"]
+          total_price: number
+          type: Database["public"]["Enums"]["order_type"]
+          updated_at: string
+        }
+        Insert: {
+          cancellation_reason?: string | null
+          cancelled_at?: string | null
+          cashier_id?: string | null
+          cashier_name?: string | null
+          created_at?: string
+          customer_address?: string | null
+          customer_id?: string | null
+          customer_name: string
+          customer_phone: string
+          delivered_at?: string | null
+          delivery_person_id?: string | null
+          delivery_person_name?: string | null
+          id?: string
+          notes?: string | null
+          order_number?: number
+          pending_delivery_acceptance?: boolean | null
+          status?: Database["public"]["Enums"]["order_status"]
+          total_price?: number
+          type?: Database["public"]["Enums"]["order_type"]
+          updated_at?: string
+        }
+        Update: {
+          cancellation_reason?: string | null
+          cancelled_at?: string | null
+          cashier_id?: string | null
+          cashier_name?: string | null
+          created_at?: string
+          customer_address?: string | null
+          customer_id?: string | null
+          customer_name?: string
+          customer_phone?: string
+          delivered_at?: string | null
+          delivery_person_id?: string | null
+          delivery_person_name?: string | null
+          id?: string
+          notes?: string | null
+          order_number?: number
+          pending_delivery_acceptance?: boolean | null
+          status?: Database["public"]["Enums"]["order_status"]
+          total_price?: number
+          type?: Database["public"]["Enums"]["order_type"]
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "orders_customer_id_fkey"
+            columns: ["customer_id"]
+            isOneToOne: false
+            referencedRelation: "customers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       profiles: {
         Row: {
           avatar_url: string | null
@@ -93,6 +281,14 @@ export type Database = {
         | "takeaway"
         | "kitchen"
         | "admin"
+      order_status:
+        | "pending"
+        | "preparing"
+        | "ready"
+        | "delivering"
+        | "delivered"
+        | "cancelled"
+      order_type: "delivery" | "takeaway"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -228,6 +424,15 @@ export const Constants = {
         "kitchen",
         "admin",
       ],
+      order_status: [
+        "pending",
+        "preparing",
+        "ready",
+        "delivering",
+        "delivered",
+        "cancelled",
+      ],
+      order_type: ["delivery", "takeaway"],
     },
   },
 } as const
