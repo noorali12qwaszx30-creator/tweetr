@@ -15,7 +15,7 @@ interface AuthContextType {
   user: AuthUser | null;
   session: Session | null;
   loading: boolean;
-  login: (email: string, password: string) => Promise<{ error: string | null }>;
+  login: (username: string, password: string) => Promise<{ error: string | null }>;
   logout: () => Promise<void>;
   isAuthenticated: boolean;
 }
@@ -103,8 +103,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return () => subscription.unsubscribe();
   }, []);
 
-  const login = async (email: string, password: string): Promise<{ error: string | null }> => {
+  const login = async (username: string, password: string): Promise<{ error: string | null }> => {
     try {
+      // Convert username to email format for Supabase auth
+      const email = `${username.toLowerCase().trim()}@restaurant.local`;
+      
       const { error } = await supabase.auth.signInWithPassword({
         email,
         password,
@@ -112,7 +115,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
       if (error) {
         if (error.message.includes('Invalid login credentials')) {
-          return { error: 'البريد الإلكتروني أو كلمة المرور غير صحيحة' };
+          return { error: 'اسم المستخدم أو كلمة المرور غير صحيحة' };
         }
         return { error: error.message };
       }

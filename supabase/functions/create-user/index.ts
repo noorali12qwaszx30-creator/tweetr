@@ -51,11 +51,28 @@ serve(async (req) => {
       );
     }
 
-    const { email, password, username, full_name, phone, role } = await req.json();
+    const { username, password, full_name, phone, role } = await req.json();
 
-    if (!email || !password || !username || !role) {
+    if (!username || !password || !role) {
       return new Response(
         JSON.stringify({ error: "Missing required fields" }),
+        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    // Auto-generate email from username
+    const email = `${username.toLowerCase().trim()}@restaurant.local`;
+
+    // Check if username already exists in profiles
+    const { data: existingProfile } = await supabaseAdmin
+      .from("profiles")
+      .select("id")
+      .eq("username", username)
+      .maybeSingle();
+
+    if (existingProfile) {
+      return new Response(
+        JSON.stringify({ error: "اسم المستخدم مسجل مسبقاً" }),
         { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
@@ -73,6 +90,12 @@ serve(async (req) => {
 
     if (createError) {
       console.error("Create user error:", createError);
+      if (createError.message.includes("already")) {
+        return new Response(
+          JSON.stringify({ error: "اسم المستخدم مسجل مسبقاً" }),
+          { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
       return new Response(
         JSON.stringify({ error: createError.message }),
         { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
@@ -117,7 +140,7 @@ serve(async (req) => {
         success: true, 
         user: { 
           id: newUser.user.id, 
-          email: newUser.user.email 
+          username: username
         } 
       }),
       { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }

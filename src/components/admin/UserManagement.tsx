@@ -66,7 +66,6 @@ export function UserManagement() {
 
   // Form state for new user
   const [newUser, setNewUser] = useState({
-    email: '',
     password: '',
     username: '',
     full_name: '',
@@ -123,7 +122,7 @@ export function UserManagement() {
   };
 
   const handleAddUser = async () => {
-    if (!newUser.email || !newUser.password || !newUser.username) {
+    if (!newUser.password || !newUser.username) {
       toast.error('يرجى ملء جميع الحقول المطلوبة');
       return;
     }
@@ -143,12 +142,11 @@ export function UserManagement() {
         return;
       }
 
-      // Call edge function to create user
+      // Call edge function to create user (email will be auto-generated from username)
       const response = await supabase.functions.invoke('create-user', {
         body: {
-          email: newUser.email,
-          password: newUser.password,
           username: newUser.username,
+          password: newUser.password,
           full_name: newUser.full_name,
           phone: newUser.phone,
           role: newUser.role,
@@ -161,7 +159,7 @@ export function UserManagement() {
 
       if (response.data?.error) {
         if (response.data.error.includes('already')) {
-          toast.error('البريد الإلكتروني مسجل مسبقاً');
+          toast.error('اسم المستخدم مسجل مسبقاً');
         } else {
           toast.error(response.data.error);
         }
@@ -171,7 +169,6 @@ export function UserManagement() {
       toast.success('تم إنشاء المستخدم بنجاح');
       setIsAddDialogOpen(false);
       setNewUser({
-        email: '',
         password: '',
         username: '',
         full_name: '',
@@ -357,13 +354,12 @@ export function UserManagement() {
             </DialogHeader>
             <div className="space-y-4 py-4">
               <div className="space-y-2">
-                <Label htmlFor="email">البريد الإلكتروني *</Label>
+                <Label htmlFor="username">اسم المستخدم *</Label>
                 <Input
-                  id="email"
-                  type="email"
-                  placeholder="example@email.com"
-                  value={newUser.email}
-                  onChange={(e) => setNewUser({ ...newUser, email: e.target.value })}
+                  id="username"
+                  placeholder="اسم المستخدم"
+                  value={newUser.username}
+                  onChange={(e) => setNewUser({ ...newUser, username: e.target.value })}
                 />
               </div>
               <div className="space-y-2">
@@ -374,15 +370,6 @@ export function UserManagement() {
                   placeholder="••••••••"
                   value={newUser.password}
                   onChange={(e) => setNewUser({ ...newUser, password: e.target.value })}
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="username">اسم المستخدم *</Label>
-                <Input
-                  id="username"
-                  placeholder="اسم المستخدم"
-                  value={newUser.username}
-                  onChange={(e) => setNewUser({ ...newUser, username: e.target.value })}
                 />
               </div>
               <div className="space-y-2">
