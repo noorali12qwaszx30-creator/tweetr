@@ -1,8 +1,9 @@
-import { useAuth } from '@/contexts/AuthContext';
+import { useRole } from '@/contexts/RoleContext';
 import { useSupabaseOrders, DbOrderItem } from '@/hooks/useSupabaseOrders';
 import { OrderTimer } from '@/components/OrderTimer';
 import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
+import { ROLE_LABELS } from '@/types';
 import { 
   ChefHat, 
   LogOut, 
@@ -14,7 +15,7 @@ import {
 } from 'lucide-react';
 
 export default function KitchenDashboard() {
-  const { user, logout } = useAuth();
+  const { role, clearRole } = useRole();
   const { orders, updateOrderStatus, loading } = useSupabaseOrders();
 
   const preparingOrders = orders.filter(o => o.status === 'preparing');
@@ -51,7 +52,7 @@ export default function KitchenDashboard() {
             </div>
             <div>
               <h1 className="font-bold text-foreground">المطبخ</h1>
-              <p className="text-xs text-muted-foreground">{user?.username}</p>
+              <p className="text-xs text-muted-foreground">{role ? ROLE_LABELS[role] : ''}</p>
             </div>
           </div>
           <div className="flex items-center gap-4">
@@ -59,7 +60,7 @@ export default function KitchenDashboard() {
               <span className="text-muted-foreground">الطلبات: </span>
               <span className="font-bold text-primary">{allKitchenOrders.length}</span>
             </div>
-            <Button variant="ghost" size="icon" onClick={logout}>
+            <Button variant="ghost" size="icon" onClick={clearRole}>
               <LogOut className="w-5 h-5" />
             </Button>
           </div>

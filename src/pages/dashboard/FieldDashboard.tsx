@@ -1,10 +1,11 @@
 import { useState } from 'react';
-import { useAuth } from '@/contexts/AuthContext';
+import { useRole } from '@/contexts/RoleContext';
 import { useSupabaseOrders, OrderWithItems } from '@/hooks/useSupabaseOrders';
 import { OrderCard } from '@/components/OrderCard';
 import { DeliveryPersonSelector } from '@/components/DeliveryPersonSelector';
 import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
+import { ROLE_LABELS } from '@/types';
 import {
   Users,
   LogOut,
@@ -21,7 +22,7 @@ import {
 type TabType = 'orders' | 'ready' | 'delivering' | 'cancelled' | 'admin';
 
 export default function FieldDashboard() {
-  const { user, logout } = useAuth();
+  const { role, clearRole } = useRole();
   const { orders, updateOrderStatus, assignDelivery, cancelOrder, loading } = useSupabaseOrders();
   const [activeTab, setActiveTab] = useState<TabType>('orders');
   const [selectorOpen, setSelectorOpen] = useState(false);
@@ -83,10 +84,10 @@ export default function FieldDashboard() {
             </div>
             <div>
               <h1 className="font-bold text-foreground">الميدان</h1>
-              <p className="text-xs text-muted-foreground">{user?.username}</p>
+              <p className="text-xs text-muted-foreground">{role ? ROLE_LABELS[role] : ''}</p>
             </div>
           </div>
-          <Button variant="ghost" size="icon" onClick={logout}>
+          <Button variant="ghost" size="icon" onClick={clearRole}>
             <LogOut className="w-5 h-5" />
           </Button>
         </div>
@@ -233,11 +234,11 @@ export default function FieldDashboard() {
                   <p className="text-sm text-muted-foreground">تفاصيل حسابات الدلفري</p>
                 </div>
               </Button>
-              <Button variant="destructive" size="lg" className="justify-start h-auto py-4" onClick={logout}>
+              <Button variant="destructive" size="lg" className="justify-start h-auto py-4" onClick={clearRole}>
                 <LogOut className="w-5 h-5 ml-3" />
                 <div className="text-right">
-                  <p className="font-semibold">تسجيل خروج</p>
-                  <p className="text-sm text-destructive-foreground/70">الخروج من الحساب</p>
+                  <p className="font-semibold">تغيير الدور</p>
+                  <p className="text-sm text-destructive-foreground/70">العودة لاختيار الدور</p>
                 </div>
               </Button>
             </div>

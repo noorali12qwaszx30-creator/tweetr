@@ -1,9 +1,10 @@
 import { useState } from 'react';
-import { useAuth } from '@/contexts/AuthContext';
+import { useRole } from '@/contexts/RoleContext';
 import { useSupabaseOrders } from '@/hooks/useSupabaseOrders';
 import { OrderCard } from '@/components/OrderCard';
 import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
+import { ROLE_LABELS } from '@/types';
 import {
   Truck,
   LogOut,
@@ -21,7 +22,7 @@ import {
 type TabType = 'orders' | 'delivering' | 'stats' | 'ready';
 
 export default function DeliveryDashboard() {
-  const { user, logout } = useAuth();
+  const { role, clearRole } = useRole();
   const { orders, updateOrderStatus, acceptDelivery, rejectDelivery, loading } = useSupabaseOrders();
   const [activeTab, setActiveTab] = useState<TabType>('orders');
 
@@ -74,10 +75,10 @@ export default function DeliveryDashboard() {
             </div>
             <div>
               <h1 className="font-bold text-foreground">الدلفري</h1>
-              <p className="text-xs text-muted-foreground">{user?.username}</p>
+              <p className="text-xs text-muted-foreground">{role ? ROLE_LABELS[role] : ''}</p>
             </div>
           </div>
-          <Button variant="ghost" size="icon" onClick={logout}>
+          <Button variant="ghost" size="icon" onClick={clearRole}>
             <LogOut className="w-5 h-5" />
           </Button>
         </div>
