@@ -5,6 +5,7 @@ import { useShift } from '@/contexts/ShiftContext';
 import { Order } from '@/types';
 import { Button } from '@/components/ui/button';
 import { CancellationReasonsManager } from '@/components/CancellationReasonsManager';
+import { UserManagement } from '@/components/admin/UserManagement';
 import { OrderDetailsDialog } from '@/components/OrderDetailsDialog';
 import { KPICard } from '@/components/admin/KPICard';
 import { OrdersChart, WeeklyChart } from '@/components/admin/OrdersChart';
@@ -482,31 +483,8 @@ export default function AdminDashboard() {
                 </Button>
               </TabsContent>
 
-              <TabsContent value="users" className="space-y-4 mt-4">
-                <div className="flex items-center justify-between">
-                  <h3 className="font-bold">إدارة المستخدمين</h3>
-                  <Button size="sm">
-                    <UserPlus className="w-4 h-4 ml-2" />
-                    إضافة
-                  </Button>
-                </div>
-                
-                <div className="space-y-3">
-                  {['كاشيرة 1', 'ميدان 1', 'دلفري 1', 'سفري 1', 'مطبخ 1'].map(name => (
-                    <div key={name} className="bg-card border border-border rounded-xl p-4 shadow-soft flex items-center justify-between">
-                      <div>
-                        <p className="font-semibold">{name}</p>
-                        <p className="text-sm text-muted-foreground">نشط</p>
-                      </div>
-                      <div className="flex gap-2">
-                        <Button variant="outline" size="sm">تعديل</Button>
-                        <Button variant="destructive" size="sm">
-                          <Trash2 className="w-3 h-3" />
-                        </Button>
-                      </div>
-                    </div>
-                  ))}
-                </div>
+              <TabsContent value="users" className="mt-4">
+                <UserManagement />
               </TabsContent>
 
               <TabsContent value="reasons" className="mt-4">
