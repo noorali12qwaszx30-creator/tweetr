@@ -20,14 +20,15 @@ import {
   User,
   Phone,
   MapPin,
-  MessageSquare
+  MessageSquare,
+  CheckCircle
 } from 'lucide-react';
 
 type TabType = 'menu' | 'orders';
 
 export default function CashierDashboard() {
   const { user, logout } = useAuth();
-  const { orders, addOrder } = useOrders();
+  const { orders, addOrder, updateOrderStatus } = useOrders();
   const [activeTab, setActiveTab] = useState<TabType>('menu');
   const [cart, setCart] = useState<OrderItem[]>([]);
   const [customerName, setCustomerName] = useState('');
@@ -108,6 +109,11 @@ export default function CashierDashboard() {
 
     toast.success('تم إرسال الطلب بنجاح');
     clearCart();
+  };
+
+  const handleMarkReady = (orderId: string) => {
+    updateOrderStatus(orderId, 'ready');
+    toast.success('تم نقل الطلب إلى الجاهز');
   };
 
   const activeOrders = orders.filter(o => !['delivered', 'cancelled'].includes(o.status));
@@ -320,6 +326,16 @@ export default function CashierDashboard() {
                           <Edit className="w-3 h-3 ml-1" />
                           تعديل
                         </Button>
+                        {order.status !== 'ready' && order.status !== 'delivering' && (
+                          <Button 
+                            variant="success" 
+                            size="sm"
+                            onClick={() => handleMarkReady(order.id)}
+                          >
+                            <CheckCircle className="w-3 h-3 ml-1" />
+                            نقل للجاهز
+                          </Button>
+                        )}
                         <Button variant="warning" size="sm">
                           تبليغ متأخر
                         </Button>
