@@ -1,10 +1,19 @@
-import { Order, ORDER_STATUS_LABELS } from '@/types';
 import { OrderTimer } from './OrderTimer';
-import { Button } from '@/components/ui/button';
-import { MessageSquare, Phone, Edit, X, CheckCircle, Truck } from 'lucide-react';
+import { MessageSquare, Truck } from 'lucide-react';
+import { OrderWithItems, DbOrderItem } from '@/hooks/useSupabaseOrders';
+
+// Status labels in Arabic
+const ORDER_STATUS_LABELS: Record<string, string> = {
+  pending: 'قيد الانتظار',
+  preparing: 'قيد التجهيز',
+  ready: 'جاهز',
+  delivering: 'قيد التوصيل',
+  delivered: 'تم التسليم',
+  cancelled: 'ملغي',
+};
 
 interface OrderCardProps {
-  order: Order;
+  order: OrderWithItems;
   showCustomerInfo?: boolean;
   showItems?: boolean;
   showActions?: boolean;
@@ -20,7 +29,7 @@ export function OrderCard({
   actions,
   compact = false,
 }: OrderCardProps) {
-  const hasNotes = !!order.notes || order.items.some(item => !!item.notes);
+  const hasNotes = !!order.notes || order.items.some((item: DbOrderItem) => !!item.notes);
 
   const statusColors: Record<string, string> = {
     pending: 'bg-warning/10 text-warning border-warning/30',
@@ -43,7 +52,7 @@ export function OrderCard({
       {/* Header */}
       <div className="flex items-center justify-between mb-3">
         <div className="flex items-center gap-3">
-          <span className="text-2xl font-bold text-primary">#{order.orderNumber}</span>
+          <span className="text-2xl font-bold text-primary">#{order.order_number}</span>
           <span className={`px-2 py-0.5 rounded-full text-xs font-medium border ${statusColors[order.status]}`}>
             {ORDER_STATUS_LABELS[order.status]}
           </span>
@@ -53,18 +62,18 @@ export function OrderCard({
             </span>
           )}
         </div>
-        <OrderTimer startTime={order.createdAt} />
+        <OrderTimer startTime={new Date(order.created_at)} />
       </div>
 
       {/* Customer Info */}
       {showCustomerInfo && (
         <div className="mb-3 p-3 bg-muted/50 rounded-lg">
-          <p className="font-semibold text-foreground">{order.customer.name}</p>
-          {order.customer.phone && (
-            <p className="text-sm text-muted-foreground">{order.customer.phone}</p>
+          <p className="font-semibold text-foreground">{order.customer_name}</p>
+          {order.customer_phone && (
+            <p className="text-sm text-muted-foreground">{order.customer_phone}</p>
           )}
-          {order.customer.address && (
-            <p className="text-sm text-muted-foreground">{order.customer.address}</p>
+          {order.customer_address && (
+            <p className="text-sm text-muted-foreground">{order.customer_address}</p>
           )}
         </div>
       )}
@@ -72,23 +81,25 @@ export function OrderCard({
       {/* Items */}
       {showItems && (
         <div className="space-y-2 mb-3">
-          {order.items.map((item, idx) => (
+          {order.items.map((item: DbOrderItem, idx: number) => (
             <div key={idx} className="flex items-center justify-between text-sm">
               <div className="flex items-center gap-2">
                 <span className="w-6 h-6 flex items-center justify-center bg-primary/10 text-primary rounded-md text-xs font-bold">
                   {item.quantity}
                 </span>
-                <span className="text-foreground">{item.menuItem.name}</span>
+                <span className="text-foreground">{item.menu_item_name}</span>
                 {item.notes && (
                   <MessageSquare className="w-3.5 h-3.5 text-warning" />
                 )}
               </div>
-              <span className="text-muted-foreground">{(item.menuItem.price * item.quantity).toLocaleString()} د.ع</span>
+              <span className="text-muted-foreground">
+                {(Number(item.menu_item_price) * item.quantity).toLocaleString()} د.ع
+              </span>
             </div>
           ))}
           <div className="flex items-center justify-between pt-2 border-t border-border font-semibold">
             <span>المجموع</span>
-            <span className="text-primary">{order.totalPrice.toLocaleString()} د.ع</span>
+            <span className="text-primary">{Number(order.total_price).toLocaleString()} د.ع</span>
           </div>
         </div>
       )}
@@ -104,11 +115,20 @@ export function OrderCard({
       )}
 
       {/* Delivery Person */}
-      {order.deliveryPersonName && (
+      {order.delivery_person_name && (
         <div className="mb-3 p-2 bg-info/10 border border-info/30 rounded-lg">
           <p className="text-sm text-info flex items-center gap-2">
             <Truck className="w-4 h-4" />
-            الدلفري: {order.deliveryPersonName}
+            الدلفري: {order.delivery_person_name}
+          </p>
+        </div>
+      )}
+
+      {/* Cancellation Reason */}
+      {order.cancellation_reason && (
+        <div className="mb-3 p-2 bg-destructive/10 border border-destructive/30 rounded-lg">
+          <p className="text-sm text-destructive">
+            سبب الإلغاء: {order.cancellation_reason}
           </p>
         </div>
       )}

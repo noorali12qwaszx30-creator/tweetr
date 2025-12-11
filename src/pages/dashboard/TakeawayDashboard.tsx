@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
-import { useOrders, MENU_ITEMS } from '@/contexts/OrderContext';
-import { OrderItem, MenuItem } from '@/types';
+import { useSupabaseOrders, DbMenuItem } from '@/hooks/useSupabaseOrders';
+import { useMenuItems } from '@/hooks/useMenuItems';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { OrderCard } from '@/components/OrderCard';
@@ -16,30 +16,38 @@ import {
   Minus,
   ClipboardList,
   BarChart3,
-  Menu as MenuIcon
+  Menu as MenuIcon,
+  Loader2
 } from 'lucide-react';
 
 type TabType = 'menu' | 'tracking' | 'stats';
 
+interface CartItem {
+  menuItem: DbMenuItem;
+  quantity: number;
+  notes?: string;
+}
+
 export default function TakeawayDashboard() {
   const { user, logout } = useAuth();
-  const { orders, addOrder, updateOrderStatus } = useOrders();
+  const { orders, addOrder, updateOrderStatus, loading } = useSupabaseOrders();
+  const { menuItems, categories, loading: menuLoading } = useMenuItems();
   const [activeTab, setActiveTab] = useState<TabType>('menu');
-  const [cart, setCart] = useState<OrderItem[]>([]);
+  const [cart, setCart] = useState<CartItem[]>([]);
   const [orderNotes, setOrderNotes] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
+  const [submitting, setSubmitting] = useState(false);
 
-  const categories = [...new Set(MENU_ITEMS.map(item => item.category))];
   const filteredItems = selectedCategory 
-    ? MENU_ITEMS.filter(item => item.category === selectedCategory)
-    : MENU_ITEMS;
+    ? menuItems.filter(item => item.category === selectedCategory && item.is_available)
+    : menuItems.filter(item => item.is_available);
 
   const takeawayOrders = orders.filter(o => o.type === 'takeaway');
   const activeOrders = takeawayOrders.filter(o => !['delivered', 'cancelled'].includes(o.status));
   const completedOrders = takeawayOrders.filter(o => o.status === 'delivered');
   const cancelledOrders = takeawayOrders.filter(o => o.status === 'cancelled');
 
-  const addToCart = (item: MenuItem) => {
+  const addToCart = (item: DbMenuItem) => {
     setCart(prev => {
       const existing = prev.find(i => i.menuItem.id === item.id);
       if (existing) {
@@ -72,47 +80,60 @@ export default function TakeawayDashboard() {
 
   const totalPrice = cart.reduce((sum, item) => sum + item.menuItem.price * item.quantity, 0);
 
-  const submitOrder = () => {
+  const submitOrder = async () => {
     if (cart.length === 0) {
       toast.error('السلة فارغة');
       return;
     }
 
-    addOrder({
-      customer: {
-        name: 'زبون سفري',
-        phone: '',
-        address: 'عنوان المطعم',
-      },
-      items: cart,
-      status: 'pending',
+    setSubmitting(true);
+    const result = await addOrder({
+      customer_name: 'زبون سفري',
+      customer_phone: '',
+      customer_address: 'عنوان المطعم',
       type: 'takeaway',
       notes: orderNotes || undefined,
-      totalPrice,
-      cashierName: user?.username || 'سفري',
+      cashier_name: user?.username || 'سفري',
+      items: cart.map(item => ({
+        menu_item_id: item.menuItem.id,
+        menu_item_name: item.menuItem.name,
+        menu_item_price: item.menuItem.price,
+        quantity: item.quantity,
+        notes: item.notes,
+      })),
     });
 
-    toast.success('تم إرسال الطلب للمطبخ');
-    clearCart();
+    setSubmitting(false);
+    if (result) {
+      clearCart();
+    }
   };
 
-  const handleDelivered = (orderId: string) => {
-    updateOrderStatus(orderId, 'delivered');
+  const handleDelivered = async (orderId: string) => {
+    await updateOrderStatus(orderId, 'delivered');
     toast.success('تم التسليم');
   };
 
-  const handleCancel = (orderId: string) => {
-    updateOrderStatus(orderId, 'cancelled');
+  const handleCancel = async (orderId: string) => {
+    await updateOrderStatus(orderId, 'cancelled');
     toast.info('تم إلغاء الطلب');
   };
 
-  const totalSales = completedOrders.reduce((sum, o) => sum + o.totalPrice, 0);
+  const totalSales = completedOrders.reduce((sum, o) => sum + Number(o.total_price), 0);
 
   const tabs: { id: TabType; label: string; icon: React.ReactNode; count?: number }[] = [
     { id: 'menu', label: 'المنيو', icon: <MenuIcon className="w-5 h-5" /> },
     { id: 'tracking', label: 'التتبع', icon: <ClipboardList className="w-5 h-5" />, count: activeOrders.length },
     { id: 'stats', label: 'الإحصائيات', icon: <BarChart3 className="w-5 h-5" /> },
   ];
+
+  if (loading || menuLoading) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <Loader2 className="w-8 h-8 animate-spin text-primary" />
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-background">
@@ -257,9 +278,13 @@ export default function TakeawayDashboard() {
                     variant="warning"
                     className="flex-1"
                     onClick={submitOrder}
-                    disabled={cart.length === 0}
+                    disabled={cart.length === 0 || submitting}
                   >
-                    <Send className="w-4 h-4 ml-2" />
+                    {submitting ? (
+                      <Loader2 className="w-4 h-4 ml-2 animate-spin" />
+                    ) : (
+                      <Send className="w-4 h-4 ml-2" />
+                    )}
                     إرسال
                   </Button>
                 </div>
