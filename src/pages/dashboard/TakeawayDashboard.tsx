@@ -1,12 +1,13 @@
 import { useState, useMemo } from 'react';
 import { useRole } from '@/contexts/RoleContext';
-import { useSupabaseOrders, DbMenuItem } from '@/hooks/useSupabaseOrders';
+import { useSupabaseOrders, DbMenuItem, OrderWithItems } from '@/hooks/useSupabaseOrders';
 import { useMenuItems, MenuItem } from '@/hooks/useMenuItems';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { OrderCard } from '@/components/OrderCard';
+import { CancelOrderDialog } from '@/components/CancelOrderDialog';
 import { toast } from 'sonner';
-import { ROLE_LABELS } from '@/types';
+import { ROLE_LABELS, Order } from '@/types';
 import {
   UtensilsCrossed,
   LogOut,
@@ -114,13 +115,15 @@ function SortableMenuItem({ item, onSelect }: SortableMenuItemProps) {
 
 export default function TakeawayDashboard() {
   const { role, clearRole } = useRole();
-  const { orders, addOrder, updateOrderStatus, loading } = useSupabaseOrders();
+  const { orders, addOrder, updateOrderStatus, cancelOrder, loading } = useSupabaseOrders();
   const { menuItems, categories, loading: menuLoading, updateDisplayOrder } = useMenuItems();
   const [activeTab, setActiveTab] = useState<TabType>('menu');
   const [cart, setCart] = useState<CartItem[]>([]);
   const [orderNotes, setOrderNotes] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
+  const [cancelDialogOpen, setCancelDialogOpen] = useState(false);
+  const [orderToCancel, setOrderToCancel] = useState<OrderWithItems | null>(null);
 
   const sensors = useSensors(
     useSensor(PointerSensor, {
@@ -237,9 +240,15 @@ export default function TakeawayDashboard() {
     toast.success('تم التسليم');
   };
 
-  const handleCancel = async (orderId: string) => {
-    await updateOrderStatus(orderId, 'cancelled');
-    toast.info('تم إلغاء الطلب');
+  const handleCancelClick = (order: OrderWithItems) => {
+    setOrderToCancel(order);
+    setCancelDialogOpen(true);
+  };
+
+  const handleCancelConfirm = async (orderId: string, reason: string) => {
+    await cancelOrder(orderId, reason);
+    setCancelDialogOpen(false);
+    setOrderToCancel(null);
   };
 
   const handleDragEnd = async (event: DragEndEvent) => {
@@ -445,7 +454,7 @@ export default function TakeawayDashboard() {
                         <Button variant="success" size="sm" onClick={() => handleDelivered(order.id)}>
                           تم التسليم
                         </Button>
-                        <Button variant="destructive" size="sm" onClick={() => handleCancel(order.id)}>
+                        <Button variant="destructive" size="sm" onClick={() => handleCancelClick(order)}>
                           إلغاء
                         </Button>
                       </>
@@ -453,6 +462,41 @@ export default function TakeawayDashboard() {
                   />
                 ))}
               </div>
+            )}
+
+            {/* Cancel Order Dialog */}
+            {orderToCancel && (
+              <CancelOrderDialog
+                order={{
+                  id: orderToCancel.id,
+                  orderNumber: orderToCancel.order_number,
+                  customer: {
+                    name: orderToCancel.customer_name,
+                    phone: orderToCancel.customer_phone,
+                    address: orderToCancel.customer_address || '',
+                  },
+                  items: orderToCancel.items.map(item => ({
+                    menuItem: {
+                      id: item.menu_item_id || item.id,
+                      name: item.menu_item_name,
+                      price: item.menu_item_price,
+                      image: '',
+                      category: '',
+                    },
+                    quantity: item.quantity,
+                    notes: item.notes || undefined,
+                  })),
+                  totalPrice: Number(orderToCancel.total_price),
+                  status: orderToCancel.status as any,
+                  type: orderToCancel.type,
+                  notes: orderToCancel.notes || undefined,
+                  createdAt: new Date(orderToCancel.created_at),
+                  cashierName: orderToCancel.cashier_name || '',
+                }}
+                open={cancelDialogOpen}
+                onOpenChange={setCancelDialogOpen}
+                onCancel={handleCancelConfirm}
+              />
             )}
           </div>
         )}
