@@ -1,10 +1,9 @@
 import { useState } from 'react';
-import { useAuth } from '@/contexts/AuthContext';
+import { useRole } from '@/contexts/RoleContext';
 import { useSupabaseOrders, OrderWithItems } from '@/hooks/useSupabaseOrders';
 import { useShift } from '@/contexts/ShiftContext';
 import { Button } from '@/components/ui/button';
 import { CancellationReasonsManager } from '@/components/CancellationReasonsManager';
-import { UserManagement } from '@/components/admin/UserManagement';
 import { KPICard } from '@/components/admin/KPICard';
 import { OrdersChart, WeeklyChart } from '@/components/admin/OrdersChart';
 import { DriverPerformance } from '@/components/admin/DriverPerformance';
@@ -16,6 +15,7 @@ import { toast } from 'sonner';
 import { format } from 'date-fns';
 import { ar } from 'date-fns/locale';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { ROLE_LABELS } from '@/types';
 import {
   Settings,
   LogOut,
@@ -43,10 +43,10 @@ type MainTab = 'home' | 'orders' | 'stats' | 'delivery' | 'settings';
 // Sub-tabs for each main section
 type OrdersSubTab = 'completed' | 'cancelled';
 type StatsSubTab = 'overview' | 'items' | 'customers' | 'finance';
-type SettingsSubTab = 'general' | 'users' | 'reasons';
+type SettingsSubTab = 'general' | 'reasons';
 
 export default function AdminDashboard() {
-  const { user, logout } = useAuth();
+  const { role, clearRole } = useRole();
   const { orders, loading, refetch } = useSupabaseOrders();
   const { currentShift, previousShift, activityLogs, lastUpdated, resetShift, addActivityLog } = useShift();
   
@@ -103,7 +103,7 @@ export default function AdminDashboard() {
 
   const handleResetShift = () => {
     resetShift();
-    addActivityLog('إعادة ضبط الشفت', 'تم إعادة ضبط الشفت وتصفير الإحصائيات', user?.username);
+    addActivityLog('إعادة ضبط الشفت', 'تم إعادة ضبط الشفت وتصفير الإحصائيات', role ? ROLE_LABELS[role] : 'مدير');
     toast.success('تم إعادة ضبط الشفت بنجاح');
   };
 
@@ -164,10 +164,10 @@ export default function AdminDashboard() {
             </div>
             <div>
               <h1 className="font-bold text-foreground text-sm">المدير التنفيذي</h1>
-              <p className="text-xs text-muted-foreground">{user?.username}</p>
+              <p className="text-xs text-muted-foreground">{role ? ROLE_LABELS[role] : ''}</p>
             </div>
           </div>
-          <Button variant="ghost" size="icon" onClick={logout}>
+          <Button variant="ghost" size="icon" onClick={clearRole}>
             <LogOut className="w-5 h-5" />
           </Button>
         </div>
@@ -458,7 +458,6 @@ export default function AdminDashboard() {
             <Tabs value={settingsSubTab} onValueChange={(v) => setSettingsSubTab(v as SettingsSubTab)}>
               <TabsList className="grid w-full grid-cols-3">
                 <TabsTrigger value="general">عام</TabsTrigger>
-                <TabsTrigger value="users">المستخدمين</TabsTrigger>
                 <TabsTrigger value="reasons">أسباب الإلغاء</TabsTrigger>
               </TabsList>
 
@@ -488,18 +487,14 @@ export default function AdminDashboard() {
                   variant="destructive" 
                   size="lg" 
                   className="w-full justify-start h-auto py-4"
-                  onClick={logout}
+                  onClick={clearRole}
                 >
                   <LogOut className="w-5 h-5 ml-3" />
                   <div className="text-right">
-                    <p className="font-semibold">تسجيل خروج</p>
-                    <p className="text-sm text-destructive-foreground/70">الخروج من الحساب</p>
+                    <p className="font-semibold">تغيير الدور</p>
+                    <p className="text-sm text-destructive-foreground/70">العودة لاختيار الدور</p>
                   </div>
                 </Button>
-              </TabsContent>
-
-              <TabsContent value="users" className="mt-4">
-                <UserManagement />
               </TabsContent>
 
               <TabsContent value="reasons" className="mt-4">

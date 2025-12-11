@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { useAuth } from '@/contexts/AuthContext';
+import { useRole } from '@/contexts/RoleContext';
 import { useSupabaseOrders, DbMenuItem, OrderWithItems } from '@/hooks/useSupabaseOrders';
 import { useMenuItems } from '@/hooks/useMenuItems';
 import { Button } from '@/components/ui/button';
@@ -8,6 +8,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { OrderCard } from '@/components/OrderCard';
 import { CancelOrderDialog } from '@/components/CancelOrderDialog';
 import { toast } from 'sonner';
+import { ROLE_LABELS } from '@/types';
 import { 
   ShoppingCart, 
   Trash2, 
@@ -36,7 +37,7 @@ interface CartItem {
 }
 
 export default function CashierDashboard() {
-  const { user, logout } = useAuth();
+  const { role, clearRole } = useRole();
   const { orders, addOrder, updateOrderStatus, cancelOrder, loading } = useSupabaseOrders();
   const { menuItems, categories, loading: menuLoading } = useMenuItems();
   const [activeTab, setActiveTab] = useState<TabType>('menu');
@@ -111,7 +112,7 @@ export default function CashierDashboard() {
       customer_address: customerAddress,
       type: 'delivery',
       notes: orderNotes || undefined,
-      cashier_name: user?.username || 'كاشير',
+      cashier_name: role ? ROLE_LABELS[role] : 'كاشير',
       items: cart.map(item => ({
         menu_item_id: item.menuItem.id,
         menu_item_name: item.menuItem.name,
@@ -157,10 +158,10 @@ export default function CashierDashboard() {
             </div>
             <div>
               <h1 className="font-bold text-foreground">الكاشيرة</h1>
-              <p className="text-xs text-muted-foreground">{user?.username}</p>
+              <p className="text-xs text-muted-foreground">{role ? ROLE_LABELS[role] : ''}</p>
             </div>
           </div>
-          <Button variant="ghost" size="icon" onClick={logout}>
+          <Button variant="ghost" size="icon" onClick={clearRole}>
             <LogOut className="w-5 h-5" />
           </Button>
         </div>
