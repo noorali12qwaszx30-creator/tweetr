@@ -12,6 +12,7 @@ import { ActivityLogList } from '@/components/admin/ActivityLogList';
 import { CustomerAnalytics } from '@/components/admin/CustomerAnalytics';
 import { FinanceBreakdown } from '@/components/admin/FinanceBreakdown';
 import { ShiftHeader } from '@/components/admin/ShiftHeader';
+import { MenuManagement } from '@/components/admin/MenuManagement';
 import { toast } from 'sonner';
 import { format } from 'date-fns';
 import { ar } from 'date-fns/locale';
@@ -35,11 +36,12 @@ import {
   AlertTriangle,
   Home,
   Package,
-  Loader2
+  Loader2,
+  UtensilsCrossed
 } from 'lucide-react';
 
-// Main navigation tabs (5 only)
-type MainTab = 'home' | 'orders' | 'stats' | 'delivery' | 'settings';
+// Main navigation tabs (6 total)
+type MainTab = 'home' | 'menu' | 'orders' | 'stats' | 'delivery' | 'settings';
 
 // Sub-tabs for each main section
 type OrdersSubTab = 'completed' | 'cancelled';
@@ -121,6 +123,7 @@ export default function AdminDashboard() {
   // Main navigation tabs
   const mainTabs: { id: MainTab; label: string; icon: React.ReactNode }[] = [
     { id: 'home', label: 'الرئيسية', icon: <Home className="w-5 h-5" /> },
+    { id: 'menu', label: 'المنيو', icon: <UtensilsCrossed className="w-5 h-5" /> },
     { id: 'orders', label: 'الطلبات', icon: <Package className="w-5 h-5" /> },
     { id: 'stats', label: 'الإحصائيات', icon: <BarChart3 className="w-5 h-5" /> },
     { id: 'delivery', label: 'الدلفري', icon: <Truck className="w-5 h-5" /> },
@@ -248,6 +251,17 @@ export default function AdminDashboard() {
 
             {/* Activity Log */}
             <ActivityLogList logs={activityLogs} />
+          </div>
+        )}
+
+        {/* MENU TAB - Quick Menu Management */}
+        {activeTab === 'menu' && (
+          <div className="space-y-4">
+            <h2 className="text-xl font-bold flex items-center gap-2">
+              <UtensilsCrossed className="w-6 h-6 text-primary" />
+              إدارة المنيو السريع
+            </h2>
+            <MenuManagement />
           </div>
         )}
 
