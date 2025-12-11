@@ -1,5 +1,7 @@
+import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useRole } from '@/contexts/RoleContext';
+import { useAuth } from '@/contexts/AuthContext';
 import { UserRole, ROLE_LABELS } from '@/types';
 import { 
   Calculator, 
@@ -8,8 +10,16 @@ import {
   ShoppingBag, 
   ChefHat, 
   Shield,
-  Utensils
+  Utensils,
+  ArrowRight,
+  User,
+  Lock,
+  AlertCircle,
+  Phone
 } from 'lucide-react';
+import { Input } from '@/components/ui/input';
+import { Button } from '@/components/ui/button';
+import { toast } from 'sonner';
 
 const ROLE_ICONS: Record<UserRole, React.ReactNode> = {
   cashier: <Calculator className="w-8 h-8" />,
@@ -25,12 +35,136 @@ const ROLES: UserRole[] = ['cashier', 'field', 'delivery', 'takeaway', 'kitchen'
 export default function RoleSelector() {
   const navigate = useNavigate();
   const { setRole } = useRole();
+  const { login } = useAuth();
+  
+  const [selectedRole, setSelectedRole] = useState<UserRole | null>(null);
+  const [username, setUsername] = useState('');
+  const [password, setPassword] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   const handleSelectRole = (role: UserRole) => {
-    setRole(role);
+    setSelectedRole(role);
+    setError(null);
+  };
+
+  const handleBack = () => {
+    setSelectedRole(null);
+    setUsername('');
+    setPassword('');
+    setError(null);
+  };
+
+  const handleLogin = async (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    if (!username.trim() || !password.trim()) {
+      setError('يرجى إدخال اسم المستخدم والرمز');
+      return;
+    }
+
+    setIsLoading(true);
+    setError(null);
+
+    const { error: loginError } = await login(username, password);
+
+    if (loginError) {
+      setError(loginError);
+      setIsLoading(false);
+      return;
+    }
+
+    // Login successful
+    setRole(selectedRole!);
+    toast.success('تم تسجيل الدخول بنجاح');
     navigate('/dashboard', { replace: true });
   };
 
+  // Login form after role selection
+  if (selectedRole) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-background via-background to-primary/5 flex items-center justify-center p-4" dir="rtl">
+        <div className="w-full max-w-md">
+          <div className="bg-card border border-border rounded-2xl p-6 shadow-lg">
+            <button
+              onClick={handleBack}
+              className="flex items-center gap-2 text-muted-foreground hover:text-foreground mb-6 transition-colors"
+            >
+              <ArrowRight className="w-4 h-4" />
+              <span>العودة لاختيار الدور</span>
+            </button>
+
+            <div className="text-center mb-6">
+              <div className="mx-auto w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center mb-3">
+                {ROLE_ICONS[selectedRole]}
+              </div>
+              <h2 className="text-xl font-bold text-foreground">{ROLE_LABELS[selectedRole]}</h2>
+              <p className="text-muted-foreground text-sm mt-1">أدخل بيانات الدخول</p>
+            </div>
+
+            <form onSubmit={handleLogin} className="space-y-4">
+              <div className="space-y-2">
+                <label className="text-sm font-medium text-foreground">اسم المستخدم</label>
+                <div className="relative">
+                  <User className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                  <Input
+                    type="text"
+                    value={username}
+                    onChange={(e) => setUsername(e.target.value)}
+                    placeholder="أدخل اسم المستخدم"
+                    className="pr-10"
+                    disabled={isLoading}
+                  />
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <label className="text-sm font-medium text-foreground">الرمز السري</label>
+                <div className="relative">
+                  <Lock className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                  <Input
+                    type="password"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    placeholder="أدخل الرمز السري"
+                    className="pr-10"
+                    disabled={isLoading}
+                  />
+                </div>
+              </div>
+
+              {error && (
+                <div className="bg-destructive/10 border border-destructive/20 rounded-lg p-3 flex items-start gap-2">
+                  <AlertCircle className="w-4 h-4 text-destructive mt-0.5 flex-shrink-0" />
+                  <span className="text-sm text-destructive">{error}</span>
+                </div>
+              )}
+
+              <Button
+                type="submit"
+                className="w-full"
+                disabled={isLoading}
+              >
+                {isLoading ? 'جاري تسجيل الدخول...' : 'تسجيل الدخول'}
+              </Button>
+            </form>
+
+            <div className="mt-6 pt-4 border-t border-border">
+              <div className="bg-muted/50 rounded-lg p-3 text-center">
+                <p className="text-sm text-muted-foreground mb-1">في حال واجهت مشكلة بتسجيل الدخول</p>
+                <div className="flex items-center justify-center gap-2 text-primary font-medium">
+                  <Phone className="w-4 h-4" />
+                  <span>تواصل مع المدير التنفيذي: محمد كاظم</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // Role selection screen
   return (
     <div className="min-h-screen bg-gradient-to-br from-background via-background to-primary/5 flex items-center justify-center p-4" dir="rtl">
       <div className="w-full max-w-2xl">
