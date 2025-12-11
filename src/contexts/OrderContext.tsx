@@ -6,6 +6,7 @@ interface OrderContextType {
   orders: Order[];
   addOrder: (order: Omit<Order, 'id' | 'orderNumber' | 'createdAt'>) => void;
   updateOrderStatus: (orderId: string, status: OrderStatus) => void;
+  updateOrder: (orderId: string, updates: Partial<Order>) => void;
   assignDelivery: (orderId: string, deliveryPersonId: string, deliveryPersonName: string) => void;
   acceptDelivery: (orderId: string) => void;
   rejectDelivery: (orderId: string) => void;
@@ -60,6 +61,14 @@ export function OrderProvider({ children }: { children: ReactNode }) {
     }
   };
 
+  const updateOrder = (orderId: string, updates: Partial<Order>) => {
+    setOrders(prev =>
+      prev.map(order =>
+        order.id === orderId ? { ...order, ...updates } : order
+      )
+    );
+  };
+
   const assignDelivery = (orderId: string, deliveryPersonId: string, deliveryPersonName: string) => {
     setOrders(prev =>
       prev.map(order =>
@@ -107,6 +116,7 @@ export function OrderProvider({ children }: { children: ReactNode }) {
         orders,
         addOrder,
         updateOrderStatus,
+        updateOrder,
         assignDelivery,
         acceptDelivery,
         rejectDelivery,

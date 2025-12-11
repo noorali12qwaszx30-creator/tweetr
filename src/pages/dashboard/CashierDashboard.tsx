@@ -1,11 +1,12 @@
 import { useState } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useOrders, MENU_ITEMS } from '@/contexts/OrderContext';
-import { OrderItem, MenuItem } from '@/types';
+import { OrderItem, MenuItem, Order } from '@/types';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { OrderCard } from '@/components/OrderCard';
+import { EditOrderDialog } from '@/components/EditOrderDialog';
 import { toast } from 'sonner';
 import { 
   ShoppingCart, 
@@ -28,7 +29,7 @@ type TabType = 'menu' | 'orders';
 
 export default function CashierDashboard() {
   const { user, logout } = useAuth();
-  const { orders, addOrder, updateOrderStatus } = useOrders();
+  const { orders, addOrder, updateOrderStatus, updateOrder } = useOrders();
   const [activeTab, setActiveTab] = useState<TabType>('menu');
   const [cart, setCart] = useState<OrderItem[]>([]);
   const [customerName, setCustomerName] = useState('');
@@ -36,6 +37,7 @@ export default function CashierDashboard() {
   const [customerAddress, setCustomerAddress] = useState('');
   const [orderNotes, setOrderNotes] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
+  const [editingOrder, setEditingOrder] = useState<Order | null>(null);
 
   const categories = [...new Set(MENU_ITEMS.map(item => item.category))];
   const filteredItems = selectedCategory 
@@ -322,7 +324,12 @@ export default function CashierDashboard() {
                     order={order}
                     actions={
                       <>
-                        <Button variant="outline" size="sm">
+                        <Button 
+                          variant="outline" 
+                          size="sm"
+                          disabled={order.status === 'delivering'}
+                          onClick={() => setEditingOrder(order)}
+                        >
                           <Edit className="w-3 h-3 ml-1" />
                           تعديل
                         </Button>
@@ -346,6 +353,16 @@ export default function CashierDashboard() {
               </div>
             )}
           </div>
+        )}
+
+        {/* Edit Order Dialog */}
+        {editingOrder && (
+          <EditOrderDialog
+            order={editingOrder}
+            open={!!editingOrder}
+            onOpenChange={(open) => !open && setEditingOrder(null)}
+            onSave={updateOrder}
+          />
         )}
       </main>
 
