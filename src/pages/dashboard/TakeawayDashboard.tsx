@@ -124,6 +124,8 @@ export default function TakeawayDashboard() {
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const [cancelDialogOpen, setCancelDialogOpen] = useState(false);
   const [orderToCancel, setOrderToCancel] = useState<OrderWithItems | null>(null);
+  const [showCompletedOrders, setShowCompletedOrders] = useState(false);
+  const [showCancelledOrders, setShowCancelledOrders] = useState(false);
 
   const sensors = useSensors(
     useSensor(PointerSensor, {
@@ -505,19 +507,98 @@ export default function TakeawayDashboard() {
           <div className="space-y-4">
             <h2 className="text-lg font-bold">الإحصائيات</h2>
             <div className="grid grid-cols-2 gap-3">
-              <div className="bg-card border border-border rounded-xl p-3 shadow-soft">
+              <button
+                onClick={() => setShowCompletedOrders(!showCompletedOrders)}
+                className="bg-card border border-border rounded-xl p-3 shadow-soft hover:border-success transition-colors text-right"
+              >
                 <p className="text-muted-foreground text-xs">الطلبات المكتملة</p>
                 <p className="text-2xl font-bold text-success">{completedOrders.length}</p>
-              </div>
-              <div className="bg-card border border-border rounded-xl p-3 shadow-soft">
+              </button>
+              <button
+                onClick={() => setShowCancelledOrders(!showCancelledOrders)}
+                className="bg-card border border-border rounded-xl p-3 shadow-soft hover:border-destructive transition-colors text-right"
+              >
                 <p className="text-muted-foreground text-xs">الطلبات الملغية</p>
                 <p className="text-2xl font-bold text-destructive">{cancelledOrders.length}</p>
-              </div>
+              </button>
               <div className="col-span-2 bg-card border border-border rounded-xl p-3 shadow-soft">
                 <p className="text-muted-foreground text-xs">إجمالي المبيعات</p>
                 <p className="text-2xl font-bold text-warning">{totalSales.toLocaleString()} د.ع</p>
               </div>
             </div>
+
+            {/* Completed Orders List */}
+            {showCompletedOrders && completedOrders.length > 0 && (
+              <div className="space-y-3">
+                <h3 className="font-semibold text-success flex items-center gap-2">
+                  <ClipboardList className="w-4 h-4" />
+                  الطلبات المكتملة ({completedOrders.length})
+                </h3>
+                <div className="grid gap-2">
+                  {completedOrders.map(order => (
+                    <div key={order.id} className="bg-success/10 border border-success/30 rounded-xl p-3">
+                      <div className="flex items-center justify-between mb-2">
+                        <span className="font-bold text-success">طلب #{order.order_number}</span>
+                        <span className="text-xs text-muted-foreground">
+                          {new Date(order.delivered_at || order.updated_at).toLocaleTimeString('ar-IQ')}
+                        </span>
+                      </div>
+                      <div className="space-y-1 text-sm">
+                        {order.items.map(item => (
+                          <div key={item.id} className="flex justify-between">
+                            <span>{item.menu_item_name} × {item.quantity}</span>
+                            <span className="text-muted-foreground">{(item.menu_item_price * item.quantity).toLocaleString()} د.ع</span>
+                          </div>
+                        ))}
+                      </div>
+                      <div className="mt-2 pt-2 border-t border-success/20 flex justify-between font-bold">
+                        <span>المجموع</span>
+                        <span className="text-success">{Number(order.total_price).toLocaleString()} د.ع</span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Cancelled Orders List */}
+            {showCancelledOrders && cancelledOrders.length > 0 && (
+              <div className="space-y-3">
+                <h3 className="font-semibold text-destructive flex items-center gap-2">
+                  <ClipboardList className="w-4 h-4" />
+                  الطلبات الملغية ({cancelledOrders.length})
+                </h3>
+                <div className="grid gap-2">
+                  {cancelledOrders.map(order => (
+                    <div key={order.id} className="bg-destructive/10 border border-destructive/30 rounded-xl p-3">
+                      <div className="flex items-center justify-between mb-2">
+                        <span className="font-bold text-destructive">طلب #{order.order_number}</span>
+                        <span className="text-xs text-muted-foreground">
+                          {new Date(order.cancelled_at || order.updated_at).toLocaleTimeString('ar-IQ')}
+                        </span>
+                      </div>
+                      {order.cancellation_reason && (
+                        <p className="text-xs text-destructive bg-destructive/10 rounded-lg px-2 py-1 mb-2">
+                          سبب الإلغاء: {order.cancellation_reason}
+                        </p>
+                      )}
+                      <div className="space-y-1 text-sm">
+                        {order.items.map(item => (
+                          <div key={item.id} className="flex justify-between">
+                            <span>{item.menu_item_name} × {item.quantity}</span>
+                            <span className="text-muted-foreground">{(item.menu_item_price * item.quantity).toLocaleString()} د.ع</span>
+                          </div>
+                        ))}
+                      </div>
+                      <div className="mt-2 pt-2 border-t border-destructive/20 flex justify-between font-bold">
+                        <span>المجموع</span>
+                        <span className="text-destructive line-through">{Number(order.total_price).toLocaleString()} د.ع</span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
           </div>
         )}
 
