@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useState, ReactNode } from 'react';
 import { Order, OrderStatus, MenuItem } from '@/types';
+import { playNotificationSound } from '@/hooks/useNotificationSound';
 
 interface OrderContextType {
   orders: Order[];
@@ -41,6 +42,7 @@ export function OrderProvider({ children }: { children: ReactNode }) {
     };
     setOrders(prev => [...prev, newOrder]);
     setOrderCounter(prev => prev + 1);
+    playNotificationSound('newOrder');
   };
 
   const updateOrderStatus = (orderId: string, status: OrderStatus) => {
@@ -49,6 +51,11 @@ export function OrderProvider({ children }: { children: ReactNode }) {
         order.id === orderId ? { ...order, status } : order
       )
     );
+    if (status === 'ready') {
+      playNotificationSound('orderReady');
+    } else if (status === 'cancelled') {
+      playNotificationSound('orderCancelled');
+    }
   };
 
   const assignDelivery = (orderId: string, deliveryPersonId: string, deliveryPersonName: string) => {
@@ -59,6 +66,7 @@ export function OrderProvider({ children }: { children: ReactNode }) {
           : order
       )
     );
+    playNotificationSound('orderAssigned');
   };
 
   const cancelOrder = (orderId: string) => {

@@ -88,9 +88,9 @@ export default {
           to: { height: "0" },
         },
         "shake-flip": {
-          "0%, 100%": { transform: "translateX(0) rotateY(0)" },
-          "10%, 30%, 50%, 70%, 90%": { transform: "translateX(-2px) rotateY(5deg)" },
-          "20%, 40%, 60%, 80%": { transform: "translateX(2px) rotateY(-5deg)" },
+          "0%, 100%": { transform: "translateX(0)" },
+          "10%, 30%, 50%, 70%, 90%": { transform: "translateX(-2px)" },
+          "20%, 40%, 60%, 80%": { transform: "translateX(2px)" },
         },
         "pulse-glow": {
           "0%, 100%": { boxShadow: "0 0 5px hsl(var(--primary) / 0.5)" },
