@@ -15,7 +15,9 @@ import {
   User,
   Lock,
   AlertCircle,
-  Phone
+  Phone,
+  Code,
+  Zap
 } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
@@ -32,6 +34,9 @@ const ROLE_ICONS: Record<UserRole, React.ReactNode> = {
 
 const ROLES: UserRole[] = ['cashier', 'field', 'delivery', 'takeaway', 'kitchen', 'admin'];
 
+// وضع المبرمج - للتجربة فقط (احذف هذا قبل الإنتاج)
+const DEV_MODE = true;
+
 export default function RoleSelector() {
   const navigate = useNavigate();
   const { setRole } = useRole();
@@ -42,10 +47,18 @@ export default function RoleSelector() {
   const [password, setPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [showDevMode, setShowDevMode] = useState(false);
 
   const handleSelectRole = (role: UserRole) => {
     setSelectedRole(role);
     setError(null);
+  };
+
+  // دخول مباشر بدون تسجيل (للمبرمج فقط)
+  const handleDevAccess = (role: UserRole) => {
+    setRole(role);
+    toast.success(`دخول مباشر: ${ROLE_LABELS[role]}`);
+    navigate('/dashboard', { replace: true });
   };
 
   const handleBack = () => {
@@ -192,6 +205,39 @@ export default function RoleSelector() {
             </button>
           ))}
         </div>
+
+        {/* وضع المبرمج - للتجربة فقط */}
+        {DEV_MODE && (
+          <div className="mt-8">
+            <button
+              onClick={() => setShowDevMode(!showDevMode)}
+              className="mx-auto flex items-center gap-2 text-xs text-muted-foreground hover:text-foreground transition-colors"
+            >
+              <Code className="w-3 h-3" />
+              <span>وضع المبرمج</span>
+            </button>
+
+            {showDevMode && (
+              <div className="mt-4 bg-yellow-500/10 border border-yellow-500/30 rounded-xl p-4">
+                <div className="flex items-center gap-2 text-yellow-600 dark:text-yellow-400 mb-3">
+                  <Zap className="w-4 h-4" />
+                  <span className="font-medium text-sm">دخول مباشر (للتجربة فقط)</span>
+                </div>
+                <div className="grid grid-cols-3 md:grid-cols-6 gap-2">
+                  {ROLES.map((role) => (
+                    <button
+                      key={`dev-${role}`}
+                      onClick={() => handleDevAccess(role)}
+                      className="bg-yellow-500/20 hover:bg-yellow-500/30 border border-yellow-500/30 rounded-lg p-2 text-xs font-medium transition-colors"
+                    >
+                      {ROLE_LABELS[role]}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+        )}
       </div>
     </div>
   );
