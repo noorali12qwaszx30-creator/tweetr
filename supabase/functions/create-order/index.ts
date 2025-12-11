@@ -73,7 +73,8 @@ serve(async (req) => {
       );
     }
 
-    if (!orderData.customer_phone || orderData.customer_phone.trim().length < 8) {
+    // Phone validation only for delivery orders, not takeaway
+    if (orderData.type === 'delivery' && (!orderData.customer_phone || orderData.customer_phone.trim().length < 8)) {
       return new Response(
         JSON.stringify({ error: 'رقم الهاتف مطلوب (8 أرقام على الأقل)' }),
         { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
