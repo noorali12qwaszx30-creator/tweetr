@@ -175,6 +175,8 @@ export function UserManagement() {
         phone: '',
         role: 'cashier',
       });
+      // Wait a moment for the database to update before fetching
+      await new Promise(resolve => setTimeout(resolve, 1000));
       fetchUsers();
     } catch (error: any) {
       console.error('Error creating user:', error);
