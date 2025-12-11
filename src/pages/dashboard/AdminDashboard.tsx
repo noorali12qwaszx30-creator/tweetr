@@ -1,10 +1,18 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useOrders, MENU_ITEMS } from '@/contexts/OrderContext';
+import { useShift } from '@/contexts/ShiftContext';
 import { Order, ORDER_STATUS_LABELS } from '@/types';
 import { Button } from '@/components/ui/button';
 import { CancellationReasonsManager } from '@/components/CancellationReasonsManager';
 import { OrderDetailsDialog } from '@/components/OrderDetailsDialog';
+import { KPICard } from '@/components/admin/KPICard';
+import { OrdersChart, WeeklyChart } from '@/components/admin/OrdersChart';
+import { DriverPerformance } from '@/components/admin/DriverPerformance';
+import { ActivityLogList } from '@/components/admin/ActivityLogList';
+import { CustomerAnalytics } from '@/components/admin/CustomerAnalytics';
+import { FinanceBreakdown } from '@/components/admin/FinanceBreakdown';
+import { ShiftHeader } from '@/components/admin/ShiftHeader';
 import { toast } from 'sonner';
 import { format } from 'date-fns';
 import { ar } from 'date-fns/locale';
@@ -25,26 +33,40 @@ import {
   DollarSign,
   ShoppingBag,
   Clock,
-  Calendar
+  Truck,
+  Activity,
+  PieChart,
+  Timer,
+  Zap,
+  AlertTriangle
 } from 'lucide-react';
 
-type TabType = 'stats' | 'completed' | 'cancelled' | 'items' | 'users' | 'cancellation' | 'settings';
+type TabType = 'overview' | 'charts' | 'drivers' | 'customers' | 'finance' | 'completed' | 'cancelled' | 'items' | 'activity' | 'users' | 'cancellation' | 'settings';
 
 export default function AdminDashboard() {
   const { user, logout } = useAuth();
   const { orders } = useOrders();
-  const [activeTab, setActiveTab] = useState<TabType>('stats');
+  const { currentShift, previousShift, activityLogs, lastUpdated, resetShift, addActivityLog } = useShift();
+  const [activeTab, setActiveTab] = useState<TabType>('overview');
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
+  const [refreshKey, setRefreshKey] = useState(0);
 
   // Statistics calculations
   const totalOrders = orders.length;
   const completedOrders = orders.filter(o => o.status === 'delivered');
   const cancelledOrders = orders.filter(o => o.status === 'cancelled');
-  const pendingOrders = orders.filter(o => !['delivered', 'cancelled'].includes(o.status));
+  const pendingOrders = orders.filter(o => o.status === 'pending');
+  const inProgressOrders = orders.filter(o => ['preparing', 'ready', 'delivering'].includes(o.status));
   
   const totalRevenue = completedOrders.reduce((sum, o) => sum + o.totalPrice, 0);
   const cancelledRevenue = cancelledOrders.reduce((sum, o) => sum + o.totalPrice, 0);
   const averageOrderValue = completedOrders.length > 0 ? totalRevenue / completedOrders.length : 0;
+
+  // Simulated time stats
+  const avgPrepTime = 12; // minutes
+  const avgDeliveryTime = 28; // minutes
+  const fastestDelivery = 15;
+  const slowestDelivery = 45;
 
   // Count items sold with details
   const itemsStats: Record<string, { quantity: number; revenue: number; price: number; category: string }> = {};
@@ -74,15 +96,39 @@ export default function AdminDashboard() {
     cancellationReasonStats[reason] = (cancellationReasonStats[reason] || 0) + 1;
   });
 
+  // Unique customers
+  const uniqueCustomers = new Set(orders.map(o => o.customer.phone)).size;
+  const newCustomers = orders.filter((o, idx, arr) => 
+    arr.findIndex(x => x.customer.phone === o.customer.phone) === idx
+  ).length;
+
   const handleResetShift = () => {
-    toast.success('تم إعادة ضبط الشفت');
+    resetShift();
+    addActivityLog('إعادة ضبط الشفت', 'تم إعادة ضبط الشفت وتصفير الإحصائيات', user?.username);
+    toast.success('تم إعادة ضبط الشفت بنجاح');
+  };
+
+  const handleRefresh = () => {
+    setRefreshKey(prev => prev + 1);
+    toast.success('تم تحديث البيانات');
+  };
+
+  // Calculate trend compared to previous shift
+  const getTrend = (current: number, previous: number | undefined) => {
+    if (!previous || previous === 0) return 0;
+    return Math.round(((current - previous) / previous) * 100);
   };
 
   const tabs: { id: TabType; label: string; icon: React.ReactNode }[] = [
-    { id: 'stats', label: 'الإحصائيات', icon: <BarChart3 className="w-5 h-5" /> },
+    { id: 'overview', label: 'نظرة عامة', icon: <BarChart3 className="w-5 h-5" /> },
+    { id: 'charts', label: 'الرسوم', icon: <PieChart className="w-5 h-5" /> },
+    { id: 'drivers', label: 'السائقين', icon: <Truck className="w-5 h-5" /> },
+    { id: 'customers', label: 'الزبائن', icon: <Users className="w-5 h-5" /> },
+    { id: 'finance', label: 'المالية', icon: <DollarSign className="w-5 h-5" /> },
     { id: 'completed', label: 'المكتملة', icon: <CheckCircle className="w-5 h-5" /> },
     { id: 'cancelled', label: 'الملغية', icon: <XCircle className="w-5 h-5" /> },
     { id: 'items', label: 'المبيعات', icon: <ShoppingBag className="w-5 h-5" /> },
+    { id: 'activity', label: 'السجل', icon: <Activity className="w-5 h-5" /> },
     { id: 'users', label: 'المستخدمين', icon: <Users className="w-5 h-5" /> },
     { id: 'cancellation', label: 'الأسباب', icon: <ClipboardList className="w-5 h-5" /> },
     { id: 'settings', label: 'الإعدادات', icon: <Settings className="w-5 h-5" /> },
@@ -98,7 +144,7 @@ export default function AdminDashboard() {
               <ShieldCheck className="w-5 h-5 text-accent-foreground" />
             </div>
             <div>
-              <h1 className="font-bold text-foreground">المدير التنفيذي</h1>
+              <h1 className="font-bold text-foreground">لوحة التحكم التنفيذية</h1>
               <p className="text-xs text-muted-foreground">{user?.username}</p>
             </div>
           </div>
@@ -110,65 +156,108 @@ export default function AdminDashboard() {
 
       {/* Main Content */}
       <main className="container py-4 pb-24">
-        {activeTab === 'stats' && (
+        {/* Shift Header - Always visible */}
+        <ShiftHeader
+          restaurantName="مطعمي"
+          branchName="الفرع الرئيسي"
+          shiftNumber={currentShift.shiftNumber}
+          shiftStartTime={currentShift.startTime}
+          lastUpdated={lastUpdated}
+          onReset={handleResetShift}
+          onRefresh={handleRefresh}
+        />
+
+        {activeTab === 'overview' && (
           <div className="space-y-6">
-            <h2 className="text-xl font-bold">الإحصائيات الشاملة</h2>
-            
-            {/* Stats Grid */}
-            <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-              <div className="bg-card border border-border rounded-xl p-4 shadow-soft">
-                <div className="flex items-center gap-2 mb-2">
-                  <ClipboardList className="w-5 h-5 text-primary" />
-                  <p className="text-muted-foreground text-sm">إجمالي الطلبات</p>
-                </div>
-                <p className="text-3xl font-bold text-primary">{totalOrders}</p>
-              </div>
-              <div className="bg-card border border-border rounded-xl p-4 shadow-soft">
-                <div className="flex items-center gap-2 mb-2">
-                  <CheckCircle className="w-5 h-5 text-success" />
-                  <p className="text-muted-foreground text-sm">المكتملة</p>
-                </div>
-                <p className="text-3xl font-bold text-success">{completedOrders.length}</p>
-              </div>
-              <div className="bg-card border border-border rounded-xl p-4 shadow-soft">
-                <div className="flex items-center gap-2 mb-2">
-                  <XCircle className="w-5 h-5 text-destructive" />
-                  <p className="text-muted-foreground text-sm">الملغية</p>
-                </div>
-                <p className="text-3xl font-bold text-destructive">{cancelledOrders.length}</p>
-              </div>
-              <div className="bg-card border border-border rounded-xl p-4 shadow-soft">
-                <div className="flex items-center gap-2 mb-2">
-                  <Clock className="w-5 h-5 text-warning" />
-                  <p className="text-muted-foreground text-sm">قيد المعالجة</p>
-                </div>
-                <p className="text-3xl font-bold text-warning">{pendingOrders.length}</p>
-              </div>
+            {/* KPI Cards Grid */}
+            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3">
+              <KPICard
+                title="إجمالي الطلبات"
+                value={totalOrders}
+                icon={<ClipboardList className="w-5 h-5" />}
+                trend={getTrend(totalOrders, previousShift?.totalOrders)}
+              />
+              <KPICard
+                title="المكتملة"
+                value={completedOrders.length}
+                icon={<CheckCircle className="w-5 h-5" />}
+                variant="success"
+              />
+              <KPICard
+                title="الملغية"
+                value={cancelledOrders.length}
+                icon={<XCircle className="w-5 h-5" />}
+                variant="destructive"
+              />
+              <KPICard
+                title="قيد الانتظار"
+                value={pendingOrders.length}
+                icon={<Clock className="w-5 h-5" />}
+                variant="warning"
+              />
+              <KPICard
+                title="قيد المعالجة"
+                value={inProgressOrders.length}
+                icon={<Zap className="w-5 h-5" />}
+                variant="info"
+              />
+              <KPICard
+                title="معدل التجهيز"
+                value={avgPrepTime}
+                suffix="دقيقة"
+                icon={<Timer className="w-5 h-5" />}
+              />
+              <KPICard
+                title="معدل التوصيل"
+                value={avgDeliveryTime}
+                suffix="دقيقة"
+                icon={<Truck className="w-5 h-5" />}
+              />
+              <KPICard
+                title="أسرع توصيل"
+                value={fastestDelivery}
+                suffix="دقيقة"
+                icon={<Zap className="w-5 h-5" />}
+                variant="success"
+              />
+              <KPICard
+                title="أبطأ توصيل"
+                value={slowestDelivery}
+                suffix="دقيقة"
+                icon={<AlertTriangle className="w-5 h-5" />}
+                variant="warning"
+              />
+              <KPICard
+                title="إجمالي الإيرادات"
+                value={totalRevenue}
+                suffix="د.ع"
+                icon={<DollarSign className="w-5 h-5" />}
+                variant="success"
+              />
+              <KPICard
+                title="العملاء اليوم"
+                value={uniqueCustomers}
+                icon={<Users className="w-5 h-5" />}
+              />
+              <KPICard
+                title="عملاء جدد"
+                value={newCustomers}
+                icon={<UserPlus className="w-5 h-5" />}
+                variant="success"
+              />
+              <KPICard
+                title="متوسط الطلب"
+                value={Math.round(averageOrderValue)}
+                suffix="د.ع"
+                icon={<TrendingUp className="w-5 h-5" />}
+                variant="info"
+              />
             </div>
 
-            {/* Revenue Stats */}
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-              <div className="bg-gradient-to-br from-success/20 to-success/5 border border-success/30 rounded-xl p-4">
-                <div className="flex items-center gap-2 mb-2">
-                  <DollarSign className="w-5 h-5 text-success" />
-                  <p className="text-success text-sm font-medium">إجمالي الإيرادات</p>
-                </div>
-                <p className="text-2xl font-bold text-success">{totalRevenue.toLocaleString()} د.ع</p>
-              </div>
-              <div className="bg-gradient-to-br from-destructive/20 to-destructive/5 border border-destructive/30 rounded-xl p-4">
-                <div className="flex items-center gap-2 mb-2">
-                  <XCircle className="w-5 h-5 text-destructive" />
-                  <p className="text-destructive text-sm font-medium">خسائر الإلغاء</p>
-                </div>
-                <p className="text-2xl font-bold text-destructive">{cancelledRevenue.toLocaleString()} د.ع</p>
-              </div>
-              <div className="bg-gradient-to-br from-info/20 to-info/5 border border-info/30 rounded-xl p-4">
-                <div className="flex items-center gap-2 mb-2">
-                  <TrendingUp className="w-5 h-5 text-info" />
-                  <p className="text-info text-sm font-medium">متوسط قيمة الطلب</p>
-                </div>
-                <p className="text-2xl font-bold text-info">{Math.round(averageOrderValue).toLocaleString()} د.ع</p>
-              </div>
+            {/* Quick Charts */}
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+              <OrdersChart orders={orders} />
+              <WeeklyChart orders={orders} />
             </div>
 
             {/* Top Items */}
@@ -180,9 +269,9 @@ export default function AdminDashboard() {
               {sortedItems.length === 0 ? (
                 <p className="text-muted-foreground text-center py-4">لا توجد بيانات</p>
               ) : (
-                <div className="space-y-3">
-                  {sortedItems.slice(0, 5).map(([name, stats], idx) => (
-                    <div key={name} className="flex items-center gap-3 p-2 bg-muted/50 rounded-lg">
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+                  {sortedItems.slice(0, 6).map(([name, stats], idx) => (
+                    <div key={name} className="flex items-center gap-3 p-3 bg-muted/50 rounded-lg">
                       <span className="w-8 h-8 flex items-center justify-center bg-primary/10 text-primary rounded-lg font-bold">
                         {idx + 1}
                       </span>
@@ -191,25 +280,55 @@ export default function AdminDashboard() {
                         <p className="text-xs text-muted-foreground">{stats.category}</p>
                       </div>
                       <div className="text-left">
-                        <p className="font-bold text-primary">{stats.quantity} قطعة</p>
-                        <p className="text-xs text-muted-foreground">{stats.revenue.toLocaleString()} د.ع</p>
+                        <p className="font-bold text-primary">{stats.quantity}</p>
+                        <p className="text-xs text-muted-foreground">{stats.revenue.toLocaleString()}</p>
                       </div>
                     </div>
                   ))}
                 </div>
               )}
             </div>
+          </div>
+        )}
 
-            {/* Reset Shift */}
-            <Button
-              variant="destructive"
-              size="lg"
-              className="w-full"
-              onClick={handleResetShift}
-            >
-              <RefreshCcw className="w-5 h-5 ml-2" />
-              إعادة ضبط الشفت
-            </Button>
+        {activeTab === 'charts' && (
+          <div className="space-y-4">
+            <h2 className="text-xl font-bold flex items-center gap-2">
+              <PieChart className="w-6 h-6 text-primary" />
+              الرسوم البيانية والتحليلات
+            </h2>
+            <OrdersChart orders={orders} title="توزيع الطلبات حسب الساعة" />
+            <WeeklyChart orders={orders} />
+          </div>
+        )}
+
+        {activeTab === 'drivers' && (
+          <div className="space-y-4">
+            <h2 className="text-xl font-bold flex items-center gap-2">
+              <Truck className="w-6 h-6 text-primary" />
+              أداء السائقين
+            </h2>
+            <DriverPerformance orders={orders} />
+          </div>
+        )}
+
+        {activeTab === 'customers' && (
+          <div className="space-y-4">
+            <h2 className="text-xl font-bold flex items-center gap-2">
+              <Users className="w-6 h-6 text-primary" />
+              تحليلات العملاء
+            </h2>
+            <CustomerAnalytics orders={orders} />
+          </div>
+        )}
+
+        {activeTab === 'finance' && (
+          <div className="space-y-4">
+            <h2 className="text-xl font-bold flex items-center gap-2">
+              <DollarSign className="w-6 h-6 text-primary" />
+              التقرير المالي
+            </h2>
+            <FinanceBreakdown orders={orders} />
           </div>
         )}
 
@@ -453,6 +572,16 @@ export default function AdminDashboard() {
           </div>
         )}
 
+        {activeTab === 'activity' && (
+          <div className="space-y-4">
+            <h2 className="text-xl font-bold flex items-center gap-2">
+              <Activity className="w-6 h-6 text-primary" />
+              سجل النشاطات
+            </h2>
+            <ActivityLogList logs={activityLogs} />
+          </div>
+        )}
+
         {activeTab === 'users' && (
           <div className="space-y-4">
             <div className="flex items-center justify-between">
@@ -520,7 +649,7 @@ export default function AdminDashboard() {
               <button
                 key={tab.id}
                 onClick={() => setActiveTab(tab.id)}
-                className={`flex-shrink-0 px-4 py-3 flex flex-col items-center gap-1 transition-colors ${
+                className={`flex-shrink-0 px-3 py-3 flex flex-col items-center gap-1 transition-colors ${
                   activeTab === tab.id ? 'text-primary' : 'text-muted-foreground'
                 }`}
               >
