@@ -36,6 +36,8 @@ import {
   Search,
   Edit3,
   Trash2,
+  Settings,
+  FolderPlus,
 } from 'lucide-react';
 import {
   AlertDialog,
@@ -47,6 +49,184 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
+
+// Category Management Modal
+function CategoryManagementModal({
+  open,
+  onClose,
+  categories,
+  menuItems,
+  onUpdateCategory,
+  onDeleteCategory,
+  onAddCategory,
+}: {
+  open: boolean;
+  onClose: () => void;
+  categories: string[];
+  menuItems: MenuItem[];
+  onUpdateCategory: (oldName: string, newName: string) => Promise<void>;
+  onDeleteCategory: (category: string) => Promise<void>;
+  onAddCategory: (name: string) => void;
+}) {
+  const [editingCategory, setEditingCategory] = useState<string | null>(null);
+  const [editValue, setEditValue] = useState('');
+  const [newCategoryName, setNewCategoryName] = useState('');
+  const [loading, setLoading] = useState(false);
+  const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null);
+
+  const getCategoryItemCount = (category: string) => {
+    return menuItems.filter(item => item.category === category).length;
+  };
+
+  const handleEditStart = (category: string) => {
+    setEditingCategory(category);
+    setEditValue(category);
+  };
+
+  const handleEditSave = async () => {
+    if (!editingCategory || !editValue.trim() || editValue === editingCategory) {
+      setEditingCategory(null);
+      return;
+    }
+    setLoading(true);
+    await onUpdateCategory(editingCategory, editValue.trim());
+    setLoading(false);
+    setEditingCategory(null);
+  };
+
+  const handleDelete = async (category: string) => {
+    setLoading(true);
+    await onDeleteCategory(category);
+    setLoading(false);
+    setDeleteConfirm(null);
+  };
+
+  const handleAddCategory = () => {
+    if (!newCategoryName.trim()) return;
+    if (categories.includes(newCategoryName.trim())) {
+      toast.error('هذا القسم موجود بالفعل');
+      return;
+    }
+    onAddCategory(newCategoryName.trim());
+    setNewCategoryName('');
+  };
+
+  return (
+    <>
+      <Dialog open={open} onOpenChange={onClose}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Settings className="w-5 h-5 text-primary" />
+              إدارة الأقسام
+            </DialogTitle>
+          </DialogHeader>
+
+          <div className="space-y-4">
+            {/* Add New Category */}
+            <div className="flex gap-2">
+              <Input
+                placeholder="اسم القسم الجديد..."
+                value={newCategoryName}
+                onChange={(e) => setNewCategoryName(e.target.value)}
+                onKeyDown={(e) => e.key === 'Enter' && handleAddCategory()}
+                className="flex-1"
+              />
+              <Button
+                onClick={handleAddCategory}
+                disabled={!newCategoryName.trim()}
+                size="sm"
+                className="bg-primary hover:bg-primary/90"
+              >
+                <FolderPlus className="w-4 h-4 ml-1" />
+                إضافة
+              </Button>
+            </div>
+
+            {/* Categories List */}
+            <div className="space-y-2 max-h-[300px] overflow-y-auto">
+              {categories.length === 0 ? (
+                <div className="text-center py-8 text-muted-foreground">
+                  لا توجد أقسام
+                </div>
+              ) : (
+                categories.map((category) => (
+                  <div
+                    key={category}
+                    className="flex items-center gap-2 p-3 bg-muted/50 rounded-lg border"
+                  >
+                    {editingCategory === category ? (
+                      <Input
+                        value={editValue}
+                        onChange={(e) => setEditValue(e.target.value)}
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter') handleEditSave();
+                          if (e.key === 'Escape') setEditingCategory(null);
+                        }}
+                        onBlur={handleEditSave}
+                        autoFocus
+                        className="flex-1 h-8"
+                        disabled={loading}
+                      />
+                    ) : (
+                      <>
+                        <span className="flex-1 font-medium">{category}</span>
+                        <span className="text-xs text-muted-foreground bg-background px-2 py-1 rounded">
+                          {getCategoryItemCount(category)} أصناف
+                        </span>
+                        <button
+                          onClick={() => handleEditStart(category)}
+                          className="p-1.5 text-muted-foreground hover:text-primary hover:bg-primary/10 rounded transition-colors"
+                          title="تعديل"
+                        >
+                          <Edit3 className="w-4 h-4" />
+                        </button>
+                        <button
+                          onClick={() => setDeleteConfirm(category)}
+                          className="p-1.5 text-muted-foreground hover:text-destructive hover:bg-destructive/10 rounded transition-colors"
+                          title="حذف"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                      </>
+                    )}
+                  </div>
+                ))
+              )}
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Delete Category Confirmation */}
+      <AlertDialog open={!!deleteConfirm} onOpenChange={() => setDeleteConfirm(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>تأكيد حذف القسم</AlertDialogTitle>
+            <AlertDialogDescription>
+              هل أنت متأكد من حذف قسم "{deleteConfirm}"؟
+              <br />
+              <span className="text-destructive font-medium">
+                سيتم حذف جميع الأصناف ({getCategoryItemCount(deleteConfirm || '')}) في هذا القسم!
+              </span>
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter className="gap-2 sm:gap-0">
+            <AlertDialogCancel disabled={loading}>إلغاء</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => deleteConfirm && handleDelete(deleteConfirm)}
+              disabled={loading}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              {loading ? <Loader2 className="w-4 h-4 animate-spin ml-2" /> : null}
+              حذف القسم والأصناف
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+    </>
+  );
+}
 
 // Sortable Menu Item Component
 function SortableMenuItem({
@@ -501,6 +681,7 @@ export function MenuManagement() {
   const [imageUpdateItem, setImageUpdateItem] = useState<MenuItem | null>(null);
   const [deleteItem, setDeleteItem] = useState<MenuItem | null>(null);
   const [deleting, setDeleting] = useState(false);
+  const [categoryManagementOpen, setCategoryManagementOpen] = useState(false);
 
   const sensors = useSensors(
     useSensor(PointerSensor, {
@@ -581,6 +762,38 @@ export function MenuManagement() {
     setDeleteItem(null);
   };
 
+  // Category management handlers
+  const handleUpdateCategory = async (oldName: string, newName: string) => {
+    const itemsToUpdate = menuItems.filter(item => item.category === oldName);
+    for (const item of itemsToUpdate) {
+      await updateMenuItem(item.id, { category: newName });
+    }
+    refetch();
+    if (activeCategory === oldName) {
+      setActiveCategory(newName);
+    }
+    toast.success(`تم تحديث اسم القسم إلى "${newName}"`);
+  };
+
+  const handleDeleteCategory = async (category: string) => {
+    const itemsToDelete = menuItems.filter(item => item.category === category);
+    for (const item of itemsToDelete) {
+      await deleteMenuItem(item.id);
+    }
+    refetch();
+    if (activeCategory === category && categories.length > 1) {
+      const newActive = categories.find(c => c !== category);
+      if (newActive) setActiveCategory(newActive);
+    }
+    toast.success(`تم حذف القسم "${category}" وجميع أصنافه`);
+  };
+
+  const handleAddCategory = (name: string) => {
+    setActiveCategory(name);
+    setAddModalOpen(true);
+    toast.info(`أضف أول صنف في قسم "${name}"`);
+  };
+
   if (loading) {
     return (
       <div className="flex items-center justify-center py-12">
@@ -609,6 +822,15 @@ export function MenuManagement() {
         <div className="w-32 shrink-0">
           <ScrollArea className="h-full">
             <div className="space-y-2">
+              {/* Category Management Button */}
+              <button
+                onClick={() => setCategoryManagementOpen(true)}
+                className="w-full text-center px-3 py-2 rounded-xl font-medium text-xs transition-all bg-muted/50 border border-dashed border-border hover:border-primary hover:text-primary"
+              >
+                <Settings className="w-4 h-4 mx-auto mb-1" />
+                إدارة الأقسام
+              </button>
+
               {categories.map((category) => (
                 <button
                   key={category}
@@ -676,6 +898,16 @@ export function MenuManagement() {
       </Button>
 
       {/* Modals */}
+      <CategoryManagementModal
+        open={categoryManagementOpen}
+        onClose={() => setCategoryManagementOpen(false)}
+        categories={categories}
+        menuItems={menuItems}
+        onUpdateCategory={handleUpdateCategory}
+        onDeleteCategory={handleDeleteCategory}
+        onAddCategory={handleAddCategory}
+      />
+
       <AddItemModal
         isOpen={addModalOpen}
         onClose={() => setAddModalOpen(false)}
