@@ -2,8 +2,10 @@ import { useState } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useOrders } from '@/contexts/OrderContext';
 import { OrderCard } from '@/components/OrderCard';
+import { DeliveryPersonSelector } from '@/components/DeliveryPersonSelector';
 import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
+import { Order } from '@/types';
 import {
   Users,
   LogOut,
@@ -12,7 +14,8 @@ import {
   Truck,
   XCircle,
   Settings,
-  Calculator
+  Calculator,
+  Clock
 } from 'lucide-react';
 
 type TabType = 'orders' | 'ready' | 'delivering' | 'cancelled' | 'admin';
@@ -21,19 +24,29 @@ export default function FieldDashboard() {
   const { user, logout } = useAuth();
   const { orders, updateOrderStatus, assignDelivery } = useOrders();
   const [activeTab, setActiveTab] = useState<TabType>('orders');
+  const [selectorOpen, setSelectorOpen] = useState(false);
+  const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
 
   const pendingOrders = orders.filter(o => o.status === 'pending');
   const preparingOrders = orders.filter(o => o.status === 'preparing');
-  const readyOrders = orders.filter(o => o.status === 'ready');
+  const readyOrders = orders.filter(o => o.status === 'ready' && !o.pendingDeliveryAcceptance);
+  const pendingAcceptanceOrders = orders.filter(o => o.status === 'ready' && o.pendingDeliveryAcceptance);
   const deliveringOrders = orders.filter(o => o.status === 'delivering');
   const cancelledOrders = orders.filter(o => o.status === 'cancelled');
 
   const incomingOrders = [...pendingOrders, ...preparingOrders];
 
-  const handleAssignDelivery = (orderId: string) => {
-    // In real app, this would open a modal to select delivery person
-    assignDelivery(orderId, 'delivery-1', 'محمد الدلفري');
-    toast.success('تم تعيين الدلفري');
+  const handleOpenSelector = (order: Order) => {
+    setSelectedOrder(order);
+    setSelectorOpen(true);
+  };
+
+  const handleAssignDelivery = (deliveryPersonId: string, deliveryPersonName: string) => {
+    if (selectedOrder) {
+      assignDelivery(selectedOrder.id, deliveryPersonId, deliveryPersonName);
+      toast.success(`تم إرسال الطلب إلى ${deliveryPersonName}`);
+      setSelectedOrder(null);
+    }
   };
 
   const handleCancelOrder = (orderId: string) => {
@@ -111,6 +124,32 @@ export default function FieldDashboard() {
 
         {activeTab === 'ready' && (
           <div className="space-y-4">
+            {/* Pending Acceptance Section */}
+            {pendingAcceptanceOrders.length > 0 && (
+              <div className="mb-6">
+                <h2 className="text-xl font-bold mb-4 flex items-center gap-2">
+                  <Clock className="w-5 h-5 text-warning" />
+                  بانتظار قبول الدلفري ({pendingAcceptanceOrders.length})
+                </h2>
+                <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
+                  {pendingAcceptanceOrders.map(order => (
+                    <OrderCard
+                      key={order.id}
+                      order={order}
+                      actions={
+                        <div className="w-full p-2 bg-warning/10 border border-warning/30 rounded-lg text-center">
+                          <p className="text-sm text-warning">
+                            بانتظار قبول {order.deliveryPersonName}
+                          </p>
+                        </div>
+                      }
+                    />
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Ready Orders Section */}
             <h2 className="text-xl font-bold">الطلبات الجاهزة ({readyOrders.length})</h2>
             {readyOrders.length === 0 ? (
               <div className="text-center py-12 text-muted-foreground">
@@ -125,7 +164,7 @@ export default function FieldDashboard() {
                     order={order}
                     actions={
                       <>
-                        <Button variant="default" size="sm" onClick={() => handleAssignDelivery(order.id)}>
+                        <Button variant="default" size="sm" onClick={() => handleOpenSelector(order)}>
                           <Truck className="w-3 h-3 ml-1" />
                           تعيين دلفري
                         </Button>
@@ -223,6 +262,13 @@ export default function FieldDashboard() {
           ))}
         </div>
       </nav>
+      {/* Delivery Person Selector */}
+      <DeliveryPersonSelector
+        open={selectorOpen}
+        onOpenChange={setSelectorOpen}
+        onSelect={handleAssignDelivery}
+        orderNumber={selectedOrder?.orderNumber || 0}
+      />
     </div>
   );
 }

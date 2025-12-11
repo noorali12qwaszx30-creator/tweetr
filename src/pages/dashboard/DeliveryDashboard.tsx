@@ -21,22 +21,24 @@ type TabType = 'orders' | 'delivering' | 'stats' | 'ready';
 
 export default function DeliveryDashboard() {
   const { user, logout } = useAuth();
-  const { orders, updateOrderStatus } = useOrders();
+  const { orders, updateOrderStatus, acceptDelivery, rejectDelivery } = useOrders();
   const [activeTab, setActiveTab] = useState<TabType>('orders');
 
-  // Orders assigned to this delivery person
-  const assignedOrders = orders.filter(o => o.status === 'ready');
-  const deliveringOrders = orders.filter(o => o.status === 'delivering' && o.deliveryPersonId);
+  // Orders assigned to this delivery person (pending acceptance)
+  const pendingAcceptanceOrders = orders.filter(o => o.status === 'ready' && o.pendingDeliveryAcceptance);
+  const deliveringOrders = orders.filter(o => o.status === 'delivering');
   const deliveredOrders = orders.filter(o => o.status === 'delivered');
   const cancelledByDelivery = orders.filter(o => o.status === 'cancelled');
+  const readyOrders = orders.filter(o => o.status === 'ready' && !o.pendingDeliveryAcceptance);
 
   const handleAcceptOrder = (orderId: string) => {
-    updateOrderStatus(orderId, 'delivering');
+    acceptDelivery(orderId);
     toast.success('تم قبول الطلب');
   };
 
   const handleRejectOrder = (orderId: string) => {
-    toast.info('تم إرسال إشعار للميدان');
+    rejectDelivery(orderId);
+    toast.info('تم رفض الطلب وإرسال إشعار للميدان');
   };
 
   const handleDelivered = (orderId: string) => {
@@ -48,10 +50,10 @@ export default function DeliveryDashboard() {
   const totalEarnings = totalDelivered * 1000; // 1000 per delivery
 
   const tabs: { id: TabType; label: string; icon: React.ReactNode; count?: number }[] = [
-    { id: 'orders', label: 'الطلبات', icon: <ClipboardList className="w-5 h-5" />, count: assignedOrders.length },
+    { id: 'orders', label: 'الطلبات', icon: <ClipboardList className="w-5 h-5" />, count: pendingAcceptanceOrders.length },
     { id: 'delivering', label: 'التوصيل', icon: <Truck className="w-5 h-5" />, count: deliveringOrders.length },
     { id: 'stats', label: 'الإحصائيات', icon: <BarChart3 className="w-5 h-5" /> },
-    { id: 'ready', label: 'الجاهز', icon: <Package className="w-5 h-5" /> },
+    { id: 'ready', label: 'الجاهز', icon: <Package className="w-5 h-5" />, count: readyOrders.length },
   ];
 
   return (
@@ -78,15 +80,15 @@ export default function DeliveryDashboard() {
       <main className="container py-4 pb-24">
         {activeTab === 'orders' && (
           <div className="space-y-4">
-            <h2 className="text-xl font-bold">الطلبات المتاحة ({assignedOrders.length})</h2>
-            {assignedOrders.length === 0 ? (
+            <h2 className="text-xl font-bold">الطلبات المحولة إليك ({pendingAcceptanceOrders.length})</h2>
+            {pendingAcceptanceOrders.length === 0 ? (
               <div className="text-center py-12 text-muted-foreground">
                 <ClipboardList className="w-12 h-12 mx-auto mb-4 opacity-50" />
-                <p>لا توجد طلبات متاحة</p>
+                <p>لا توجد طلبات محولة إليك</p>
               </div>
             ) : (
               <div className="grid md:grid-cols-2 gap-4">
-                {assignedOrders.map(order => (
+                {pendingAcceptanceOrders.map(order => (
                   <OrderCard
                     key={order.id}
                     order={order}
@@ -94,11 +96,11 @@ export default function DeliveryDashboard() {
                       <>
                         <Button variant="success" size="sm" onClick={() => handleAcceptOrder(order.id)}>
                           <CheckCircle className="w-3 h-3 ml-1" />
-                          موافقة
+                          قبول الطلب
                         </Button>
                         <Button variant="destructive" size="sm" onClick={() => handleRejectOrder(order.id)}>
                           <XCircle className="w-3 h-3 ml-1" />
-                          رفض
+                          رفض الطلب
                         </Button>
                       </>
                     }
@@ -180,11 +182,23 @@ export default function DeliveryDashboard() {
 
         {activeTab === 'ready' && (
           <div className="space-y-4">
-            <h2 className="text-xl font-bold">الطلبات الجاهزة</h2>
-            <div className="text-center py-12 text-muted-foreground">
-              <Package className="w-12 h-12 mx-auto mb-4 opacity-50" />
-              <p>طلبات المطبخ الجاهزة للتوصيل</p>
-            </div>
+            <h2 className="text-xl font-bold">الطلبات الجاهزة ({readyOrders.length})</h2>
+            {readyOrders.length === 0 ? (
+              <div className="text-center py-12 text-muted-foreground">
+                <Package className="w-12 h-12 mx-auto mb-4 opacity-50" />
+                <p>لا توجد طلبات جاهزة حالياً</p>
+              </div>
+            ) : (
+              <div className="grid md:grid-cols-2 gap-4">
+                {readyOrders.map(order => (
+                  <OrderCard
+                    key={order.id}
+                    order={order}
+                    showActions={false}
+                  />
+                ))}
+              </div>
+            )}
           </div>
         )}
       </main>

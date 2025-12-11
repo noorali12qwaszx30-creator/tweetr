@@ -7,6 +7,8 @@ interface OrderContextType {
   addOrder: (order: Omit<Order, 'id' | 'orderNumber' | 'createdAt'>) => void;
   updateOrderStatus: (orderId: string, status: OrderStatus) => void;
   assignDelivery: (orderId: string, deliveryPersonId: string, deliveryPersonName: string) => void;
+  acceptDelivery: (orderId: string) => void;
+  rejectDelivery: (orderId: string) => void;
   cancelOrder: (orderId: string) => void;
   getOrdersByStatus: (status: OrderStatus) => Order[];
 }
@@ -62,11 +64,33 @@ export function OrderProvider({ children }: { children: ReactNode }) {
     setOrders(prev =>
       prev.map(order =>
         order.id === orderId
-          ? { ...order, deliveryPersonId, deliveryPersonName, status: 'delivering' as OrderStatus }
+          ? { ...order, deliveryPersonId, deliveryPersonName, pendingDeliveryAcceptance: true }
           : order
       )
     );
     playNotificationSound('orderAssigned');
+  };
+
+  const acceptDelivery = (orderId: string) => {
+    setOrders(prev =>
+      prev.map(order =>
+        order.id === orderId
+          ? { ...order, status: 'delivering' as OrderStatus, pendingDeliveryAcceptance: false }
+          : order
+      )
+    );
+    playNotificationSound('orderAssigned');
+  };
+
+  const rejectDelivery = (orderId: string) => {
+    setOrders(prev =>
+      prev.map(order =>
+        order.id === orderId
+          ? { ...order, deliveryPersonId: undefined, deliveryPersonName: undefined, pendingDeliveryAcceptance: false }
+          : order
+      )
+    );
+    playNotificationSound('alert');
   };
 
   const cancelOrder = (orderId: string) => {
@@ -84,6 +108,8 @@ export function OrderProvider({ children }: { children: ReactNode }) {
         addOrder,
         updateOrderStatus,
         assignDelivery,
+        acceptDelivery,
+        rejectDelivery,
         cancelOrder,
         getOrdersByStatus,
       }}
