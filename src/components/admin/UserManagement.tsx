@@ -125,69 +125,60 @@ export function UserManagement() {
       return;
     }
 
+    if (newUser.password.length < 6) {
+      toast.error('كلمة المرور يجب أن تكون 6 أحرف على الأقل');
+      return;
+    }
+
     setSubmitting(true);
     try {
-      // Create user via Supabase Auth
-      const { data: authData, error: authError } = await supabase.auth.signUp({
-        email: newUser.email,
-        password: newUser.password,
-        options: {
-          emailRedirectTo: `${window.location.origin}/`,
-          data: {
-            username: newUser.username,
-            full_name: newUser.full_name,
-          },
+      // Get current session token
+      const { data: { session } } = await supabase.auth.getSession();
+      
+      if (!session) {
+        toast.error('يجب تسجيل الدخول أولاً');
+        return;
+      }
+
+      // Call edge function to create user
+      const response = await supabase.functions.invoke('create-user', {
+        body: {
+          email: newUser.email,
+          password: newUser.password,
+          username: newUser.username,
+          full_name: newUser.full_name,
+          phone: newUser.phone,
+          role: newUser.role,
         },
       });
 
-      if (authError) throw authError;
-
-      if (authData.user) {
-        // Update profile with additional data
-        const { error: profileError } = await supabase
-          .from('profiles')
-          .update({
-            username: newUser.username,
-            full_name: newUser.full_name || null,
-            phone: newUser.phone || null,
-          })
-          .eq('user_id', authData.user.id);
-
-        if (profileError) {
-          console.error('Profile update error:', profileError);
-        }
-
-        // Add role
-        const { error: roleError } = await supabase
-          .from('user_roles')
-          .insert({
-            user_id: authData.user.id,
-            role: newUser.role,
-          });
-
-        if (roleError) {
-          console.error('Role insert error:', roleError);
-        }
-
-        toast.success('تم إنشاء المستخدم بنجاح');
-        setIsAddDialogOpen(false);
-        setNewUser({
-          email: '',
-          password: '',
-          username: '',
-          full_name: '',
-          phone: '',
-          role: 'cashier',
-        });
-        fetchUsers();
+      if (response.error) {
+        throw new Error(response.error.message || 'Failed to create user');
       }
+
+      if (response.data?.error) {
+        if (response.data.error.includes('already')) {
+          toast.error('البريد الإلكتروني مسجل مسبقاً');
+        } else {
+          toast.error(response.data.error);
+        }
+        return;
+      }
+
+      toast.success('تم إنشاء المستخدم بنجاح');
+      setIsAddDialogOpen(false);
+      setNewUser({
+        email: '',
+        password: '',
+        username: '',
+        full_name: '',
+        phone: '',
+        role: 'cashier',
+      });
+      fetchUsers();
     } catch (error: any) {
       console.error('Error creating user:', error);
-      if (error.message?.includes('already registered')) {
-        toast.error('البريد الإلكتروني مسجل مسبقاً');
-      } else {
-        toast.error('حدث خطأ في إنشاء المستخدم');
-      }
+      toast.error(error.message || 'حدث خطأ في إنشاء المستخدم');
     } finally {
       setSubmitting(false);
     }
