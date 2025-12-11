@@ -42,7 +42,8 @@ export interface Order {
   deliveryPersonId?: string;
   deliveryPersonName?: string;
   cashierName: string;
-  pendingDeliveryAcceptance?: boolean; // انتظار قبول الدلفري
+  pendingDeliveryAcceptance?: boolean;
+  cancellationReason?: string;
 }
 
 export const ROLE_LABELS: Record<UserRole, string> = {

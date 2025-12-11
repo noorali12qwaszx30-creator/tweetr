@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useOrders } from '@/contexts/OrderContext';
 import { Button } from '@/components/ui/button';
+import { CancellationReasonsManager } from '@/components/CancellationReasonsManager';
 import { toast } from 'sonner';
 import {
   Settings,
@@ -11,10 +12,11 @@ import {
   RefreshCcw,
   UserPlus,
   Trash2,
-  ShieldCheck
+  ShieldCheck,
+  XCircle
 } from 'lucide-react';
 
-type TabType = 'stats' | 'users' | 'settings';
+type TabType = 'stats' | 'users' | 'settings' | 'cancellation';
 
 export default function AdminDashboard() {
   const { user, logout } = useAuth();
@@ -49,6 +51,7 @@ export default function AdminDashboard() {
   const tabs: { id: TabType; label: string; icon: React.ReactNode }[] = [
     { id: 'stats', label: 'الإحصائيات', icon: <BarChart3 className="w-5 h-5" /> },
     { id: 'users', label: 'المستخدمين', icon: <Users className="w-5 h-5" /> },
+    { id: 'cancellation', label: 'أسباب الإلغاء', icon: <XCircle className="w-5 h-5" /> },
     { id: 'settings', label: 'الإعدادات', icon: <Settings className="w-5 h-5" /> },
   ];
 
@@ -158,6 +161,12 @@ export default function AdminDashboard() {
                 </div>
               ))}
             </div>
+          </div>
+        )}
+
+        {activeTab === 'cancellation' && (
+          <div className="bg-card border border-border rounded-xl p-4 shadow-soft">
+            <CancellationReasonsManager />
           </div>
         )}
 

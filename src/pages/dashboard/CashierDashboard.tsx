@@ -7,6 +7,7 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { OrderCard } from '@/components/OrderCard';
 import { EditOrderDialog } from '@/components/EditOrderDialog';
+import { CancelOrderDialog } from '@/components/CancelOrderDialog';
 import { toast } from 'sonner';
 import { 
   ShoppingCart, 
@@ -22,14 +23,15 @@ import {
   Phone,
   MapPin,
   MessageSquare,
-  CheckCircle
+  CheckCircle,
+  XCircle
 } from 'lucide-react';
 
 type TabType = 'menu' | 'orders';
 
 export default function CashierDashboard() {
   const { user, logout } = useAuth();
-  const { orders, addOrder, updateOrderStatus, updateOrder } = useOrders();
+  const { orders, addOrder, updateOrderStatus, updateOrder, cancelOrder } = useOrders();
   const [activeTab, setActiveTab] = useState<TabType>('menu');
   const [cart, setCart] = useState<OrderItem[]>([]);
   const [customerName, setCustomerName] = useState('');
@@ -38,6 +40,7 @@ export default function CashierDashboard() {
   const [orderNotes, setOrderNotes] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const [editingOrder, setEditingOrder] = useState<Order | null>(null);
+  const [cancellingOrder, setCancellingOrder] = useState<Order | null>(null);
 
   const categories = [...new Set(MENU_ITEMS.map(item => item.category))];
   const filteredItems = selectedCategory 
@@ -343,8 +346,13 @@ export default function CashierDashboard() {
                             نقل للجاهز
                           </Button>
                         )}
-                        <Button variant="warning" size="sm">
-                          تبليغ متأخر
+                        <Button 
+                          variant="destructive" 
+                          size="sm"
+                          onClick={() => setCancellingOrder(order)}
+                        >
+                          <XCircle className="w-3 h-3 ml-1" />
+                          إلغاء
                         </Button>
                       </>
                     }
@@ -362,6 +370,16 @@ export default function CashierDashboard() {
             open={!!editingOrder}
             onOpenChange={(open) => !open && setEditingOrder(null)}
             onSave={updateOrder}
+          />
+        )}
+
+        {/* Cancel Order Dialog */}
+        {cancellingOrder && (
+          <CancelOrderDialog
+            order={cancellingOrder}
+            open={!!cancellingOrder}
+            onOpenChange={(open) => !open && setCancellingOrder(null)}
+            onCancel={cancelOrder}
           />
         )}
       </main>

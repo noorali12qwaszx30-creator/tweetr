@@ -10,7 +10,7 @@ interface OrderContextType {
   assignDelivery: (orderId: string, deliveryPersonId: string, deliveryPersonName: string) => void;
   acceptDelivery: (orderId: string) => void;
   rejectDelivery: (orderId: string) => void;
-  cancelOrder: (orderId: string) => void;
+  cancelOrder: (orderId: string, reason?: string) => void;
   getOrdersByStatus: (status: OrderStatus) => Order[];
 }
 
@@ -102,8 +102,15 @@ export function OrderProvider({ children }: { children: ReactNode }) {
     playNotificationSound('alert');
   };
 
-  const cancelOrder = (orderId: string) => {
-    updateOrderStatus(orderId, 'cancelled');
+  const cancelOrder = (orderId: string, reason?: string) => {
+    setOrders(prev =>
+      prev.map(order =>
+        order.id === orderId
+          ? { ...order, status: 'cancelled' as OrderStatus, cancellationReason: reason }
+          : order
+      )
+    );
+    playNotificationSound('orderCancelled');
   };
 
   const getOrdersByStatus = (status: OrderStatus) => {
