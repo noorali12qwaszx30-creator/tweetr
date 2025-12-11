@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useRole } from '@/contexts/RoleContext';
 import { useAuth } from '@/contexts/AuthContext';
@@ -10,14 +10,12 @@ import {
   ShoppingBag, 
   ChefHat, 
   Shield,
-  Utensils,
   ArrowRight,
   User,
   Lock,
   AlertCircle,
   Phone,
-  Code,
-  Zap
+  Sparkles,
 } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
@@ -32,10 +30,16 @@ const ROLE_ICONS: Record<UserRole, React.ReactNode> = {
   admin: <Shield className="w-8 h-8" />,
 };
 
-const ROLES: UserRole[] = ['cashier', 'field', 'delivery', 'takeaway', 'kitchen', 'admin'];
+const ROLE_DESCRIPTIONS: Record<UserRole, string> = {
+  cashier: 'إدارة الطلبات والمبيعات',
+  field: 'متابعة التوصيل والميدان',
+  delivery: 'توصيل الطلبات للزبائن',
+  takeaway: 'طلبات السفري',
+  kitchen: 'تحضير الطلبات',
+  admin: 'إدارة النظام الكاملة',
+};
 
-// وضع المبرمج - للتجربة فقط (احذف هذا قبل الإنتاج)
-const DEV_MODE = true;
+const ROLES: UserRole[] = ['admin', 'cashier', 'kitchen', 'field', 'delivery', 'takeaway'];
 
 export default function RoleSelector() {
   const navigate = useNavigate();
@@ -47,18 +51,15 @@ export default function RoleSelector() {
   const [password, setPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [showDevMode, setShowDevMode] = useState(false);
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   const handleSelectRole = (role: UserRole) => {
     setSelectedRole(role);
     setError(null);
-  };
-
-  // دخول مباشر بدون تسجيل (للمبرمج فقط)
-  const handleDevAccess = (role: UserRole) => {
-    setRole(role);
-    toast.success(`دخول مباشر: ${ROLE_LABELS[role]}`);
-    navigate('/dashboard', { replace: true });
   };
 
   const handleBack = () => {
@@ -87,7 +88,6 @@ export default function RoleSelector() {
       return;
     }
 
-    // Login successful
     setRole(selectedRole!);
     toast.success('تم تسجيل الدخول بنجاح');
     navigate('/dashboard', { replace: true });
@@ -96,76 +96,91 @@ export default function RoleSelector() {
   // Login form after role selection
   if (selectedRole) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-background via-background to-primary/5 flex items-center justify-center p-4" dir="rtl">
-        <div className="w-full max-w-md">
-          <div className="bg-card border border-border rounded-2xl p-6 shadow-lg">
+      <div className="min-h-screen bg-gradient-to-br from-background via-background to-primary/5 flex items-center justify-center p-4 overflow-hidden" dir="rtl">
+        {/* Background decorations */}
+        <div className="absolute inset-0 overflow-hidden pointer-events-none">
+          <div className="absolute -top-40 -right-40 w-80 h-80 bg-primary/10 rounded-full blur-3xl animate-float" />
+          <div className="absolute -bottom-40 -left-40 w-96 h-96 bg-primary/5 rounded-full blur-3xl animate-float" style={{ animationDelay: '1s' }} />
+        </div>
+
+        <div className="w-full max-w-md relative z-10">
+          <div 
+            className="bg-card/80 backdrop-blur-xl border border-border/50 rounded-3xl p-8 shadow-elevated animate-scale-in"
+          >
             <button
               onClick={handleBack}
-              className="flex items-center gap-2 text-muted-foreground hover:text-foreground mb-6 transition-colors"
+              className="flex items-center gap-2 text-muted-foreground hover:text-primary mb-6 transition-all duration-300 hover:-translate-x-1"
             >
-              <ArrowRight className="w-4 h-4" />
-              <span>العودة لاختيار الدور</span>
+              <ArrowRight className="w-5 h-5" />
+              <span className="font-medium">العودة لاختيار الدور</span>
             </button>
 
-            <div className="text-center mb-6">
-              <div className="mx-auto w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center mb-3">
+            <div className="text-center mb-8">
+              <div className="mx-auto w-20 h-20 bg-gradient-to-br from-primary to-primary/80 rounded-2xl flex items-center justify-center mb-4 shadow-glow text-primary-foreground rotate-3 hover:rotate-0 transition-transform duration-300">
                 {ROLE_ICONS[selectedRole]}
               </div>
-              <h2 className="text-xl font-bold text-foreground">{ROLE_LABELS[selectedRole]}</h2>
-              <p className="text-muted-foreground text-sm mt-1">أدخل بيانات الدخول</p>
+              <h2 className="text-2xl font-bold text-foreground">{ROLE_LABELS[selectedRole]}</h2>
+              <p className="text-muted-foreground mt-2">{ROLE_DESCRIPTIONS[selectedRole]}</p>
             </div>
 
-            <form onSubmit={handleLogin} className="space-y-4">
+            <form onSubmit={handleLogin} className="space-y-5">
               <div className="space-y-2">
-                <label className="text-sm font-medium text-foreground">اسم المستخدم</label>
-                <div className="relative">
-                  <User className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                <label className="text-sm font-semibold text-foreground">اسم المستخدم</label>
+                <div className="relative group">
+                  <User className="absolute right-4 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground group-focus-within:text-primary transition-colors" />
                   <Input
                     type="text"
                     value={username}
                     onChange={(e) => setUsername(e.target.value)}
                     placeholder="أدخل اسم المستخدم"
-                    className="pr-10"
+                    className="pr-12 h-14 text-lg bg-background/50 border-border/50 rounded-xl focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all"
                     disabled={isLoading}
                   />
                 </div>
               </div>
 
               <div className="space-y-2">
-                <label className="text-sm font-medium text-foreground">الرمز السري</label>
-                <div className="relative">
-                  <Lock className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                <label className="text-sm font-semibold text-foreground">الرمز السري</label>
+                <div className="relative group">
+                  <Lock className="absolute right-4 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground group-focus-within:text-primary transition-colors" />
                   <Input
                     type="password"
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
                     placeholder="أدخل الرمز السري"
-                    className="pr-10"
+                    className="pr-12 h-14 text-lg bg-background/50 border-border/50 rounded-xl focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all"
                     disabled={isLoading}
                   />
                 </div>
               </div>
 
               {error && (
-                <div className="bg-destructive/10 border border-destructive/20 rounded-lg p-3 flex items-start gap-2">
-                  <AlertCircle className="w-4 h-4 text-destructive mt-0.5 flex-shrink-0" />
-                  <span className="text-sm text-destructive">{error}</span>
+                <div className="bg-destructive/10 border border-destructive/30 rounded-xl p-4 flex items-start gap-3 animate-scale-in">
+                  <AlertCircle className="w-5 h-5 text-destructive mt-0.5 flex-shrink-0" />
+                  <span className="text-sm text-destructive font-medium">{error}</span>
                 </div>
               )}
 
               <Button
                 type="submit"
-                className="w-full"
+                className="w-full h-14 text-lg font-bold rounded-xl bg-gradient-to-r from-primary to-primary/90 hover:from-primary/90 hover:to-primary shadow-lg hover:shadow-primary/25 transition-all duration-300 hover:scale-[1.02]"
                 disabled={isLoading}
               >
-                {isLoading ? 'جاري تسجيل الدخول...' : 'تسجيل الدخول'}
+                {isLoading ? (
+                  <span className="flex items-center gap-2">
+                    <span className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                    جاري تسجيل الدخول...
+                  </span>
+                ) : (
+                  'تسجيل الدخول'
+                )}
               </Button>
             </form>
 
-            <div className="mt-6 pt-4 border-t border-border">
-              <div className="bg-muted/50 rounded-lg p-3 text-center">
-                <p className="text-sm text-muted-foreground mb-1">في حال واجهت مشكلة بتسجيل الدخول</p>
-                <div className="flex items-center justify-center gap-2 text-primary font-medium">
+            <div className="mt-8 pt-6 border-t border-border/50">
+              <div className="bg-muted/30 backdrop-blur rounded-xl p-4 text-center">
+                <p className="text-sm text-muted-foreground mb-2">في حال واجهت مشكلة بتسجيل الدخول</p>
+                <div className="flex items-center justify-center gap-2 text-primary font-semibold">
                   <Phone className="w-4 h-4" />
                   <span>تواصل مع المدير التنفيذي: محمد كاظم</span>
                 </div>
@@ -177,67 +192,115 @@ export default function RoleSelector() {
     );
   }
 
-  // Role selection screen
+  // Welcome & Role selection screen
   return (
-    <div className="min-h-screen bg-gradient-to-br from-background via-background to-primary/5 flex items-center justify-center p-4" dir="rtl">
-      <div className="w-full max-w-2xl">
-        <div className="text-center mb-8">
-          <div className="mx-auto w-20 h-20 bg-primary/10 rounded-full flex items-center justify-center mb-4">
-            <Utensils className="w-10 h-10 text-primary" />
+    <div className="min-h-screen bg-gradient-to-br from-background via-background to-primary/10 flex flex-col items-center justify-center p-4 overflow-hidden" dir="rtl">
+      {/* Animated background decorations */}
+      <div className="absolute inset-0 overflow-hidden pointer-events-none">
+        <div className="absolute top-0 left-0 w-full h-full">
+          <div className="absolute top-20 right-20 w-72 h-72 bg-primary/20 rounded-full blur-3xl animate-float" />
+          <div className="absolute bottom-20 left-20 w-96 h-96 bg-primary/10 rounded-full blur-3xl animate-float" style={{ animationDelay: '1.5s' }} />
+          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-gradient-radial from-primary/5 to-transparent rounded-full" />
+        </div>
+        {/* Decorative shapes */}
+        <div className="absolute top-10 left-10 w-4 h-4 bg-primary/30 rounded-full animate-pulse" />
+        <div className="absolute top-32 right-32 w-3 h-3 bg-primary/40 rounded-full animate-pulse" style={{ animationDelay: '0.5s' }} />
+        <div className="absolute bottom-40 right-20 w-5 h-5 bg-primary/20 rounded-full animate-pulse" style={{ animationDelay: '1s' }} />
+      </div>
+
+      <div className="w-full max-w-4xl relative z-10">
+        {/* Hero Section */}
+        <div 
+          className={`text-center mb-12 ${mounted ? 'opacity-100' : 'opacity-0'}`}
+          style={{ 
+            animation: mounted ? 'slide-up 0.8s cubic-bezier(0.16, 1, 0.3, 1) forwards' : 'none',
+          }}
+        >
+          {/* Logo/Brand */}
+          <div className="inline-flex items-center justify-center mb-6">
+            <div className="relative">
+              <div className="w-24 h-24 bg-gradient-to-br from-primary via-primary to-primary/80 rounded-3xl flex items-center justify-center shadow-2xl shadow-primary/30 rotate-3 hover:rotate-0 transition-transform duration-500">
+                <span className="text-4xl font-black text-primary-foreground">ج</span>
+              </div>
+              <div className="absolute -top-2 -right-2 w-8 h-8 bg-gradient-to-br from-yellow-400 to-orange-500 rounded-full flex items-center justify-center shadow-lg animate-float">
+                <Sparkles className="w-4 h-4 text-white" />
+              </div>
+            </div>
           </div>
-          <h1 className="text-3xl font-bold text-foreground mb-2">نظام إدارة المطعم</h1>
-          <p className="text-muted-foreground">اختر دورك للدخول إلى النظام</p>
+
+          {/* Welcome Title */}
+          <h1 className="text-4xl md:text-6xl font-black text-foreground mb-4 leading-tight">
+            أهلاً بكم في{' '}
+            <span className="text-transparent bg-clip-text bg-gradient-to-l from-primary via-red-500 to-primary">
+              جومانجي
+            </span>
+          </h1>
+          <p className="text-lg md:text-xl text-muted-foreground max-w-lg mx-auto">
+            نظام إدارة المطعم المتكامل - اختر دورك للبدء
+          </p>
         </div>
 
-        <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-          {ROLES.map((role) => (
+        {/* Role Selection Grid */}
+        <div className="grid grid-cols-2 md:grid-cols-3 gap-4 md:gap-6">
+          {ROLES.map((role, index) => (
             <button
               key={role}
               onClick={() => handleSelectRole(role)}
-              className="bg-card hover:bg-accent border border-border rounded-2xl p-6 transition-all duration-200 hover:scale-105 hover:shadow-lg group"
+              className={`
+                group relative bg-card/60 backdrop-blur-xl border-2 border-border/50 rounded-3xl p-6 
+                transition-all duration-500 hover:scale-105 hover:border-primary/50
+                hover:shadow-2xl hover:shadow-primary/20
+                focus:outline-none focus:ring-4 focus:ring-primary/20
+                ${mounted ? 'opacity-100' : 'opacity-0'}
+              `}
+              style={{ 
+                animation: mounted 
+                  ? `slide-up 0.6s cubic-bezier(0.16, 1, 0.3, 1) ${0.1 + index * 0.1}s forwards` 
+                  : 'none',
+                opacity: 0,
+              }}
             >
-              <div className="flex flex-col items-center gap-3">
-                <div className="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center text-primary group-hover:bg-primary group-hover:text-primary-foreground transition-colors">
+              {/* Glow effect on hover */}
+              <div className="absolute inset-0 rounded-3xl bg-gradient-to-br from-primary/0 via-primary/0 to-primary/0 group-hover:from-primary/10 group-hover:via-primary/5 group-hover:to-transparent transition-all duration-500" />
+              
+              {/* Selected indicator */}
+              <div className="absolute top-3 right-3 w-3 h-3 rounded-full bg-primary/0 group-hover:bg-primary group-hover:animate-pulse transition-all duration-300" />
+
+              <div className="relative flex flex-col items-center gap-4">
+                {/* Icon container */}
+                <div className="w-16 h-16 md:w-20 md:h-20 rounded-2xl bg-gradient-to-br from-muted to-muted/50 flex items-center justify-center text-muted-foreground group-hover:from-primary group-hover:to-primary/80 group-hover:text-primary-foreground transition-all duration-500 group-hover:scale-110 group-hover:rotate-3 group-hover:shadow-lg group-hover:shadow-primary/30">
                   {ROLE_ICONS[role]}
                 </div>
-                <span className="font-semibold text-lg">{ROLE_LABELS[role]}</span>
+
+                {/* Role name */}
+                <div className="text-center">
+                  <h3 className="font-bold text-lg text-foreground group-hover:text-primary transition-colors duration-300">
+                    {ROLE_LABELS[role]}
+                  </h3>
+                  <p className="text-xs text-muted-foreground mt-1 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                    {ROLE_DESCRIPTIONS[role]}
+                  </p>
+                </div>
               </div>
+
+              {/* Bottom accent line */}
+              <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-0 h-1 bg-gradient-to-r from-transparent via-primary to-transparent rounded-full group-hover:w-3/4 transition-all duration-500" />
             </button>
           ))}
         </div>
 
-        {/* وضع المبرمج - للتجربة فقط */}
-        {DEV_MODE && (
-          <div className="mt-8">
-            <button
-              onClick={() => setShowDevMode(!showDevMode)}
-              className="mx-auto flex items-center gap-2 text-xs text-muted-foreground hover:text-foreground transition-colors"
-            >
-              <Code className="w-3 h-3" />
-              <span>وضع المبرمج</span>
-            </button>
-
-            {showDevMode && (
-              <div className="mt-4 bg-yellow-500/10 border border-yellow-500/30 rounded-xl p-4">
-                <div className="flex items-center gap-2 text-yellow-600 dark:text-yellow-400 mb-3">
-                  <Zap className="w-4 h-4" />
-                  <span className="font-medium text-sm">دخول مباشر (للتجربة فقط)</span>
-                </div>
-                <div className="grid grid-cols-3 md:grid-cols-6 gap-2">
-                  {ROLES.map((role) => (
-                    <button
-                      key={`dev-${role}`}
-                      onClick={() => handleDevAccess(role)}
-                      className="bg-yellow-500/20 hover:bg-yellow-500/30 border border-yellow-500/30 rounded-lg p-2 text-xs font-medium transition-colors"
-                    >
-                      {ROLE_LABELS[role]}
-                    </button>
-                  ))}
-                </div>
-              </div>
-            )}
-          </div>
-        )}
+        {/* Footer */}
+        <div 
+          className={`mt-12 text-center ${mounted ? 'opacity-100' : 'opacity-0'}`}
+          style={{ 
+            animation: mounted ? 'fade-in 0.8s ease-out 0.8s forwards' : 'none',
+            opacity: 0,
+          }}
+        >
+          <p className="text-sm text-muted-foreground">
+            © {new Date().getFullYear()} جومانجي - جميع الحقوق محفوظة
+          </p>
+        </div>
       </div>
     </div>
   );
