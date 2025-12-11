@@ -9,6 +9,7 @@ export interface MenuItem {
   image: string | null;
   category: string;
   is_available: boolean;
+  display_order: number;
 }
 
 export function useMenuItems() {
@@ -42,7 +43,17 @@ export function useMenuItems() {
     fetchMenuItems();
   }, []);
 
-  const addMenuItem = async (item: Omit<MenuItem, 'id' | 'is_available'>) => {
+  const addMenuItem = async (item: Omit<MenuItem, 'id' | 'is_available' | 'display_order'>) => {
+    // Get the max display_order for this category
+    const { data: maxOrderData } = await supabase
+      .from('menu_items')
+      .select('display_order')
+      .eq('category', item.category)
+      .order('display_order', { ascending: false })
+      .limit(1);
+    
+    const maxOrder = maxOrderData?.[0]?.display_order ?? -1;
+
     const { data, error } = await supabase
       .from('menu_items')
       .insert({
@@ -51,6 +62,7 @@ export function useMenuItems() {
         image: item.image,
         category: item.category,
         is_available: true,
+        display_order: maxOrder + 1,
       })
       .select()
       .single();
