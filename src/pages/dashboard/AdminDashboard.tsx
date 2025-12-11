@@ -4,6 +4,7 @@ import { useSupabaseOrders, OrderWithItems } from '@/hooks/useSupabaseOrders';
 import { useShift } from '@/contexts/ShiftContext';
 import { Button } from '@/components/ui/button';
 import { CancellationReasonsManager } from '@/components/CancellationReasonsManager';
+import { UserManagement } from '@/components/admin/UserManagement';
 import { KPICard } from '@/components/admin/KPICard';
 import { OrdersChart, WeeklyChart } from '@/components/admin/OrdersChart';
 import { DriverPerformance } from '@/components/admin/DriverPerformance';
@@ -43,7 +44,7 @@ type MainTab = 'home' | 'orders' | 'stats' | 'delivery' | 'settings';
 // Sub-tabs for each main section
 type OrdersSubTab = 'completed' | 'cancelled';
 type StatsSubTab = 'overview' | 'items' | 'customers' | 'finance';
-type SettingsSubTab = 'general' | 'reasons';
+type SettingsSubTab = 'general' | 'users' | 'reasons';
 
 export default function AdminDashboard() {
   const { role, clearRole } = useRole();
@@ -458,6 +459,7 @@ export default function AdminDashboard() {
             <Tabs value={settingsSubTab} onValueChange={(v) => setSettingsSubTab(v as SettingsSubTab)}>
               <TabsList className="grid w-full grid-cols-3">
                 <TabsTrigger value="general">عام</TabsTrigger>
+                <TabsTrigger value="users">المستخدمين</TabsTrigger>
                 <TabsTrigger value="reasons">أسباب الإلغاء</TabsTrigger>
               </TabsList>
 
@@ -495,6 +497,10 @@ export default function AdminDashboard() {
                     <p className="text-sm text-destructive-foreground/70">العودة لاختيار الدور</p>
                   </div>
                 </Button>
+              </TabsContent>
+
+              <TabsContent value="users" className="mt-4">
+                <UserManagement />
               </TabsContent>
 
               <TabsContent value="reasons" className="mt-4">
