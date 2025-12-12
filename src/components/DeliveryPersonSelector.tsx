@@ -6,16 +6,8 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
-import { Truck, User } from 'lucide-react';
-
-// قائمة الدلفري المتاحين (في التطبيق الحقيقي ستأتي من قاعدة البيانات)
-const DELIVERY_PERSONS = [
-  { id: 'delivery-1', name: 'محمد أحمد' },
-  { id: 'delivery-2', name: 'علي حسين' },
-  { id: 'delivery-3', name: 'أحمد كريم' },
-  { id: 'delivery-4', name: 'حسن محمود' },
-  { id: 'delivery-5', name: 'عمر سالم' },
-];
+import { Truck, User, Loader2 } from 'lucide-react';
+import { useDeliveryDrivers } from '@/hooks/useDeliveryDrivers';
 
 interface DeliveryPersonSelectorProps {
   open: boolean;
@@ -30,12 +22,13 @@ export function DeliveryPersonSelector({
   onSelect,
   orderNumber,
 }: DeliveryPersonSelectorProps) {
+  const { drivers, loading } = useDeliveryDrivers();
   const [selectedId, setSelectedId] = useState<string | null>(null);
 
   const handleConfirm = () => {
-    const person = DELIVERY_PERSONS.find(p => p.id === selectedId);
-    if (person) {
-      onSelect(person.id, person.name);
+    const driver = drivers.find(d => d.user_id === selectedId);
+    if (driver) {
+      onSelect(driver.user_id, driver.full_name);
       onOpenChange(false);
       setSelectedId(null);
     }
@@ -43,7 +36,7 @@ export function DeliveryPersonSelector({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-md">
+      <DialogContent className="sm:max-w-md max-h-[80vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <Truck className="w-5 h-5 text-primary" />
@@ -52,27 +45,44 @@ export function DeliveryPersonSelector({
         </DialogHeader>
         
         <div className="space-y-2 py-4">
-          {DELIVERY_PERSONS.map((person) => (
-            <button
-              key={person.id}
-              onClick={() => setSelectedId(person.id)}
-              className={`
-                w-full flex items-center gap-3 p-3 rounded-lg border-2 transition-all
-                ${selectedId === person.id 
-                  ? 'border-primary bg-primary/10' 
-                  : 'border-border hover:border-primary/50'
-                }
-              `}
-            >
-              <div className={`
-                w-10 h-10 rounded-full flex items-center justify-center
-                ${selectedId === person.id ? 'bg-primary text-primary-foreground' : 'bg-muted'}
-              `}>
-                <User className="w-5 h-5" />
-              </div>
-              <span className="font-medium text-foreground">{person.name}</span>
-            </button>
-          ))}
+          {loading ? (
+            <div className="flex items-center justify-center py-8">
+              <Loader2 className="w-6 h-6 animate-spin text-primary" />
+            </div>
+          ) : drivers.length === 0 ? (
+            <div className="text-center py-8 text-muted-foreground">
+              <User className="w-12 h-12 mx-auto mb-2 opacity-50" />
+              <p className="text-sm">لا يوجد دلفرية مضافين</p>
+              <p className="text-xs mt-1">يرجى إضافة دلفري من لوحة المدير</p>
+            </div>
+          ) : (
+            drivers.map((driver) => (
+              <button
+                key={driver.user_id}
+                onClick={() => setSelectedId(driver.user_id)}
+                className={`
+                  w-full flex items-center gap-3 p-3 rounded-lg border-2 transition-all
+                  ${selectedId === driver.user_id 
+                    ? 'border-primary bg-primary/10' 
+                    : 'border-border hover:border-primary/50'
+                  }
+                `}
+              >
+                <div className={`
+                  w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0
+                  ${selectedId === driver.user_id ? 'bg-primary text-primary-foreground' : 'bg-muted'}
+                `}>
+                  <User className="w-5 h-5" />
+                </div>
+                <div className="text-right flex-1 min-w-0">
+                  <span className="font-medium text-foreground block truncate">{driver.full_name}</span>
+                  {driver.phone && (
+                    <span className="text-xs text-muted-foreground">{driver.phone}</span>
+                  )}
+                </div>
+              </button>
+            ))
+          )}
         </div>
 
         <div className="flex gap-2">
@@ -86,7 +96,7 @@ export function DeliveryPersonSelector({
           <Button
             className="flex-1"
             onClick={handleConfirm}
-            disabled={!selectedId}
+            disabled={!selectedId || drivers.length === 0}
           >
             تعيين الدلفري
           </Button>
