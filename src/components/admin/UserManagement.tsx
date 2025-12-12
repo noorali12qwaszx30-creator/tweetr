@@ -421,12 +421,18 @@ export function UserManagement() {
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="phone">رقم الهاتف</Label>
+                <Label htmlFor="phone">رقم الهاتف (11 رقم)</Label>
                 <Input
                   id="phone"
-                  placeholder="07XX XXX XXXX"
+                  placeholder="07XXXXXXXXX"
                   value={newUser.phone}
-                  onChange={(e) => setNewUser({ ...newUser, phone: e.target.value })}
+                  onChange={(e) => {
+                    const value = e.target.value.replace(/\D/g, '').slice(0, 11);
+                    setNewUser({ ...newUser, phone: value });
+                  }}
+                  inputMode="numeric"
+                  pattern="[0-9]{11}"
+                  maxLength={11}
                 />
               </div>
               <div className="space-y-2">
@@ -571,11 +577,17 @@ export function UserManagement() {
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="edit_phone">رقم الهاتف</Label>
+              <Label htmlFor="edit_phone">رقم الهاتف (11 رقم)</Label>
               <Input
                 id="edit_phone"
                 value={editForm.phone}
-                onChange={(e) => setEditForm({ ...editForm, phone: e.target.value })}
+                onChange={(e) => {
+                  const value = e.target.value.replace(/\D/g, '').slice(0, 11);
+                  setEditForm({ ...editForm, phone: value });
+                }}
+                inputMode="numeric"
+                pattern="[0-9]{11}"
+                maxLength={11}
               />
             </div>
             <div className="space-y-2">
