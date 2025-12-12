@@ -512,13 +512,13 @@ export default function CashierDashboard() {
             <div className="bg-card border border-border rounded-xl p-4">
               <h3 className="font-bold text-sm mb-3 flex items-center gap-2 text-success">
                 <CheckCircle className="w-4 h-4" />
-                الطلبات المكتملة ({orders.filter(o => o.status === 'delivered').length})
+                الطلبات المكتملة ({orders.filter(o => o.status === 'delivered' && o.type === 'delivery').length})
               </h3>
               <div className="space-y-3 max-h-64 overflow-y-auto">
-                {orders.filter(o => o.status === 'delivered').length === 0 ? (
+                {orders.filter(o => o.status === 'delivered' && o.type === 'delivery').length === 0 ? (
                   <p className="text-center text-muted-foreground text-sm py-4">لا توجد طلبات مكتملة</p>
                 ) : (
-                  orders.filter(o => o.status === 'delivered').map(order => (
+                  orders.filter(o => o.status === 'delivered' && o.type === 'delivery').map(order => (
                     <div 
                       key={order.id} 
                       className="bg-success/10 border border-success/20 rounded-lg p-3 cursor-pointer hover:bg-success/20 transition-colors"
@@ -555,13 +555,13 @@ export default function CashierDashboard() {
             <div className="bg-card border border-border rounded-xl p-4">
               <h3 className="font-bold text-sm mb-3 flex items-center gap-2 text-destructive">
                 <XCircle className="w-4 h-4" />
-                الطلبات الملغية ({orders.filter(o => o.status === 'cancelled').length})
+                الطلبات الملغية ({orders.filter(o => o.status === 'cancelled' && o.type === 'delivery').length})
               </h3>
               <div className="space-y-3 max-h-64 overflow-y-auto">
-                {orders.filter(o => o.status === 'cancelled').length === 0 ? (
+                {orders.filter(o => o.status === 'cancelled' && o.type === 'delivery').length === 0 ? (
                   <p className="text-center text-muted-foreground text-sm py-4">لا توجد طلبات ملغية</p>
                 ) : (
-                  orders.filter(o => o.status === 'cancelled').map(order => (
+                  orders.filter(o => o.status === 'cancelled' && o.type === 'delivery').map(order => (
                     <div 
                       key={order.id} 
                       className="bg-destructive/10 border border-destructive/20 rounded-lg p-3 cursor-pointer hover:bg-destructive/20 transition-colors"
