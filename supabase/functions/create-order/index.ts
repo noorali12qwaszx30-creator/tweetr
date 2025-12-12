@@ -73,12 +73,15 @@ serve(async (req) => {
       );
     }
 
-    // Phone validation only for delivery orders, not takeaway
-    if (orderData.type === 'delivery' && (!orderData.customer_phone || orderData.customer_phone.trim().length < 8)) {
-      return new Response(
-        JSON.stringify({ error: 'رقم الهاتف مطلوب (8 أرقام على الأقل)' }),
-        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
+    // Phone validation only for delivery orders - must be exactly 11 digits
+    if (orderData.type === 'delivery') {
+      const phoneDigits = orderData.customer_phone?.replace(/\D/g, '') || '';
+      if (phoneDigits.length !== 11) {
+        return new Response(
+          JSON.stringify({ error: 'رقم الهاتف يجب أن يكون 11 رقم بالضبط' }),
+          { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
     }
 
     if (!orderData.items || orderData.items.length === 0) {

@@ -326,9 +326,15 @@ export default function CashierDashboard() {
                 <div className="relative">
                   <Phone className="absolute right-2 top-1/2 -translate-y-1/2 w-3 h-3 text-muted-foreground" />
                   <Input
-                    placeholder="رقم الهاتف"
+                    placeholder="رقم الهاتف (11 رقم)"
                     value={customerPhone}
-                    onChange={(e) => setCustomerPhone(e.target.value)}
+                    onChange={(e) => {
+                      const value = e.target.value.replace(/\D/g, '').slice(0, 11);
+                      setCustomerPhone(value);
+                    }}
+                    inputMode="numeric"
+                    pattern="[0-9]{11}"
+                    maxLength={11}
                     className="pr-7 h-9 text-sm"
                   />
                 </div>
