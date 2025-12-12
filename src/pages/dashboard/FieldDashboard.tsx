@@ -4,12 +4,12 @@ import { useSupabaseOrders, OrderWithItems } from '@/hooks/useSupabaseOrders';
 import { OrderCard } from '@/components/OrderCard';
 import { DeliveryPersonSelector } from '@/components/DeliveryPersonSelector';
 import { QuickAccessReturnButton } from '@/components/admin/QuickAccessReturnButton';
+import { LogoutConfirmButton } from '@/components/LogoutConfirmButton';
 import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
 import { ROLE_LABELS } from '@/types';
 import {
   Users,
-  LogOut,
   ClipboardList,
   CheckCircle,
   Truck,
@@ -89,9 +89,6 @@ export default function FieldDashboard() {
               <p className="text-[10px] sm:text-xs text-muted-foreground">{role ? ROLE_LABELS[role] : ''}</p>
             </div>
           </div>
-          <Button variant="ghost" size="icon" className="h-8 w-8 sm:h-10 sm:w-10" onClick={clearRole}>
-            <LogOut className="w-4 h-4 sm:w-5 sm:h-5" />
-          </Button>
         </div>
       </header>
 
@@ -236,13 +233,7 @@ export default function FieldDashboard() {
                   <p className="text-sm text-muted-foreground">تفاصيل حسابات الدلفري</p>
                 </div>
               </Button>
-              <Button variant="destructive" size="lg" className="justify-start h-auto py-4" onClick={clearRole}>
-                <LogOut className="w-5 h-5 ml-3" />
-                <div className="text-right">
-                  <p className="font-semibold">تغيير الدور</p>
-                  <p className="text-sm text-destructive-foreground/70">العودة لاختيار الدور</p>
-                </div>
-              </Button>
+              <LogoutConfirmButton />
             </div>
           </div>
         )}
