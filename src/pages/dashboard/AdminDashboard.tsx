@@ -5,6 +5,7 @@ import { useShift } from '@/contexts/ShiftContext';
 import { Button } from '@/components/ui/button';
 import { CancellationReasonsManager } from '@/components/CancellationReasonsManager';
 import { UserManagement } from '@/components/admin/UserManagement';
+import { QuickAccessPanel } from '@/components/admin/QuickAccessPanel';
 import { KPICard } from '@/components/admin/KPICard';
 import { OrdersChart, WeeklyChart } from '@/components/admin/OrdersChart';
 import { DriverPerformance } from '@/components/admin/DriverPerformance';
@@ -46,7 +47,7 @@ type MainTab = 'home' | 'menu' | 'orders' | 'stats' | 'delivery' | 'settings';
 // Sub-tabs for each main section
 type OrdersSubTab = 'completed' | 'cancelled';
 type StatsSubTab = 'overview' | 'items' | 'customers' | 'finance';
-type SettingsSubTab = 'general' | 'users' | 'reasons';
+type SettingsSubTab = 'general' | 'users' | 'reasons' | 'quickaccess';
 
 export default function AdminDashboard() {
   const { role, clearRole } = useRole();
@@ -471,10 +472,11 @@ export default function AdminDashboard() {
           <div className="space-y-4">
             {/* Sub-tabs */}
             <Tabs value={settingsSubTab} onValueChange={(v) => setSettingsSubTab(v as SettingsSubTab)}>
-              <TabsList className="grid w-full grid-cols-3">
-                <TabsTrigger value="general">عام</TabsTrigger>
-                <TabsTrigger value="users">المستخدمين</TabsTrigger>
-                <TabsTrigger value="reasons">أسباب الإلغاء</TabsTrigger>
+              <TabsList className="grid w-full grid-cols-4">
+                <TabsTrigger value="general" className="text-xs px-1">عام</TabsTrigger>
+                <TabsTrigger value="quickaccess" className="text-xs px-1">دخول سريع</TabsTrigger>
+                <TabsTrigger value="users" className="text-xs px-1">المستخدمين</TabsTrigger>
+                <TabsTrigger value="reasons" className="text-xs px-1">أسباب الإلغاء</TabsTrigger>
               </TabsList>
 
               <TabsContent value="general" className="space-y-4 mt-4">
@@ -511,6 +513,10 @@ export default function AdminDashboard() {
                     <p className="text-sm text-destructive-foreground/70">العودة لاختيار الدور</p>
                   </div>
                 </Button>
+              </TabsContent>
+
+              <TabsContent value="quickaccess" className="mt-4">
+                <QuickAccessPanel />
               </TabsContent>
 
               <TabsContent value="users" className="mt-4">
