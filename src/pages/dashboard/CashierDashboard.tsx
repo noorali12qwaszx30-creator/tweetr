@@ -35,7 +35,6 @@ import {
   ChevronDown,
   Pencil
 } from 'lucide-react';
-import { OrderTimer } from '@/components/OrderTimer';
 import {
   Select,
   SelectContent,
@@ -550,26 +549,22 @@ export default function CashierDashboard() {
             ) : (
               <div className="grid gap-3">
                 {activeOrders.map(order => (
-                  <div key={order.id} className="relative">
-                    <div className="absolute top-2 left-2 z-10">
-                      <OrderTimer startTime={new Date(order.created_at)} />
-                    </div>
-                    <OrderCard
-                      order={order}
-                      actions={
-                        <>
-                          <Button variant="outline" size="sm" onClick={() => setEditingOrder(order)}>
-                            <Pencil className="w-3 h-3 ml-1" />
-                            تعديل
-                          </Button>
-                          <Button variant="destructive" size="sm" onClick={() => setCancellingOrder(order)}>
-                            <XCircle className="w-3 h-3 ml-1" />
-                            إلغاء
-                          </Button>
-                        </>
-                      }
-                    />
-                  </div>
+                  <OrderCard
+                    key={order.id}
+                    order={order}
+                    actions={
+                      <>
+                        <Button variant="outline" size="sm" onClick={() => handleEditOrder(order)}>
+                          <Pencil className="w-3 h-3 ml-1" />
+                          تعديل
+                        </Button>
+                        <Button variant="destructive" size="sm" onClick={() => setCancellingOrder(order)}>
+                          <XCircle className="w-3 h-3 ml-1" />
+                          إلغاء
+                        </Button>
+                      </>
+                    }
+                  />
                 ))}
               </div>
             )}
