@@ -50,39 +50,39 @@ export default function KitchenDashboard() {
     <div className="min-h-screen bg-background">
       {/* Header */}
       <header className="bg-card border-b border-border shadow-soft sticky top-0 z-50">
-        <div className="container flex items-center justify-between h-16">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-destructive flex items-center justify-center">
-              <ChefHat className="w-5 h-5 text-destructive-foreground" />
+        <div className="container flex items-center justify-between h-14 sm:h-16">
+          <div className="flex items-center gap-2 sm:gap-3">
+            <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-xl bg-destructive flex items-center justify-center">
+              <ChefHat className="w-4 h-4 sm:w-5 sm:h-5 text-destructive-foreground" />
             </div>
             <div>
-              <h1 className="font-bold text-foreground">المطبخ</h1>
-              <p className="text-xs text-muted-foreground">{role ? ROLE_LABELS[role] : ''}</p>
+              <h1 className="font-bold text-foreground text-sm sm:text-base">المطبخ</h1>
+              <p className="text-[10px] sm:text-xs text-muted-foreground">{role ? ROLE_LABELS[role] : ''}</p>
             </div>
           </div>
-          <div className="flex items-center gap-4">
-            <div className="text-sm">
+          <div className="flex items-center gap-2 sm:gap-4">
+            <div className="text-xs sm:text-sm">
               <span className="text-muted-foreground">الطلبات: </span>
               <span className="font-bold text-primary">{allKitchenOrders.length}</span>
             </div>
-            <Button variant="ghost" size="icon" onClick={clearRole}>
-              <LogOut className="w-5 h-5" />
+            <Button variant="ghost" size="icon" className="h-8 w-8 sm:h-10 sm:w-10" onClick={clearRole}>
+              <LogOut className="w-4 h-4 sm:w-5 sm:h-5" />
             </Button>
           </div>
         </div>
       </header>
 
       {/* Main Content */}
-      <main className="container py-6 pb-24">
+      <main className="container py-4 sm:py-6 pb-24">
         {activeTab === 'orders' && (
           <>
             {allKitchenOrders.length === 0 ? (
-              <div className="text-center py-20 text-muted-foreground">
-                <ChefHat className="w-16 h-16 mx-auto mb-4 opacity-50" />
-                <p className="text-xl">لا توجد طلبات للتحضير</p>
+              <div className="text-center py-12 sm:py-20 text-muted-foreground">
+                <ChefHat className="w-12 h-12 sm:w-16 sm:h-16 mx-auto mb-4 opacity-50" />
+                <p className="text-lg sm:text-xl">لا توجد طلبات للتحضير</p>
               </div>
             ) : (
-              <div className="grid sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 sm:gap-4">
                 {allKitchenOrders.map(order => {
                   const hasNotes = !!order.notes || order.items.some((item: DbOrderItem) => !!item.notes);
                   const isPreparing = order.status === 'preparing';
