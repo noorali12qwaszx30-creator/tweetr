@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { useRole } from '@/contexts/RoleContext';
+import { useAuth } from '@/contexts/AuthContext';
 import { useSupabaseOrders, OrderWithItems } from '@/hooks/useSupabaseOrders';
 import { useShift } from '@/contexts/ShiftContext';
 import { Button } from '@/components/ui/button';
@@ -50,7 +51,8 @@ type StatsSubTab = 'overview' | 'items' | 'customers' | 'finance';
 type SettingsSubTab = 'general' | 'users' | 'reasons' | 'quickaccess';
 
 export default function AdminDashboard() {
-  const { role, clearRole } = useRole();
+  const { role } = useRole();
+  const { user } = useAuth();
   const { orders, loading, refetch } = useSupabaseOrders();
   const { currentShift, previousShift, activityLogs, lastUpdated, resetShift, addActivityLog } = useShift();
   
@@ -169,7 +171,7 @@ export default function AdminDashboard() {
             </div>
             <div>
               <h1 className="font-bold text-foreground text-sm">المدير التنفيذي</h1>
-              <p className="text-xs text-muted-foreground">{role ? ROLE_LABELS[role] : ''}</p>
+              <p className="text-xs text-muted-foreground">{user?.fullName || user?.username || ''}</p>
             </div>
           </div>
         </div>

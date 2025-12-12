@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { useRole } from '@/contexts/RoleContext';
+import { useAuth } from '@/contexts/AuthContext';
 import { useSupabaseOrders } from '@/hooks/useSupabaseOrders';
 import { OrderCard } from '@/components/OrderCard';
 import { QuickAccessReturnButton } from '@/components/admin/QuickAccessReturnButton';
@@ -24,7 +25,8 @@ import {
 type TabType = 'orders' | 'delivering' | 'stats' | 'ready' | 'settings';
 
 export default function DeliveryDashboard() {
-  const { role, clearRole } = useRole();
+  const { role } = useRole();
+  const { user } = useAuth();
   const { orders, updateOrderStatus, acceptDelivery, rejectDelivery, loading } = useSupabaseOrders();
   const [activeTab, setActiveTab] = useState<TabType>('orders');
 
@@ -79,7 +81,7 @@ export default function DeliveryDashboard() {
             </div>
             <div>
               <h1 className="font-bold text-foreground text-sm sm:text-base">الدلفري</h1>
-              <p className="text-[10px] sm:text-xs text-muted-foreground">{role ? ROLE_LABELS[role] : ''}</p>
+              <p className="text-[10px] sm:text-xs text-muted-foreground">{user?.fullName || user?.username || ''}</p>
             </div>
           </div>
         </div>

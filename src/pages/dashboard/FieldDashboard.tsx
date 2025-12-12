@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { useRole } from '@/contexts/RoleContext';
+import { useAuth } from '@/contexts/AuthContext';
 import { useSupabaseOrders, OrderWithItems } from '@/hooks/useSupabaseOrders';
 import { OrderCard } from '@/components/OrderCard';
 import { DeliveryPersonSelector } from '@/components/DeliveryPersonSelector';
@@ -23,7 +24,8 @@ import {
 type TabType = 'orders' | 'ready' | 'delivering' | 'cancelled' | 'admin';
 
 export default function FieldDashboard() {
-  const { role, clearRole } = useRole();
+  const { role } = useRole();
+  const { user } = useAuth();
   const { orders, updateOrderStatus, assignDelivery, cancelOrder, loading } = useSupabaseOrders();
   const [activeTab, setActiveTab] = useState<TabType>('orders');
   const [selectorOpen, setSelectorOpen] = useState(false);
@@ -86,7 +88,7 @@ export default function FieldDashboard() {
             </div>
             <div>
               <h1 className="font-bold text-foreground text-sm sm:text-base">الميدان</h1>
-              <p className="text-[10px] sm:text-xs text-muted-foreground">{role ? ROLE_LABELS[role] : ''}</p>
+              <p className="text-[10px] sm:text-xs text-muted-foreground">{user?.fullName || user?.username || ''}</p>
             </div>
           </div>
         </div>
