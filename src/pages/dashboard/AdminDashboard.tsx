@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button';
 import { CancellationReasonsManager } from '@/components/CancellationReasonsManager';
 import { UserManagement } from '@/components/admin/UserManagement';
 import { QuickAccessPanel } from '@/components/admin/QuickAccessPanel';
+import { LogoutConfirmButton } from '@/components/LogoutConfirmButton';
 import { KPICard } from '@/components/admin/KPICard';
 import { OrdersChart, WeeklyChart } from '@/components/admin/OrdersChart';
 import { DriverPerformance } from '@/components/admin/DriverPerformance';
@@ -21,7 +22,6 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { ROLE_LABELS } from '@/types';
 import {
   Settings,
-  LogOut,
   Users,
   BarChart3,
   RefreshCcw,
@@ -172,9 +172,6 @@ export default function AdminDashboard() {
               <p className="text-xs text-muted-foreground">{role ? ROLE_LABELS[role] : ''}</p>
             </div>
           </div>
-          <Button variant="ghost" size="icon" onClick={clearRole}>
-            <LogOut className="w-5 h-5" />
-          </Button>
         </div>
       </header>
 
@@ -501,18 +498,7 @@ export default function AdminDashboard() {
                   </div>
                 </Button>
                 
-                <Button 
-                  variant="destructive" 
-                  size="lg" 
-                  className="w-full justify-start h-auto py-4"
-                  onClick={clearRole}
-                >
-                  <LogOut className="w-5 h-5 ml-3" />
-                  <div className="text-right">
-                    <p className="font-semibold">تغيير الدور</p>
-                    <p className="text-sm text-destructive-foreground/70">العودة لاختيار الدور</p>
-                  </div>
-                </Button>
+                <LogoutConfirmButton />
               </TabsContent>
 
               <TabsContent value="quickaccess" className="mt-4">

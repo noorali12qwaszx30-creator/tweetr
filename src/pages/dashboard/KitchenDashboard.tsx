@@ -3,12 +3,12 @@ import { useRole } from '@/contexts/RoleContext';
 import { useSupabaseOrders, DbOrderItem } from '@/hooks/useSupabaseOrders';
 import { OrderTimer } from '@/components/OrderTimer';
 import { QuickAccessReturnButton } from '@/components/admin/QuickAccessReturnButton';
+import { LogoutConfirmButton } from '@/components/LogoutConfirmButton';
 import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
 import { ROLE_LABELS } from '@/types';
 import { 
   ChefHat, 
-  LogOut, 
   Clock, 
   CheckCircle, 
   Loader2,
@@ -67,9 +67,6 @@ export default function KitchenDashboard() {
               <span className="text-muted-foreground">الطلبات: </span>
               <span className="font-bold text-primary">{allKitchenOrders.length}</span>
             </div>
-            <Button variant="ghost" size="icon" className="h-8 w-8 sm:h-10 sm:w-10" onClick={clearRole}>
-              <LogOut className="w-4 h-4 sm:w-5 sm:h-5" />
-            </Button>
           </div>
         </div>
       </header>
@@ -209,18 +206,7 @@ export default function KitchenDashboard() {
           <div className="space-y-4">
             <h2 className="text-xl font-bold">الإعدادات</h2>
             <div className="grid gap-4">
-              <Button 
-                variant="destructive" 
-                size="lg" 
-                className="w-full justify-start h-auto py-4"
-                onClick={clearRole}
-              >
-                <LogOut className="w-5 h-5 ml-3" />
-                <div className="text-right">
-                  <p className="font-semibold">تسجيل الخروج</p>
-                  <p className="text-sm text-destructive-foreground/70">العودة لاختيار الدور</p>
-                </div>
-              </Button>
+              <LogoutConfirmButton />
             </div>
           </div>
         )}

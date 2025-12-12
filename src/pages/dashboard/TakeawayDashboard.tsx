@@ -7,11 +7,11 @@ import { Textarea } from '@/components/ui/textarea';
 import { OrderCard } from '@/components/OrderCard';
 import { CancelOrderDialog } from '@/components/CancelOrderDialog';
 import { QuickAccessReturnButton } from '@/components/admin/QuickAccessReturnButton';
+import { LogoutConfirmButton } from '@/components/LogoutConfirmButton';
 import { toast } from 'sonner';
 import { ROLE_LABELS, Order } from '@/types';
 import {
   UtensilsCrossed,
-  LogOut,
   ShoppingCart,
   Trash2,
   Send,
@@ -303,9 +303,6 @@ export default function TakeawayDashboard() {
               <p className="text-xs text-muted-foreground">{role ? ROLE_LABELS[role] : ''}</p>
             </div>
           </div>
-          <Button variant="ghost" size="icon" onClick={clearRole}>
-            <LogOut className="w-5 h-5" />
-          </Button>
         </div>
       </header>
 
@@ -608,18 +605,7 @@ export default function TakeawayDashboard() {
           <div className="space-y-4">
             <h2 className="text-lg font-bold">الإعدادات</h2>
             <div className="grid gap-4">
-              <Button 
-                variant="destructive" 
-                size="lg" 
-                className="w-full justify-start h-auto py-4"
-                onClick={clearRole}
-              >
-                <LogOut className="w-5 h-5 ml-3" />
-                <div className="text-right">
-                  <p className="font-semibold">تسجيل الخروج</p>
-                  <p className="text-sm text-destructive-foreground/70">العودة لاختيار الدور</p>
-                </div>
-              </Button>
+              <LogoutConfirmButton />
             </div>
           </div>
         )}
