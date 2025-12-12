@@ -201,6 +201,13 @@ export function useSupabaseOrders() {
 
   // Update order status
   const updateOrderStatus = async (orderId: string, status: DbOrder['status']) => {
+    // Optimistic update - immediately update local state
+    setOrders(prevOrders => 
+      prevOrders.map(order => 
+        order.id === orderId ? { ...order, status } : order
+      )
+    );
+
     const { error } = await supabase
       .from('orders')
       .update({ status })
@@ -209,6 +216,8 @@ export function useSupabaseOrders() {
     if (error) {
       console.error('Error updating order status:', error);
       toast.error('حدث خطأ في تحديث حالة الطلب');
+      // Revert on error
+      fetchOrders();
       return false;
     }
 
@@ -280,6 +289,15 @@ export function useSupabaseOrders() {
 
   // Cancel order
   const cancelOrder = async (orderId: string, reason?: string) => {
+    // Optimistic update - immediately update local state
+    setOrders(prevOrders => 
+      prevOrders.map(order => 
+        order.id === orderId 
+          ? { ...order, status: 'cancelled' as const, cancellation_reason: reason || null } 
+          : order
+      )
+    );
+
     const { error } = await supabase
       .from('orders')
       .update({
@@ -291,6 +309,8 @@ export function useSupabaseOrders() {
     if (error) {
       console.error('Error cancelling order:', error);
       toast.error('حدث خطأ في إلغاء الطلب');
+      // Revert on error
+      fetchOrders();
       return false;
     }
 
