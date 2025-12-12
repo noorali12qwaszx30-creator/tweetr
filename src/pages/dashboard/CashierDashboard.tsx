@@ -505,6 +505,86 @@ export default function CashierDashboard() {
         {activeTab === 'settings' && (
           <div className="space-y-4">
             <h2 className="text-xl font-bold">الإعدادات</h2>
+            
+            {/* Completed Orders */}
+            <div className="bg-card border border-border rounded-xl p-4">
+              <h3 className="font-bold text-sm mb-3 flex items-center gap-2 text-success">
+                <CheckCircle className="w-4 h-4" />
+                الطلبات المكتملة ({orders.filter(o => o.status === 'delivered').length})
+              </h3>
+              <div className="space-y-3 max-h-64 overflow-y-auto">
+                {orders.filter(o => o.status === 'delivered').length === 0 ? (
+                  <p className="text-center text-muted-foreground text-sm py-4">لا توجد طلبات مكتملة</p>
+                ) : (
+                  orders.filter(o => o.status === 'delivered').map(order => (
+                    <div key={order.id} className="bg-success/10 border border-success/20 rounded-lg p-3">
+                      <div className="flex items-center justify-between mb-2">
+                        <span className="font-bold text-success">طلب #{order.order_number}</span>
+                        <span className="text-xs text-muted-foreground">
+                          {new Date(order.delivered_at || order.updated_at).toLocaleString('ar-IQ')}
+                        </span>
+                      </div>
+                      <div className="text-sm space-y-1">
+                        <p className="flex items-center gap-2">
+                          <User className="w-3 h-3" />
+                          {order.customer_name}
+                        </p>
+                        <p className="flex items-center gap-2">
+                          <Phone className="w-3 h-3" />
+                          {order.customer_phone}
+                        </p>
+                        <p className="font-semibold text-primary">
+                          المجموع: {Number(order.total_price).toLocaleString()} د.ع
+                        </p>
+                      </div>
+                    </div>
+                  ))
+                )}
+              </div>
+            </div>
+
+            {/* Cancelled Orders */}
+            <div className="bg-card border border-border rounded-xl p-4">
+              <h3 className="font-bold text-sm mb-3 flex items-center gap-2 text-destructive">
+                <XCircle className="w-4 h-4" />
+                الطلبات الملغية ({orders.filter(o => o.status === 'cancelled').length})
+              </h3>
+              <div className="space-y-3 max-h-64 overflow-y-auto">
+                {orders.filter(o => o.status === 'cancelled').length === 0 ? (
+                  <p className="text-center text-muted-foreground text-sm py-4">لا توجد طلبات ملغية</p>
+                ) : (
+                  orders.filter(o => o.status === 'cancelled').map(order => (
+                    <div key={order.id} className="bg-destructive/10 border border-destructive/20 rounded-lg p-3">
+                      <div className="flex items-center justify-between mb-2">
+                        <span className="font-bold text-destructive">طلب #{order.order_number}</span>
+                        <span className="text-xs text-muted-foreground">
+                          {new Date(order.cancelled_at || order.updated_at).toLocaleString('ar-IQ')}
+                        </span>
+                      </div>
+                      <div className="text-sm space-y-1">
+                        <p className="flex items-center gap-2">
+                          <User className="w-3 h-3" />
+                          {order.customer_name}
+                        </p>
+                        <p className="flex items-center gap-2">
+                          <Phone className="w-3 h-3" />
+                          {order.customer_phone}
+                        </p>
+                        {order.cancellation_reason && (
+                          <p className="text-destructive text-xs">
+                            سبب الإلغاء: {order.cancellation_reason}
+                          </p>
+                        )}
+                        <p className="font-semibold text-primary">
+                          المجموع: {Number(order.total_price).toLocaleString()} د.ع
+                        </p>
+                      </div>
+                    </div>
+                  ))
+                )}
+              </div>
+            </div>
+
             <div className="grid gap-4">
               <LogoutConfirmButton />
             </div>
