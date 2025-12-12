@@ -3,6 +3,7 @@ import { useRole } from '@/contexts/RoleContext';
 import { useSupabaseOrders, OrderWithItems } from '@/hooks/useSupabaseOrders';
 import { OrderCard } from '@/components/OrderCard';
 import { DeliveryPersonSelector } from '@/components/DeliveryPersonSelector';
+import { QuickAccessReturnButton } from '@/components/admin/QuickAccessReturnButton';
 import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
 import { ROLE_LABELS } from '@/types';
@@ -75,6 +76,7 @@ export default function FieldDashboard() {
 
   return (
     <div className="min-h-screen bg-background">
+      <QuickAccessReturnButton />
       {/* Header */}
       <header className="bg-card border-b border-border shadow-soft sticky top-0 z-50">
         <div className="container flex items-center justify-between h-14 sm:h-16">

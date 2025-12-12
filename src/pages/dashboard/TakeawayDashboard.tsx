@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { OrderCard } from '@/components/OrderCard';
 import { CancelOrderDialog } from '@/components/CancelOrderDialog';
+import { QuickAccessReturnButton } from '@/components/admin/QuickAccessReturnButton';
 import { toast } from 'sonner';
 import { ROLE_LABELS, Order } from '@/types';
 import {
@@ -289,6 +290,7 @@ export default function TakeawayDashboard() {
 
   return (
     <div className="min-h-screen bg-background">
+      <QuickAccessReturnButton />
       {/* Header */}
       <header className="bg-card border-b border-border shadow-soft sticky top-0 z-50">
         <div className="container flex items-center justify-between h-14">
