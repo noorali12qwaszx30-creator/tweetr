@@ -32,8 +32,10 @@ import {
   Loader2,
   Star,
   GripVertical,
-  ChevronDown
+  ChevronDown,
+  Pencil
 } from 'lucide-react';
+import { OrderTimer } from '@/components/OrderTimer';
 import {
   Select,
   SelectContent,
@@ -144,6 +146,7 @@ export default function CashierDashboard() {
   const [orderNotes, setOrderNotes] = useState('');
   const [cancellingOrder, setCancellingOrder] = useState<OrderWithItems | null>(null);
   const [selectedOrderDetails, setSelectedOrderDetails] = useState<OrderWithItems | null>(null);
+  const [editingOrder, setEditingOrder] = useState<OrderWithItems | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
 
@@ -262,8 +265,31 @@ export default function CashierDashboard() {
     }
   };
 
-  const handleMarkReady = async (orderId: string) => {
-    await updateOrderStatus(orderId, 'ready');
+  const handleEditOrder = (order: OrderWithItems) => {
+    // Populate cart with order items for editing
+    setCart(order.items.map(item => ({
+      menuItem: {
+        id: item.menu_item_id || '',
+        name: item.menu_item_name,
+        price: Number(item.menu_item_price),
+        image: null,
+        category: '',
+        is_available: true,
+        display_order: 0,
+        created_at: '',
+        updated_at: '',
+      },
+      quantity: item.quantity,
+      notes: item.notes || undefined,
+    })));
+    setCustomerName(order.customer_name);
+    setCustomerPhone(order.customer_phone);
+    setCustomerAddress(order.customer_address || '');
+    setSelectedAreaId(order.delivery_area_id || '');
+    setOrderNotes(order.notes || '');
+    setEditingOrder(null);
+    setActiveTab('menu');
+    toast.info('تم تحميل بيانات الطلب للتعديل - أرسل الطلب الجديد وألغِ القديم');
   };
 
   const handleCancelOrder = async (orderId: string, reason?: string) => {
@@ -524,24 +550,26 @@ export default function CashierDashboard() {
             ) : (
               <div className="grid gap-3">
                 {activeOrders.map(order => (
-                  <OrderCard
-                    key={order.id}
-                    order={order}
-                    actions={
-                      <>
-                        {order.status !== 'ready' && order.status !== 'delivering' && (
-                          <Button variant="success" size="sm" onClick={() => handleMarkReady(order.id)}>
-                            <CheckCircle className="w-3 h-3 ml-1" />
-                            نقل للجاهز
+                  <div key={order.id} className="relative">
+                    <div className="absolute top-2 left-2 z-10">
+                      <OrderTimer startTime={new Date(order.created_at)} />
+                    </div>
+                    <OrderCard
+                      order={order}
+                      actions={
+                        <>
+                          <Button variant="outline" size="sm" onClick={() => setEditingOrder(order)}>
+                            <Pencil className="w-3 h-3 ml-1" />
+                            تعديل
                           </Button>
-                        )}
-                        <Button variant="destructive" size="sm" onClick={() => setCancellingOrder(order)}>
-                          <XCircle className="w-3 h-3 ml-1" />
-                          إلغاء
-                        </Button>
-                      </>
-                    }
-                  />
+                          <Button variant="destructive" size="sm" onClick={() => setCancellingOrder(order)}>
+                            <XCircle className="w-3 h-3 ml-1" />
+                            إلغاء
+                          </Button>
+                        </>
+                      }
+                    />
+                  </div>
                 ))}
               </div>
             )}

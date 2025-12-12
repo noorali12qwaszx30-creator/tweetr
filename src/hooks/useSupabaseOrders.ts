@@ -19,6 +19,7 @@ export interface DbOrder {
   customer_name: string;
   customer_phone: string;
   customer_address: string | null;
+  delivery_area_id: string | null;
   status: 'pending' | 'preparing' | 'ready' | 'delivering' | 'delivered' | 'cancelled';
   type: 'delivery' | 'takeaway';
   notes: string | null;
