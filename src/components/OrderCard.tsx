@@ -119,7 +119,7 @@ export function OrderCard({
         <div className="mb-3 p-2 bg-info/10 border border-info/30 rounded-lg">
           <p className="text-sm text-info flex items-center gap-2">
             <Truck className="w-4 h-4" />
-            الدلفري: {order.delivery_person_name}
+            موظف التوصيل: {order.delivery_person_name}
           </p>
         </div>
       )}

@@ -135,7 +135,7 @@ export function OrderDetailsDialog({ order, open, onOpenChange }: OrderDetailsDi
               {order.delivery_person_name && (
                 <p className="flex items-center gap-2">
                   <Truck className="w-3 h-3 text-muted-foreground" />
-                  <span className="text-muted-foreground">الدلفري:</span>
+                  <span className="text-muted-foreground">موظف التوصيل:</span>
                   <span className="font-medium">{order.delivery_person_name}</span>
                 </p>
               )}

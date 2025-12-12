@@ -98,7 +98,7 @@ export function DeliveryPersonSelector({
             onClick={handleConfirm}
             disabled={!selectedId || drivers.length === 0}
           >
-            تعيين الدلفري
+            تعيين موظف التوصيل
           </Button>
         </div>
       </DialogContent>

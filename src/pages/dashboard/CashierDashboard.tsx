@@ -296,7 +296,7 @@ export default function CashierDashboard() {
               <ShoppingCart className="w-4 h-4 text-primary-foreground" />
             </div>
             <div>
-              <h1 className="font-bold text-foreground text-sm">الكاشيرة</h1>
+              <h1 className="font-bold text-foreground text-sm">كاشير</h1>
               <p className="text-xs text-muted-foreground">{user?.fullName || user?.username || ''}</p>
             </div>
           </div>
@@ -537,7 +537,7 @@ export default function CashierDashboard() {
                         </p>
                         {order.delivery_person_name && (
                           <p className="flex items-center gap-2 text-muted-foreground">
-                            <span>الدلفري:</span>
+                            <span>موظف التوصيل:</span>
                             <span className="font-medium text-foreground">{order.delivery_person_name}</span>
                           </p>
                         )}
