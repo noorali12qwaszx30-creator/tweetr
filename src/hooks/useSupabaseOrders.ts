@@ -166,6 +166,7 @@ export function useSupabaseOrders() {
     customer_name: string;
     customer_phone: string;
     customer_address?: string;
+    delivery_area_id?: string;
     type: 'delivery' | 'takeaway';
     notes?: string;
     cashier_id?: string;

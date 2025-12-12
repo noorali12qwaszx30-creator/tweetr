@@ -18,6 +18,7 @@ interface OrderRequest {
   customer_name: string;
   customer_phone: string;
   customer_address?: string;
+  delivery_area_id?: string;
   type: 'delivery' | 'takeaway';
   notes?: string;
   cashier_id?: string;
@@ -214,6 +215,7 @@ serve(async (req) => {
         customer_name: orderData.customer_name.trim().slice(0, 100),
         customer_phone: orderData.customer_phone.trim().slice(0, 20),
         customer_address: orderData.customer_address?.trim().slice(0, 500) || null,
+        delivery_area_id: orderData.delivery_area_id || null,
         type: orderData.type,
         notes: orderData.notes?.trim().slice(0, 500) || null,
         total_price: serverCalculatedTotal, // Use server-calculated total

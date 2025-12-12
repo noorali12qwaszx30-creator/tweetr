@@ -3,6 +3,7 @@ import { useRole } from '@/contexts/RoleContext';
 import { useAuth } from '@/contexts/AuthContext';
 import { useSupabaseOrders, DbMenuItem, OrderWithItems } from '@/hooks/useSupabaseOrders';
 import { useMenuItems, MenuItem } from '@/hooks/useMenuItems';
+import { useDeliveryAreas } from '@/hooks/useDeliveryAreas';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
@@ -30,8 +31,16 @@ import {
   XCircle,
   Loader2,
   Star,
-  GripVertical
+  GripVertical,
+  ChevronDown
 } from 'lucide-react';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 import {
   DndContext,
   closestCenter,
@@ -125,11 +134,13 @@ export default function CashierDashboard() {
   const { user } = useAuth();
   const { orders, addOrder, updateOrderStatus, cancelOrder, loading } = useSupabaseOrders();
   const { menuItems, categories, loading: menuLoading, updateDisplayOrder } = useMenuItems();
+  const { activeAreas, loading: areasLoading } = useDeliveryAreas();
   const [activeTab, setActiveTab] = useState<TabType>('menu');
   const [cart, setCart] = useState<CartItem[]>([]);
   const [customerName, setCustomerName] = useState('');
   const [customerPhone, setCustomerPhone] = useState('');
   const [customerAddress, setCustomerAddress] = useState('');
+  const [selectedAreaId, setSelectedAreaId] = useState<string>('');
   const [orderNotes, setOrderNotes] = useState('');
   const [cancellingOrder, setCancellingOrder] = useState<OrderWithItems | null>(null);
   const [selectedOrderDetails, setSelectedOrderDetails] = useState<OrderWithItems | null>(null);
@@ -210,6 +221,7 @@ export default function CashierDashboard() {
     setCustomerName('');
     setCustomerPhone('');
     setCustomerAddress('');
+    setSelectedAreaId('');
     setOrderNotes('');
   };
 
@@ -221,8 +233,8 @@ export default function CashierDashboard() {
       return;
     }
 
-    if (!customerName || !customerPhone || !customerAddress) {
-      toast.error('يرجى إدخال بيانات الزبون كاملة');
+    if (!customerName || !customerPhone || !selectedAreaId) {
+      toast.error('يرجى إدخال بيانات الزبون كاملة واختيار المنطقة');
       return;
     }
 
@@ -231,6 +243,7 @@ export default function CashierDashboard() {
       customer_name: customerName,
       customer_phone: customerPhone,
       customer_address: customerAddress,
+      delivery_area_id: selectedAreaId,
       type: 'delivery',
       notes: orderNotes || undefined,
       cashier_name: role ? ROLE_LABELS[role] : 'كاشير',
@@ -338,14 +351,39 @@ export default function CashierDashboard() {
                     className="pr-7 h-9 text-sm"
                   />
                 </div>
-                <div className="relative col-span-2">
-                  <MapPin className="absolute right-2 top-1/2 -translate-y-1/2 w-3 h-3 text-muted-foreground" />
-                  <Input
-                    placeholder="العنوان"
-                    value={customerAddress}
-                    onChange={(e) => setCustomerAddress(e.target.value)}
-                    className="pr-7 h-9 text-sm"
-                  />
+                <div className="col-span-2">
+                  <Select
+                    value={selectedAreaId}
+                    onValueChange={(value) => {
+                      setSelectedAreaId(value);
+                      const area = activeAreas.find(a => a.id === value);
+                      setCustomerAddress(area?.name || '');
+                    }}
+                  >
+                    <SelectTrigger className="h-9 text-sm">
+                      <div className="flex items-center gap-2">
+                        <MapPin className="w-3 h-3 text-muted-foreground" />
+                        <SelectValue placeholder="اختر المنطقة" />
+                      </div>
+                    </SelectTrigger>
+                    <SelectContent>
+                      {areasLoading ? (
+                        <div className="flex items-center justify-center py-2">
+                          <Loader2 className="w-4 h-4 animate-spin" />
+                        </div>
+                      ) : activeAreas.length === 0 ? (
+                        <div className="text-center py-2 text-sm text-muted-foreground">
+                          لا توجد مناطق محددة
+                        </div>
+                      ) : (
+                        activeAreas.map(area => (
+                          <SelectItem key={area.id} value={area.id}>
+                            {area.name}
+                          </SelectItem>
+                        ))
+                      )}
+                    </SelectContent>
+                  </Select>
                 </div>
               </div>
             </div>

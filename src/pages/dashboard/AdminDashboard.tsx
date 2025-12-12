@@ -5,6 +5,7 @@ import { useSupabaseOrders, OrderWithItems } from '@/hooks/useSupabaseOrders';
 import { useShift } from '@/contexts/ShiftContext';
 import { Button } from '@/components/ui/button';
 import { CancellationReasonsManager } from '@/components/CancellationReasonsManager';
+import { DeliveryAreasManager } from '@/components/admin/DeliveryAreasManager';
 import { UserManagement } from '@/components/admin/UserManagement';
 import { QuickAccessPanel } from '@/components/admin/QuickAccessPanel';
 import { LogoutConfirmButton } from '@/components/LogoutConfirmButton';
@@ -48,7 +49,7 @@ type MainTab = 'home' | 'menu' | 'orders' | 'stats' | 'delivery' | 'settings';
 // Sub-tabs for each main section
 type OrdersSubTab = 'completed' | 'cancelled';
 type StatsSubTab = 'overview' | 'items' | 'customers' | 'finance';
-type SettingsSubTab = 'general' | 'users' | 'reasons' | 'quickaccess';
+type SettingsSubTab = 'general' | 'users' | 'reasons' | 'quickaccess' | 'areas';
 
 export default function AdminDashboard() {
   const { role } = useRole();
@@ -471,10 +472,11 @@ export default function AdminDashboard() {
           <div className="space-y-4">
             {/* Sub-tabs */}
             <Tabs value={settingsSubTab} onValueChange={(v) => setSettingsSubTab(v as SettingsSubTab)}>
-              <TabsList className="grid w-full grid-cols-4">
+              <TabsList className="grid w-full grid-cols-5">
                 <TabsTrigger value="general" className="text-xs px-1">عام</TabsTrigger>
                 <TabsTrigger value="quickaccess" className="text-xs px-1">دخول سريع</TabsTrigger>
                 <TabsTrigger value="users" className="text-xs px-1">المستخدمين</TabsTrigger>
+                <TabsTrigger value="areas" className="text-xs px-1">المناطق</TabsTrigger>
                 <TabsTrigger value="reasons" className="text-xs px-1">أسباب الإلغاء</TabsTrigger>
               </TabsList>
 
@@ -509,6 +511,10 @@ export default function AdminDashboard() {
 
               <TabsContent value="users" className="mt-4">
                 <UserManagement />
+              </TabsContent>
+
+              <TabsContent value="areas" className="mt-4">
+                <DeliveryAreasManager />
               </TabsContent>
 
               <TabsContent value="reasons" className="mt-4">
