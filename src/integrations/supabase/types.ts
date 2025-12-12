@@ -173,7 +173,9 @@ export type Database = {
           delivery_area_id: string | null
           delivery_person_id: string | null
           delivery_person_name: string | null
+          edited_at: string | null
           id: string
+          is_edited: boolean | null
           notes: string | null
           order_number: number
           pending_delivery_acceptance: boolean | null
@@ -196,7 +198,9 @@ export type Database = {
           delivery_area_id?: string | null
           delivery_person_id?: string | null
           delivery_person_name?: string | null
+          edited_at?: string | null
           id?: string
+          is_edited?: boolean | null
           notes?: string | null
           order_number?: number
           pending_delivery_acceptance?: boolean | null
@@ -219,7 +223,9 @@ export type Database = {
           delivery_area_id?: string | null
           delivery_person_id?: string | null
           delivery_person_name?: string | null
+          edited_at?: string | null
           id?: string
+          is_edited?: boolean | null
           notes?: string | null
           order_number?: number
           pending_delivery_acceptance?: boolean | null

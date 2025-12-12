@@ -11,3 +11,6 @@ verify_jwt = false
 
 [functions.create-order]
 verify_jwt = false
+
+[functions.update-order]
+verify_jwt = false
