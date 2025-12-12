@@ -80,7 +80,7 @@ export default function DeliveryDashboard() {
               <Truck className="w-4 h-4 sm:w-5 sm:h-5 text-info-foreground" />
             </div>
             <div>
-              <h1 className="font-bold text-foreground text-sm sm:text-base">الدلفري</h1>
+              <h1 className="font-bold text-foreground text-sm sm:text-base">موظف توصيل</h1>
               <p className="text-[10px] sm:text-xs text-muted-foreground">{user?.fullName || user?.username || ''}</p>
             </div>
           </div>

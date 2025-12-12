@@ -227,11 +227,11 @@ export function useSupabaseOrders() {
 
     if (error) {
       console.error('Error assigning delivery:', error);
-      toast.error('حدث خطأ في تعيين الدلفري');
+      toast.error('حدث خطأ في تعيين موظف التوصيل');
       return false;
     }
 
-    toast.success('تم تعيين الدلفري');
+    toast.success('تم تعيين موظف التوصيل');
     return true;
   };
 

@@ -47,9 +47,9 @@ export interface Order {
 }
 
 export const ROLE_LABELS: Record<UserRole, string> = {
-  cashier: 'كاشيرة',
+  cashier: 'كاشير',
   field: 'الميدان',
-  delivery: 'الدلفري',
+  delivery: 'موظف توصيل',
   takeaway: 'السفري',
   kitchen: 'المطبخ',
   admin: 'المدير التنفيذي',

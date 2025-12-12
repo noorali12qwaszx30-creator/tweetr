@@ -81,7 +81,7 @@ const roleIcons: Record<UserRole, React.ReactNode> = {
 
 const roleDescriptions: Record<UserRole, string> = {
   cashier: 'إدارة الطلبات وإنشاء الفواتير',
-  field: 'متابعة الطلبات وتعيين السائقين',
+  field: 'متابعة الطلبات وتعيين موظفي التوصيل',
   delivery: 'استلام وتوصيل الطلبات',
   takeaway: 'طلبات السفري والاستلام',
   kitchen: 'تحضير الطلبات في المطبخ',

@@ -129,7 +129,7 @@ export default function AdminDashboard() {
     { id: 'menu', label: 'المنيو', icon: <UtensilsCrossed className="w-5 h-5" /> },
     { id: 'orders', label: 'الطلبات', icon: <Package className="w-5 h-5" /> },
     { id: 'stats', label: 'الإحصائيات', icon: <BarChart3 className="w-5 h-5" /> },
-    { id: 'delivery', label: 'الدلفري', icon: <Truck className="w-5 h-5" /> },
+    { id: 'delivery', label: 'التوصيل', icon: <Truck className="w-5 h-5" /> },
     { id: 'settings', label: 'الإعدادات', icon: <Settings className="w-5 h-5" /> },
   ];
 
@@ -461,7 +461,7 @@ export default function AdminDashboard() {
         {/* DELIVERY TAB - Driver Performance */}
         {activeTab === 'delivery' && (
           <div className="space-y-4">
-            <h2 className="text-xl font-bold">أداء الدلفري</h2>
+            <h2 className="text-xl font-bold">أداء موظفي التوصيل</h2>
             <DriverPerformance orders={ordersForCharts} />
           </div>
         )}

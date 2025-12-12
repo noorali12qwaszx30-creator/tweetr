@@ -136,7 +136,7 @@ export default function FieldDashboard() {
               <div className="mb-6">
                 <h2 className="text-xl font-bold mb-4 flex items-center gap-2">
                   <Clock className="w-5 h-5 text-warning" />
-                  بانتظار قبول الدلفري ({pendingAcceptanceOrders.length})
+                  بانتظار قبول موظف التوصيل ({pendingAcceptanceOrders.length})
                 </h2>
                 <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
                   {pendingAcceptanceOrders.map(order => (
@@ -173,7 +173,7 @@ export default function FieldDashboard() {
                       <>
                         <Button variant="default" size="sm" onClick={() => handleOpenSelector(order)}>
                           <Truck className="w-3 h-3 ml-1" />
-                          تعيين دلفري
+                          تعيين موظف توصيل
                         </Button>
                         <Button variant="destructive" size="sm" onClick={() => handleCancelOrder(order.id)}>
                           <XCircle className="w-3 h-3 ml-1" />
@@ -232,7 +232,7 @@ export default function FieldDashboard() {
                 <Calculator className="w-5 h-5 ml-3" />
                 <div className="text-right">
                   <p className="font-semibold">المحاسبة</p>
-                  <p className="text-sm text-muted-foreground">تفاصيل حسابات الدلفري</p>
+                  <p className="text-sm text-muted-foreground">تفاصيل حسابات موظفي التوصيل</p>
                 </div>
               </Button>
               <LogoutConfirmButton />
