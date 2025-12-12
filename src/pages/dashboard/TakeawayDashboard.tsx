@@ -1,5 +1,6 @@
 import { useState, useMemo } from 'react';
 import { useRole } from '@/contexts/RoleContext';
+import { useAuth } from '@/contexts/AuthContext';
 import { useSupabaseOrders, DbMenuItem, OrderWithItems } from '@/hooks/useSupabaseOrders';
 import { useMenuItems, MenuItem } from '@/hooks/useMenuItems';
 import { Button } from '@/components/ui/button';
@@ -115,7 +116,8 @@ function SortableMenuItem({ item, onSelect }: SortableMenuItemProps) {
 }
 
 export default function TakeawayDashboard() {
-  const { role, clearRole } = useRole();
+  const { role } = useRole();
+  const { user } = useAuth();
   const { orders, addOrder, updateOrderStatus, cancelOrder, loading } = useSupabaseOrders();
   const { menuItems, categories, loading: menuLoading, updateDisplayOrder } = useMenuItems();
   const [activeTab, setActiveTab] = useState<TabType>('menu');
@@ -300,7 +302,7 @@ export default function TakeawayDashboard() {
             </div>
             <div>
               <h1 className="font-bold text-foreground text-sm">السفري</h1>
-              <p className="text-xs text-muted-foreground">{role ? ROLE_LABELS[role] : ''}</p>
+              <p className="text-xs text-muted-foreground">{user?.fullName || user?.username || ''}</p>
             </div>
           </div>
         </div>
