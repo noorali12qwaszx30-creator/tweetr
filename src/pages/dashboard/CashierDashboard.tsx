@@ -8,6 +8,7 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { OrderCard } from '@/components/OrderCard';
 import { CancelOrderDialog } from '@/components/CancelOrderDialog';
+import { OrderDetailsDialog } from '@/components/OrderDetailsDialog';
 import { QuickAccessReturnButton } from '@/components/admin/QuickAccessReturnButton';
 import { LogoutConfirmButton } from '@/components/LogoutConfirmButton';
 import { toast } from 'sonner';
@@ -131,6 +132,7 @@ export default function CashierDashboard() {
   const [customerAddress, setCustomerAddress] = useState('');
   const [orderNotes, setOrderNotes] = useState('');
   const [cancellingOrder, setCancellingOrder] = useState<OrderWithItems | null>(null);
+  const [selectedOrderDetails, setSelectedOrderDetails] = useState<OrderWithItems | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
 
@@ -517,7 +519,11 @@ export default function CashierDashboard() {
                   <p className="text-center text-muted-foreground text-sm py-4">لا توجد طلبات مكتملة</p>
                 ) : (
                   orders.filter(o => o.status === 'delivered').map(order => (
-                    <div key={order.id} className="bg-success/10 border border-success/20 rounded-lg p-3">
+                    <div 
+                      key={order.id} 
+                      className="bg-success/10 border border-success/20 rounded-lg p-3 cursor-pointer hover:bg-success/20 transition-colors"
+                      onClick={() => setSelectedOrderDetails(order)}
+                    >
                       <div className="flex items-center justify-between mb-2">
                         <span className="font-bold text-success">طلب #{order.order_number}</span>
                         <span className="text-xs text-muted-foreground">
@@ -529,10 +535,12 @@ export default function CashierDashboard() {
                           <User className="w-3 h-3" />
                           {order.customer_name}
                         </p>
-                        <p className="flex items-center gap-2">
-                          <Phone className="w-3 h-3" />
-                          {order.customer_phone}
-                        </p>
+                        {order.delivery_person_name && (
+                          <p className="flex items-center gap-2 text-muted-foreground">
+                            <span>الدلفري:</span>
+                            <span className="font-medium text-foreground">{order.delivery_person_name}</span>
+                          </p>
+                        )}
                         <p className="font-semibold text-primary">
                           المجموع: {Number(order.total_price).toLocaleString()} د.ع
                         </p>
@@ -554,7 +562,11 @@ export default function CashierDashboard() {
                   <p className="text-center text-muted-foreground text-sm py-4">لا توجد طلبات ملغية</p>
                 ) : (
                   orders.filter(o => o.status === 'cancelled').map(order => (
-                    <div key={order.id} className="bg-destructive/10 border border-destructive/20 rounded-lg p-3">
+                    <div 
+                      key={order.id} 
+                      className="bg-destructive/10 border border-destructive/20 rounded-lg p-3 cursor-pointer hover:bg-destructive/20 transition-colors"
+                      onClick={() => setSelectedOrderDetails(order)}
+                    >
                       <div className="flex items-center justify-between mb-2">
                         <span className="font-bold text-destructive">طلب #{order.order_number}</span>
                         <span className="text-xs text-muted-foreground">
@@ -565,10 +577,6 @@ export default function CashierDashboard() {
                         <p className="flex items-center gap-2">
                           <User className="w-3 h-3" />
                           {order.customer_name}
-                        </p>
-                        <p className="flex items-center gap-2">
-                          <Phone className="w-3 h-3" />
-                          {order.customer_phone}
                         </p>
                         {order.cancellation_reason && (
                           <p className="text-destructive text-xs">
@@ -619,6 +627,13 @@ export default function CashierDashboard() {
             onCancel={handleCancelOrder}
           />
         )}
+
+        {/* Order Details Dialog */}
+        <OrderDetailsDialog
+          order={selectedOrderDetails}
+          open={!!selectedOrderDetails}
+          onOpenChange={(open) => !open && setSelectedOrderDetails(null)}
+        />
       </main>
 
       {/* Bottom Navigation */}
