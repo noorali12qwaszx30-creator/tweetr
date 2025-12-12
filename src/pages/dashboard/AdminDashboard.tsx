@@ -6,6 +6,7 @@ import { useShift } from '@/contexts/ShiftContext';
 import { Button } from '@/components/ui/button';
 import { CancellationReasonsManager } from '@/components/CancellationReasonsManager';
 import { DeliveryAreasManager } from '@/components/admin/DeliveryAreasManager';
+import { DeliveryAreaAnalytics } from '@/components/admin/DeliveryAreaAnalytics';
 import { UserManagement } from '@/components/admin/UserManagement';
 import { QuickAccessPanel } from '@/components/admin/QuickAccessPanel';
 import { LogoutConfirmButton } from '@/components/LogoutConfirmButton';
@@ -48,7 +49,7 @@ type MainTab = 'home' | 'menu' | 'orders' | 'stats' | 'delivery' | 'settings';
 
 // Sub-tabs for each main section
 type OrdersSubTab = 'completed' | 'cancelled';
-type StatsSubTab = 'overview' | 'items' | 'customers' | 'finance';
+type StatsSubTab = 'overview' | 'items' | 'customers' | 'finance' | 'areas';
 type SettingsSubTab = 'general' | 'users' | 'reasons' | 'quickaccess' | 'areas';
 
 export default function AdminDashboard() {
@@ -368,11 +369,12 @@ export default function AdminDashboard() {
           <div className="space-y-4">
             {/* Sub-tabs */}
             <Tabs value={statsSubTab} onValueChange={(v) => setStatsSubTab(v as StatsSubTab)}>
-              <TabsList className="grid w-full grid-cols-4">
-                <TabsTrigger value="overview" className="text-xs px-2">نظرة عامة</TabsTrigger>
-                <TabsTrigger value="items" className="text-xs px-2">المبيعات</TabsTrigger>
-                <TabsTrigger value="customers" className="text-xs px-2">الزبائن</TabsTrigger>
-                <TabsTrigger value="finance" className="text-xs px-2">المالية</TabsTrigger>
+              <TabsList className="grid w-full grid-cols-5">
+                <TabsTrigger value="overview" className="text-xs px-1">نظرة عامة</TabsTrigger>
+                <TabsTrigger value="items" className="text-xs px-1">المبيعات</TabsTrigger>
+                <TabsTrigger value="areas" className="text-xs px-1">المناطق</TabsTrigger>
+                <TabsTrigger value="customers" className="text-xs px-1">الزبائن</TabsTrigger>
+                <TabsTrigger value="finance" className="text-xs px-1">المالية</TabsTrigger>
               </TabsList>
 
               <TabsContent value="overview" className="space-y-4 mt-4">
@@ -446,6 +448,10 @@ export default function AdminDashboard() {
                     ))}
                   </div>
                 </div>
+              </TabsContent>
+
+              <TabsContent value="areas" className="mt-4">
+                <DeliveryAreaAnalytics orders={orders} />
               </TabsContent>
 
               <TabsContent value="customers" className="mt-4">
