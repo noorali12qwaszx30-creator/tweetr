@@ -1,5 +1,5 @@
 import { OrderTimer } from './OrderTimer';
-import { MessageSquare, Truck } from 'lucide-react';
+import { MessageSquare, Truck, Pencil } from 'lucide-react';
 import { OrderWithItems, DbOrderItem } from '@/hooks/useSupabaseOrders';
 
 // Status labels in Arabic
@@ -46,6 +46,7 @@ export function OrderCard({
         bg-card rounded-xl border shadow-soft transition-all duration-200
         ${order.type === 'takeaway' ? 'border-warning/50 bg-warning/5' : 'border-border'}
         ${hasNotes ? 'order-has-notes' : ''}
+        ${order.is_edited ? 'ring-2 ring-warning/50' : ''}
         ${compact ? 'p-2 sm:p-3' : 'p-3 sm:p-4'}
       `}
     >
@@ -59,6 +60,12 @@ export function OrderCard({
           {order.type === 'takeaway' && (
             <span className="px-2 py-0.5 rounded-full text-[10px] sm:text-xs font-medium bg-warning/20 text-warning">
               سفري
+            </span>
+          )}
+          {order.is_edited && (
+            <span className="px-2 py-0.5 rounded-full text-[10px] sm:text-xs font-medium bg-info/20 text-info flex items-center gap-1">
+              <Pencil className="w-3 h-3" />
+              معدّل
             </span>
           )}
         </div>

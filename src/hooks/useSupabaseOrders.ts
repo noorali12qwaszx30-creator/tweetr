@@ -34,6 +34,8 @@ export interface DbOrder {
   updated_at: string;
   delivered_at: string | null;
   cancelled_at: string | null;
+  is_edited?: boolean;
+  edited_at?: string | null;
 }
 
 export interface DbOrderItem {
@@ -324,11 +326,48 @@ export function useSupabaseOrders() {
     return orders.filter(o => o.status === status);
   };
 
+  // Update order (edit items, customer info, etc.)
+  const updateOrder = async (orderId: string, orderData: {
+    customer_name?: string;
+    customer_phone?: string;
+    customer_address?: string;
+    delivery_area_id?: string;
+    notes?: string;
+    items?: { menu_item_id?: string; menu_item_name: string; menu_item_price: number; quantity: number; notes?: string }[];
+  }) => {
+    try {
+      const { data, error } = await supabase.functions.invoke('update-order', {
+        body: { order_id: orderId, ...orderData },
+      });
+
+      if (error) {
+        console.error('Error updating order:', error);
+        toast.error('حدث خطأ في تعديل الطلب');
+        return null;
+      }
+
+      if (data?.error) {
+        console.error('Server error:', data.error);
+        toast.error(data.error);
+        return null;
+      }
+
+      toast.success('تم تعديل الطلب بنجاح');
+      await fetchOrders();
+      return data.order;
+    } catch (err) {
+      console.error('Unexpected error updating order:', err);
+      toast.error('حدث خطأ غير متوقع');
+      return null;
+    }
+  };
+
   return {
     orders,
     menuItems,
     loading,
     addOrder,
+    updateOrder,
     updateOrderStatus,
     assignDelivery,
     acceptDelivery,

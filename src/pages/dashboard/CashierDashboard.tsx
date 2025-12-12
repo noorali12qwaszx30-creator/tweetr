@@ -133,7 +133,7 @@ function SortableMenuItem({ item, onSelect }: SortableMenuItemProps) {
 export default function CashierDashboard() {
   const { role } = useRole();
   const { user } = useAuth();
-  const { orders, addOrder, updateOrderStatus, cancelOrder, loading } = useSupabaseOrders();
+  const { orders, addOrder, updateOrder, updateOrderStatus, cancelOrder, loading } = useSupabaseOrders();
   const { menuItems, categories, loading: menuLoading, updateDisplayOrder } = useMenuItems();
   const { activeAreas, loading: areasLoading } = useDeliveryAreas();
   const [activeTab, setActiveTab] = useState<TabType>('menu');
@@ -241,6 +241,33 @@ export default function CashierDashboard() {
     }
 
     setSubmitting(true);
+
+    // If editing an existing order, update it instead of creating new
+    if (editingOrder) {
+      const result = await updateOrder(editingOrder.id, {
+        customer_name: customerName,
+        customer_phone: customerPhone,
+        customer_address: customerAddress,
+        delivery_area_id: selectedAreaId,
+        notes: orderNotes || undefined,
+        items: cart.map(item => ({
+          menu_item_id: item.menuItem.id,
+          menu_item_name: item.menuItem.name,
+          menu_item_price: item.menuItem.price,
+          quantity: item.quantity,
+          notes: item.notes,
+        })),
+      });
+
+      setSubmitting(false);
+      if (result) {
+        clearCart();
+        setEditingOrder(null);
+      }
+      return;
+    }
+
+    // Create new order
     const result = await addOrder({
       customer_name: customerName,
       customer_phone: customerPhone,
@@ -286,9 +313,15 @@ export default function CashierDashboard() {
     setCustomerAddress(order.customer_address || '');
     setSelectedAreaId(order.delivery_area_id || '');
     setOrderNotes(order.notes || '');
-    setEditingOrder(null);
+    setEditingOrder(order);
     setActiveTab('menu');
-    toast.info('تم تحميل بيانات الطلب للتعديل - أرسل الطلب الجديد وألغِ القديم');
+    toast.info(`جاري تعديل الطلب #${order.order_number}`);
+  };
+
+  const cancelEdit = () => {
+    clearCart();
+    setEditingOrder(null);
+    toast.info('تم إلغاء التعديل');
   };
 
   const handleCancelOrder = async (orderId: string, reason?: string) => {
@@ -343,9 +376,24 @@ export default function CashierDashboard() {
 
       {/* Main Content */}
       <main className="container py-3 pb-24 space-y-4">
+        {/* Editing Mode Banner */}
+        {editingOrder && (
+          <div className="bg-warning/20 border border-warning/50 rounded-xl p-3 flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <Pencil className="w-4 h-4 text-warning" />
+              <span className="font-semibold text-sm text-warning">
+                جاري تعديل الطلب #{editingOrder.order_number}
+              </span>
+            </div>
+            <Button variant="ghost" size="sm" onClick={cancelEdit} className="text-destructive">
+              <XCircle className="w-4 h-4 ml-1" />
+              إلغاء التعديل
+            </Button>
+          </div>
+        )}
+
         {activeTab === 'menu' && (
           <>
-            {/* Customer Info - First */}
             <div className="bg-card border border-border rounded-xl p-3 shadow-soft">
               <h2 className="font-bold text-sm mb-3 flex items-center gap-2">
                 <User className="w-4 h-4 text-primary" />
@@ -453,13 +501,13 @@ export default function CashierDashboard() {
                   />
                 </div>
                 <div className="flex gap-2 mt-2">
-                  <Button variant="destructive" size="sm" className="flex-1" onClick={clearCart}>
+                  <Button variant="destructive" size="sm" className="flex-1" onClick={editingOrder ? cancelEdit : clearCart}>
                     <Trash2 className="w-3 h-3 ml-1" />
-                    مسح
+                    {editingOrder ? 'إلغاء التعديل' : 'مسح'}
                   </Button>
-                  <Button size="sm" className="flex-1" onClick={submitOrder} disabled={submitting}>
+                  <Button size="sm" className={`flex-1 ${editingOrder ? 'bg-warning hover:bg-warning/90' : ''}`} onClick={submitOrder} disabled={submitting}>
                     {submitting ? <Loader2 className="w-3 h-3 ml-1 animate-spin" /> : <Send className="w-3 h-3 ml-1" />}
-                    إرسال
+                    {editingOrder ? 'حفظ التعديلات' : 'إرسال'}
                   </Button>
                 </div>
               </div>
