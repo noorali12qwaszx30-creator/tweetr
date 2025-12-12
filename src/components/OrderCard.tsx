@@ -46,18 +46,18 @@ export function OrderCard({
         bg-card rounded-xl border shadow-soft transition-all duration-200
         ${order.type === 'takeaway' ? 'border-warning/50 bg-warning/5' : 'border-border'}
         ${hasNotes ? 'order-has-notes' : ''}
-        ${compact ? 'p-3' : 'p-4'}
+        ${compact ? 'p-2 sm:p-3' : 'p-3 sm:p-4'}
       `}
     >
       {/* Header */}
-      <div className="flex items-center justify-between mb-3">
-        <div className="flex items-center gap-3">
-          <span className="text-2xl font-bold text-primary">#{order.order_number}</span>
-          <span className={`px-2 py-0.5 rounded-full text-xs font-medium border ${statusColors[order.status]}`}>
+      <div className="flex items-center justify-between mb-2 sm:mb-3 flex-wrap gap-2">
+        <div className="flex items-center gap-2 sm:gap-3 flex-wrap">
+          <span className="text-xl sm:text-2xl font-bold text-primary">#{order.order_number}</span>
+          <span className={`px-2 py-0.5 rounded-full text-[10px] sm:text-xs font-medium border ${statusColors[order.status]}`}>
             {ORDER_STATUS_LABELS[order.status]}
           </span>
           {order.type === 'takeaway' && (
-            <span className="px-2 py-0.5 rounded-full text-xs font-medium bg-warning/20 text-warning">
+            <span className="px-2 py-0.5 rounded-full text-[10px] sm:text-xs font-medium bg-warning/20 text-warning">
               سفري
             </span>
           )}
@@ -67,37 +67,37 @@ export function OrderCard({
 
       {/* Customer Info */}
       {showCustomerInfo && (
-        <div className="mb-3 p-3 bg-muted/50 rounded-lg">
-          <p className="font-semibold text-foreground">{order.customer_name}</p>
+        <div className="mb-2 sm:mb-3 p-2 sm:p-3 bg-muted/50 rounded-lg">
+          <p className="font-semibold text-foreground text-sm sm:text-base">{order.customer_name}</p>
           {order.customer_phone && (
-            <p className="text-sm text-muted-foreground">{order.customer_phone}</p>
+            <p className="text-xs sm:text-sm text-muted-foreground">{order.customer_phone}</p>
           )}
           {order.customer_address && (
-            <p className="text-sm text-muted-foreground">{order.customer_address}</p>
+            <p className="text-xs sm:text-sm text-muted-foreground">{order.customer_address}</p>
           )}
         </div>
       )}
 
       {/* Items */}
       {showItems && (
-        <div className="space-y-2 mb-3">
+        <div className="space-y-1.5 sm:space-y-2 mb-2 sm:mb-3">
           {order.items.map((item: DbOrderItem, idx: number) => (
-            <div key={idx} className="flex items-center justify-between text-sm">
-              <div className="flex items-center gap-2">
-                <span className="w-6 h-6 flex items-center justify-center bg-primary/10 text-primary rounded-md text-xs font-bold">
+            <div key={idx} className="flex items-center justify-between text-xs sm:text-sm">
+              <div className="flex items-center gap-1.5 sm:gap-2">
+                <span className="w-5 h-5 sm:w-6 sm:h-6 flex items-center justify-center bg-primary/10 text-primary rounded-md text-[10px] sm:text-xs font-bold">
                   {item.quantity}
                 </span>
-                <span className="text-foreground">{item.menu_item_name}</span>
+                <span className="text-foreground truncate max-w-[120px] sm:max-w-none">{item.menu_item_name}</span>
                 {item.notes && (
-                  <MessageSquare className="w-3.5 h-3.5 text-warning" />
+                  <MessageSquare className="w-3 h-3 sm:w-3.5 sm:h-3.5 text-warning flex-shrink-0" />
                 )}
               </div>
-              <span className="text-muted-foreground">
+              <span className="text-muted-foreground text-[10px] sm:text-xs">
                 {(Number(item.menu_item_price) * item.quantity).toLocaleString()} د.ع
               </span>
             </div>
           ))}
-          <div className="flex items-center justify-between pt-2 border-t border-border font-semibold">
+          <div className="flex items-center justify-between pt-2 border-t border-border font-semibold text-sm sm:text-base">
             <span>المجموع</span>
             <span className="text-primary">{Number(order.total_price).toLocaleString()} د.ع</span>
           </div>

@@ -70,34 +70,34 @@ export default function DeliveryDashboard() {
     <div className="min-h-screen bg-background">
       {/* Header */}
       <header className="bg-card border-b border-border shadow-soft sticky top-0 z-50">
-        <div className="container flex items-center justify-between h-16">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-info flex items-center justify-center">
-              <Truck className="w-5 h-5 text-info-foreground" />
+        <div className="container flex items-center justify-between h-14 sm:h-16">
+          <div className="flex items-center gap-2 sm:gap-3">
+            <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-xl bg-info flex items-center justify-center">
+              <Truck className="w-4 h-4 sm:w-5 sm:h-5 text-info-foreground" />
             </div>
             <div>
-              <h1 className="font-bold text-foreground">الدلفري</h1>
-              <p className="text-xs text-muted-foreground">{role ? ROLE_LABELS[role] : ''}</p>
+              <h1 className="font-bold text-foreground text-sm sm:text-base">الدلفري</h1>
+              <p className="text-[10px] sm:text-xs text-muted-foreground">{role ? ROLE_LABELS[role] : ''}</p>
             </div>
           </div>
-          <Button variant="ghost" size="icon" onClick={clearRole}>
-            <LogOut className="w-5 h-5" />
+          <Button variant="ghost" size="icon" className="h-8 w-8 sm:h-10 sm:w-10" onClick={clearRole}>
+            <LogOut className="w-4 h-4 sm:w-5 sm:h-5" />
           </Button>
         </div>
       </header>
 
       {/* Main Content */}
-      <main className="container py-4 pb-24">
+      <main className="container py-3 sm:py-4 pb-24">
         {activeTab === 'orders' && (
-          <div className="space-y-4">
-            <h2 className="text-xl font-bold">الطلبات المحولة إليك ({pendingAcceptanceOrders.length})</h2>
+          <div className="space-y-3 sm:space-y-4">
+            <h2 className="text-lg sm:text-xl font-bold">الطلبات المحولة إليك ({pendingAcceptanceOrders.length})</h2>
             {pendingAcceptanceOrders.length === 0 ? (
-              <div className="text-center py-12 text-muted-foreground">
-                <ClipboardList className="w-12 h-12 mx-auto mb-4 opacity-50" />
+              <div className="text-center py-8 sm:py-12 text-muted-foreground">
+                <ClipboardList className="w-10 h-10 sm:w-12 sm:h-12 mx-auto mb-4 opacity-50" />
                 <p>لا توجد طلبات محولة إليك</p>
               </div>
             ) : (
-              <div className="grid md:grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3 sm:gap-4">
                 {pendingAcceptanceOrders.map(order => (
                   <OrderCard
                     key={order.id}
@@ -167,24 +167,24 @@ export default function DeliveryDashboard() {
         )}
 
         {activeTab === 'stats' && (
-          <div className="space-y-4">
-            <h2 className="text-xl font-bold">الإحصائيات</h2>
-            <div className="grid grid-cols-2 gap-4">
-              <div className="bg-card border border-border rounded-xl p-4 shadow-soft">
-                <p className="text-muted-foreground text-sm">الطلبات المكتملة</p>
-                <p className="text-3xl font-bold text-success">{totalDelivered}</p>
+          <div className="space-y-3 sm:space-y-4">
+            <h2 className="text-lg sm:text-xl font-bold">الإحصائيات</h2>
+            <div className="grid grid-cols-2 gap-2 sm:gap-4">
+              <div className="bg-card border border-border rounded-xl p-3 sm:p-4 shadow-soft">
+                <p className="text-muted-foreground text-xs sm:text-sm">الطلبات المكتملة</p>
+                <p className="text-2xl sm:text-3xl font-bold text-success">{totalDelivered}</p>
               </div>
-              <div className="bg-card border border-border rounded-xl p-4 shadow-soft">
-                <p className="text-muted-foreground text-sm">إجمالي الأرباح</p>
-                <p className="text-3xl font-bold text-primary">{totalEarnings.toLocaleString()} د.ع</p>
+              <div className="bg-card border border-border rounded-xl p-3 sm:p-4 shadow-soft">
+                <p className="text-muted-foreground text-xs sm:text-sm">إجمالي الأرباح</p>
+                <p className="text-2xl sm:text-3xl font-bold text-primary">{totalEarnings.toLocaleString()} د.ع</p>
               </div>
-              <div className="bg-card border border-border rounded-xl p-4 shadow-soft">
-                <p className="text-muted-foreground text-sm">الطلبات الملغية</p>
-                <p className="text-3xl font-bold text-destructive">{cancelledByDelivery.length}</p>
+              <div className="bg-card border border-border rounded-xl p-3 sm:p-4 shadow-soft">
+                <p className="text-muted-foreground text-xs sm:text-sm">الطلبات الملغية</p>
+                <p className="text-2xl sm:text-3xl font-bold text-destructive">{cancelledByDelivery.length}</p>
               </div>
-              <div className="bg-card border border-border rounded-xl p-4 shadow-soft">
-                <p className="text-muted-foreground text-sm">الفائدة لكل طلب</p>
-                <p className="text-3xl font-bold text-foreground">1,000 د.ع</p>
+              <div className="bg-card border border-border rounded-xl p-3 sm:p-4 shadow-soft">
+                <p className="text-muted-foreground text-xs sm:text-sm">الفائدة لكل طلب</p>
+                <p className="text-2xl sm:text-3xl font-bold text-foreground">1,000 د.ع</p>
               </div>
             </div>
           </div>

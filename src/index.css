@@ -171,6 +171,37 @@
   }
 }
 
+/* Mobile-first responsive utilities */
+@media (max-width: 640px) {
+  .container {
+    @apply px-3;
+  }
+  
+  /* Smaller text on mobile */
+  h1 {
+    @apply text-2xl;
+  }
+  
+  h2 {
+    @apply text-lg;
+  }
+  
+  /* Compact cards on mobile */
+  .shadow-soft {
+    box-shadow: 0 2px 8px -2px rgba(0, 0, 0, 0.1);
+  }
+  
+  /* Better touch targets */
+  button, a {
+    min-height: 44px;
+  }
+  
+  /* Optimize input fields for mobile */
+  input, textarea, select {
+    font-size: 16px !important; /* Prevent zoom on iOS */
+  }
+}
+
 /* Premium glass effect */
 .glass {
   background: rgba(255, 255, 255, 0.1);

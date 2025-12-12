@@ -257,26 +257,26 @@ export default function RoleSelector() {
           </div>
 
           {/* Welcome Title */}
-          <h1 className="text-4xl md:text-6xl font-black text-foreground mb-4 leading-tight">
+          <h1 className="text-3xl sm:text-4xl md:text-6xl font-black text-foreground mb-4 leading-tight px-2">
             أهلاً بكم في{' '}
             <span className="text-transparent bg-clip-text bg-gradient-to-l from-primary via-red-500 to-primary">
               جومانجي
             </span>
           </h1>
-          <p className="text-lg md:text-xl text-muted-foreground max-w-lg mx-auto">
+          <p className="text-base sm:text-lg md:text-xl text-muted-foreground max-w-lg mx-auto px-4">
             نظام إدارة المطعم المتكامل - اختر دورك للبدء
           </p>
         </div>
 
         {/* Role Selection Grid */}
-        <div className="grid grid-cols-2 md:grid-cols-3 gap-4 md:gap-6">
+        <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 sm:gap-4 md:gap-6 px-2">
           {ROLES.map((role, index) => (
             <button
               key={role}
               onClick={() => handleSelectRole(role)}
               className={`
-                group relative bg-card/60 backdrop-blur-xl border-2 border-border/50 rounded-3xl p-6 
-                transition-all duration-500 hover:scale-105 hover:border-primary/50
+                group relative bg-card/60 backdrop-blur-xl border-2 border-border/50 rounded-2xl sm:rounded-3xl p-4 sm:p-6 
+                transition-all duration-500 active:scale-95 hover:scale-105 hover:border-primary/50
                 hover:shadow-2xl hover:shadow-primary/20
                 focus:outline-none focus:ring-4 focus:ring-primary/20
                 ${mounted ? 'opacity-100' : 'opacity-0'}
@@ -294,18 +294,18 @@ export default function RoleSelector() {
               {/* Selected indicator */}
               <div className="absolute top-3 right-3 w-3 h-3 rounded-full bg-primary/0 group-hover:bg-primary group-hover:animate-pulse transition-all duration-300" />
 
-              <div className="relative flex flex-col items-center gap-4">
+              <div className="relative flex flex-col items-center gap-2 sm:gap-4">
                 {/* Icon container */}
-                <div className="w-16 h-16 md:w-20 md:h-20 rounded-2xl bg-gradient-to-br from-muted to-muted/50 flex items-center justify-center text-muted-foreground group-hover:from-primary group-hover:to-primary/80 group-hover:text-primary-foreground transition-all duration-500 group-hover:scale-110 group-hover:rotate-3 group-hover:shadow-lg group-hover:shadow-primary/30">
-                  {ROLE_ICONS[role]}
+                <div className="w-12 h-12 sm:w-16 sm:h-16 md:w-20 md:h-20 rounded-xl sm:rounded-2xl bg-gradient-to-br from-muted to-muted/50 flex items-center justify-center text-muted-foreground group-hover:from-primary group-hover:to-primary/80 group-hover:text-primary-foreground transition-all duration-500 group-hover:scale-110 group-hover:rotate-3 group-hover:shadow-lg group-hover:shadow-primary/30">
+                  <div className="scale-75 sm:scale-100">{ROLE_ICONS[role]}</div>
                 </div>
 
                 {/* Role name */}
                 <div className="text-center">
-                  <h3 className="font-bold text-lg text-foreground group-hover:text-primary transition-colors duration-300">
+                  <h3 className="font-bold text-sm sm:text-base md:text-lg text-foreground group-hover:text-primary transition-colors duration-300">
                     {ROLE_LABELS[role]}
                   </h3>
-                  <p className="text-xs text-muted-foreground mt-1 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                  <p className="text-[10px] sm:text-xs text-muted-foreground mt-1 opacity-0 group-hover:opacity-100 transition-opacity duration-300 hidden sm:block">
                     {ROLE_DESCRIPTIONS[role]}
                   </p>
                 </div>
