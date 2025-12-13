@@ -46,18 +46,17 @@ export function DeliveryAccountingDialog({ orders, onOrdersUpdated }: DeliveryAc
 
       const totalAmount = deliveredOrders.reduce((sum, order) => sum + Number(order.total_price), 0);
 
-      if (deliveredOrders.length > 0 || deliveringOrders.length > 0 || cancelledOrders.length > 0) {
-        accounting.push({
-          id: driver.id,
-          userId: driver.user_id,
-          name: driver.full_name,
-          phone: driver.phone,
-          totalAmount,
-          deliveredOrders,
-          deliveringOrders,
-          cancelledOrders,
-        });
-      }
+      // Show ALL delivery drivers, not just those with orders
+      accounting.push({
+        id: driver.id,
+        userId: driver.user_id,
+        name: driver.full_name,
+        phone: driver.phone,
+        totalAmount,
+        deliveredOrders,
+        deliveringOrders,
+        cancelledOrders,
+      });
     });
 
     return accounting.sort((a, b) => b.totalAmount - a.totalAmount);
