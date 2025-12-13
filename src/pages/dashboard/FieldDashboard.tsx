@@ -6,6 +6,7 @@ import { OrderCard } from '@/components/OrderCard';
 import { DeliveryPersonSelector } from '@/components/DeliveryPersonSelector';
 import { QuickAccessReturnButton } from '@/components/admin/QuickAccessReturnButton';
 import { LogoutConfirmButton } from '@/components/LogoutConfirmButton';
+import { FieldAccounting } from '@/components/admin/FieldAccounting';
 import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
 import { ROLE_LABELS } from '@/types';
@@ -226,15 +227,12 @@ export default function FieldDashboard() {
 
         {activeTab === 'admin' && (
           <div className="space-y-4">
-            <h2 className="text-xl font-bold">الإدارة</h2>
-            <div className="grid gap-4">
-              <Button variant="outline" size="lg" className="justify-start h-auto py-4">
-                <Calculator className="w-5 h-5 ml-3" />
-                <div className="text-right">
-                  <p className="font-semibold">المحاسبة</p>
-                  <p className="text-sm text-muted-foreground">تفاصيل حسابات موظفي التوصيل</p>
-                </div>
-              </Button>
+            <h2 className="text-xl font-bold flex items-center gap-2">
+              <Calculator className="w-6 h-6 text-primary" />
+              المحاسبة
+            </h2>
+            <FieldAccounting />
+            <div className="mt-6">
               <LogoutConfirmButton />
             </div>
           </div>

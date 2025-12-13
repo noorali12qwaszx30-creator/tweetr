@@ -2,7 +2,6 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useRole } from '@/contexts/RoleContext';
 import { useAuth } from '@/contexts/AuthContext';
-import { useTheme } from '@/hooks/useTheme';
 import { UserRole, ROLE_LABELS } from '@/types';
 import { 
   Calculator, 
@@ -17,8 +16,6 @@ import {
   AlertCircle,
   Phone,
   Sparkles,
-  Sun,
-  Moon,
   UtensilsCrossed,
 } from 'lucide-react';
 import { Input } from '@/components/ui/input';
@@ -49,7 +46,6 @@ export default function RoleSelector() {
   const navigate = useNavigate();
   const { setRole } = useRole();
   const { login } = useAuth();
-  const { theme, toggleTheme } = useTheme();
   
   const [selectedRole, setSelectedRole] = useState<UserRole | null>(null);
   const [username, setUsername] = useState('');
@@ -102,15 +98,6 @@ export default function RoleSelector() {
   if (selectedRole) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-background via-background to-primary/5 flex items-center justify-center p-4 overflow-hidden" dir="rtl">
-        {/* Theme Toggle */}
-        <button
-          onClick={toggleTheme}
-          className="fixed top-4 left-4 z-50 w-12 h-12 rounded-2xl bg-card/80 backdrop-blur-xl border border-border/50 flex items-center justify-center text-foreground hover:bg-primary hover:text-primary-foreground transition-all duration-300 hover:scale-110 shadow-lg"
-          aria-label="تبديل الوضع"
-        >
-          {theme === 'dark' ? <Sun className="w-5 h-5" /> : <Moon className="w-5 h-5" />}
-        </button>
-
         {/* Background decorations */}
         <div className="absolute inset-0 overflow-hidden pointer-events-none">
           <div className="absolute -top-40 -right-40 w-80 h-80 bg-primary/10 rounded-full blur-3xl animate-float" />
@@ -209,19 +196,6 @@ export default function RoleSelector() {
   // Welcome & Role selection screen
   return (
     <div className="min-h-screen bg-gradient-to-br from-background via-background to-primary/10 flex flex-col items-center justify-center p-4 overflow-hidden" dir="rtl">
-      {/* Theme Toggle */}
-      <button
-        onClick={toggleTheme}
-        className="fixed top-4 left-4 z-50 w-14 h-14 rounded-2xl bg-card/80 backdrop-blur-xl border border-border/50 flex items-center justify-center text-foreground hover:bg-primary hover:text-primary-foreground transition-all duration-500 hover:scale-110 hover:rotate-180 shadow-lg group"
-        aria-label="تبديل الوضع"
-      >
-        {theme === 'dark' ? (
-          <Sun className="w-6 h-6 transition-transform duration-500 group-hover:rotate-90" />
-        ) : (
-          <Moon className="w-6 h-6 transition-transform duration-500 group-hover:-rotate-12" />
-        )}
-      </button>
-
       {/* Animated background decorations */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
         <div className="absolute top-0 left-0 w-full h-full">

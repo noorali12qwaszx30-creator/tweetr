@@ -1,7 +1,18 @@
 import { format } from 'date-fns';
 import { ar } from 'date-fns/locale';
 import { Button } from '@/components/ui/button';
-import { RefreshCcw, Clock, Hash, Building2, Calendar } from 'lucide-react';
+import { RefreshCcw, Clock, Hash, Building2, Calendar, Trash2 } from 'lucide-react';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from '@/components/ui/alert-dialog';
 
 interface ShiftHeaderProps {
   restaurantName: string;
@@ -22,6 +33,15 @@ export function ShiftHeader({
   onReset,
   onRefresh,
 }: ShiftHeaderProps) {
+  const handleFullReset = () => {
+    // Clear all localStorage data
+    localStorage.clear();
+    // Call the original reset function
+    onReset();
+    // Reload the page to start fresh
+    window.location.reload();
+  };
+
   return (
     <div className="bg-card border border-border rounded-xl p-4 shadow-soft mb-6">
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
@@ -68,10 +88,28 @@ export function ShiftHeader({
           <Button variant="outline" size="sm" onClick={onRefresh}>
             <RefreshCcw className="w-4 h-4" />
           </Button>
-          <Button variant="destructive" size="sm" onClick={onReset}>
-            <RefreshCcw className="w-4 h-4 ml-1" />
-            إعادة ضبط
-          </Button>
+          <AlertDialog>
+            <AlertDialogTrigger asChild>
+              <Button variant="destructive" size="sm">
+                <Trash2 className="w-4 h-4 ml-1" />
+                إعادة ضبط الشفت
+              </Button>
+            </AlertDialogTrigger>
+            <AlertDialogContent>
+              <AlertDialogHeader>
+                <AlertDialogTitle>إعادة ضبط الشفت</AlertDialogTitle>
+                <AlertDialogDescription>
+                  سيتم مسح جميع بيانات التطبيق المحلية والعودة للصفر. البيانات المحفوظة في قاعدة البيانات ستبقى كما هي.
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+              <AlertDialogFooter>
+                <AlertDialogCancel>إلغاء</AlertDialogCancel>
+                <AlertDialogAction onClick={handleFullReset} className="bg-destructive hover:bg-destructive/90">
+                  تأكيد إعادة الضبط
+                </AlertDialogAction>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
         </div>
       </div>
     </div>
