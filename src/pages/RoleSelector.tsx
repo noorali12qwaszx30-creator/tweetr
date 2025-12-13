@@ -8,7 +8,6 @@ import {
   MapPin, 
   Truck, 
   ShoppingBag, 
-  ChefHat, 
   Shield,
   ArrowRight,
   User,
@@ -17,6 +16,7 @@ import {
   Phone,
   Sparkles,
   UtensilsCrossed,
+  ChefHat,
 } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
@@ -27,7 +27,6 @@ const ROLE_ICONS: Record<UserRole, React.ReactNode> = {
   field: <MapPin className="w-8 h-8" />,
   delivery: <Truck className="w-8 h-8" />,
   takeaway: <ShoppingBag className="w-8 h-8" />,
-  kitchen: <ChefHat className="w-8 h-8" />,
   admin: <Shield className="w-8 h-8" />,
 };
 
@@ -36,11 +35,10 @@ const ROLE_DESCRIPTIONS: Record<UserRole, string> = {
   field: 'متابعة التوصيل والميدان',
   delivery: 'توصيل الطلبات للزبائن',
   takeaway: 'طلبات السفري',
-  kitchen: 'تحضير الطلبات',
   admin: 'إدارة النظام الكاملة',
 };
 
-const ROLES: UserRole[] = ['admin', 'cashier', 'kitchen', 'field', 'delivery', 'takeaway'];
+const ROLES: UserRole[] = ['admin', 'cashier', 'field', 'delivery', 'takeaway'];
 
 export default function RoleSelector() {
   const navigate = useNavigate();

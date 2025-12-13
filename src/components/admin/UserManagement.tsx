@@ -52,7 +52,7 @@ interface UserWithRole extends Profile {
   role?: UserRole;
 }
 
-const ROLES: UserRole[] = ['cashier', 'field', 'delivery', 'takeaway', 'kitchen', 'admin'];
+const ROLES: UserRole[] = ['cashier', 'field', 'delivery', 'takeaway', 'admin'];
 
 export function UserManagement() {
   const [users, setUsers] = useState<UserWithRole[]>([]);
