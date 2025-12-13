@@ -41,8 +41,21 @@ import {
   Package,
   Loader2,
   UtensilsCrossed,
-  Truck
+  Truck,
+  Trash2
 } from 'lucide-react';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from '@/components/ui/alert-dialog';
+import { supabase } from '@/integrations/supabase/client';
 
 // Main navigation tabs (6 total)
 type MainTab = 'home' | 'menu' | 'orders' | 'stats' | 'settings';
@@ -113,6 +126,37 @@ export default function AdminDashboard() {
   const handleRefresh = () => {
     refetch();
     toast.success('تم تحديث البيانات');
+  };
+
+  const [isDeletingOrders, setIsDeletingOrders] = useState(false);
+
+  const handleDeleteAllOrders = async () => {
+    setIsDeletingOrders(true);
+    try {
+      // Delete all order_items first (due to foreign key constraint)
+      const { error: itemsError } = await supabase
+        .from('order_items')
+        .delete()
+        .neq('id', '00000000-0000-0000-0000-000000000000'); // Delete all
+
+      if (itemsError) throw itemsError;
+
+      // Then delete all orders
+      const { error: ordersError } = await supabase
+        .from('orders')
+        .delete()
+        .neq('id', '00000000-0000-0000-0000-000000000000'); // Delete all
+
+      if (ordersError) throw ordersError;
+
+      toast.success('تم حذف جميع الطلبات بنجاح');
+      refetch();
+    } catch (error: any) {
+      console.error('Error deleting orders:', error);
+      toast.error('حدث خطأ أثناء حذف الطلبات');
+    } finally {
+      setIsDeletingOrders(false);
+    }
   };
 
 
@@ -452,6 +496,40 @@ export default function AdminDashboard() {
                   </div>
                 </Button>
                 
+                <AlertDialog>
+                  <AlertDialogTrigger asChild>
+                    <Button variant="destructive" size="lg" className="w-full justify-start h-auto py-4">
+                      <Trash2 className="w-5 h-5 ml-3" />
+                      <div className="text-right">
+                        <p className="font-semibold">حذف جميع الطلبات</p>
+                        <p className="text-sm opacity-80">حذف كل الطلبات من النظام نهائياً</p>
+                      </div>
+                    </Button>
+                  </AlertDialogTrigger>
+                  <AlertDialogContent>
+                    <AlertDialogHeader>
+                      <AlertDialogTitle>هل أنت متأكد؟</AlertDialogTitle>
+                      <AlertDialogDescription>
+                        سيتم حذف جميع الطلبات ({orders.length} طلب) نهائياً من النظام. هذا الإجراء لا يمكن التراجع عنه.
+                      </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter className="flex-row-reverse gap-2">
+                      <AlertDialogCancel>إلغاء</AlertDialogCancel>
+                      <AlertDialogAction
+                        onClick={handleDeleteAllOrders}
+                        className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                        disabled={isDeletingOrders}
+                      >
+                        {isDeletingOrders ? (
+                          <Loader2 className="w-4 h-4 animate-spin ml-2" />
+                        ) : (
+                          <Trash2 className="w-4 h-4 ml-2" />
+                        )}
+                        حذف الكل
+                      </AlertDialogAction>
+                    </AlertDialogFooter>
+                  </AlertDialogContent>
+                </AlertDialog>
                 
                 <LogoutConfirmButton />
               </TabsContent>
