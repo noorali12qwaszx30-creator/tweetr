@@ -1,6 +1,7 @@
 import { useMemo, useState } from 'react';
 import { Order } from '@/types';
-import { Users, UserPlus, UserCheck, DollarSign, TrendingUp, Phone, MapPin, ChevronDown, ChevronUp } from 'lucide-react';
+import { Users, UserPlus, UserCheck, DollarSign, TrendingUp, Phone, MapPin, ChevronDown, ChevronUp, MessageCircle } from 'lucide-react';
+import { Button } from '@/components/ui/button';
 
 interface CustomerAnalyticsProps {
   orders: Order[];
@@ -137,22 +138,45 @@ export function CustomerAnalytics({ orders }: CustomerAnalyticsProps) {
                 </button>
                 
                 {expandedCustomer === customer.phone && (
-                  <div className="p-3 bg-muted/10 border-t border-border space-y-2">
+                  <div className="p-3 bg-muted/10 border-t border-border space-y-3">
                     <div className="flex items-center gap-2 text-sm">
                       <Phone className="w-4 h-4 text-primary" />
                       <span className="text-muted-foreground">رقم الهاتف:</span>
-                      <a 
-                        href={`tel:${customer.phone}`} 
-                        className="font-medium text-primary hover:underline"
-                        dir="ltr"
-                      >
-                        {customer.phone}
-                      </a>
+                      <span className="font-medium" dir="ltr">{customer.phone}</span>
                     </div>
                     <div className="flex items-center gap-2 text-sm">
                       <MapPin className="w-4 h-4 text-primary" />
                       <span className="text-muted-foreground">العنوان:</span>
                       <span className="font-medium">{customer.address}</span>
+                    </div>
+                    
+                    {/* Action Buttons */}
+                    <div className="flex gap-2 pt-2">
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        className="flex-1 gap-2"
+                        asChild
+                      >
+                        <a href={`tel:${customer.phone}`}>
+                          <Phone className="w-4 h-4" />
+                          اتصال
+                        </a>
+                      </Button>
+                      <Button
+                        size="sm"
+                        className="flex-1 gap-2 bg-green-600 hover:bg-green-700 text-white"
+                        asChild
+                      >
+                        <a 
+                          href={`https://wa.me/964${customer.phone.replace(/^0/, '')}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                        >
+                          <MessageCircle className="w-4 h-4" />
+                          واتساب
+                        </a>
+                      </Button>
                     </div>
                   </div>
                 )}
