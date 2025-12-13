@@ -49,7 +49,7 @@ type MainTab = 'home' | 'menu' | 'orders' | 'stats' | 'settings';
 
 // Sub-tabs for each main section
 type OrdersSubTab = 'completed' | 'cancelled';
-type StatsSubTab = 'overview' | 'items' | 'customers' | 'finance' | 'areas';
+type StatsSubTab = 'items' | 'customers' | 'finance' | 'areas';
 type SettingsSubTab = 'general' | 'users' | 'reasons' | 'quickaccess' | 'areas';
 
 export default function AdminDashboard() {
@@ -60,7 +60,7 @@ export default function AdminDashboard() {
   
   const [activeTab, setActiveTab] = useState<MainTab>('home');
   const [ordersSubTab, setOrdersSubTab] = useState<OrdersSubTab>('completed');
-  const [statsSubTab, setStatsSubTab] = useState<StatsSubTab>('overview');
+  const [statsSubTab, setStatsSubTab] = useState<StatsSubTab>('items');
   const [settingsSubTab, setSettingsSubTab] = useState<SettingsSubTab>('general');
   const [selectedOrder, setSelectedOrder] = useState<OrderWithItems | null>(null);
 
@@ -347,26 +347,12 @@ export default function AdminDashboard() {
           <div className="space-y-4">
             {/* Sub-tabs */}
             <Tabs value={statsSubTab} onValueChange={(v) => setStatsSubTab(v as StatsSubTab)}>
-              <TabsList className="grid w-full grid-cols-5">
-                <TabsTrigger value="overview" className="text-xs px-1">نظرة عامة</TabsTrigger>
+              <TabsList className="grid w-full grid-cols-4">
                 <TabsTrigger value="items" className="text-xs px-1">المبيعات</TabsTrigger>
                 <TabsTrigger value="areas" className="text-xs px-1">المناطق</TabsTrigger>
                 <TabsTrigger value="customers" className="text-xs px-1">الزبائن</TabsTrigger>
                 <TabsTrigger value="finance" className="text-xs px-1">المالية</TabsTrigger>
               </TabsList>
-
-              <TabsContent value="overview" className="space-y-4 mt-4">
-                {/* KPI Grid */}
-                <div className="grid grid-cols-2 gap-3">
-                  <KPICard title="معدل التجهيز" value={avgPrepTime} suffix="دقيقة" icon={<Timer className="w-5 h-5" />} />
-                  <KPICard title="معدل التوصيل" value={avgDeliveryTime} suffix="دقيقة" icon={<Truck className="w-5 h-5" />} />
-                  <KPICard title="أسرع توصيل" value={fastestDelivery} suffix="دقيقة" icon={<Zap className="w-5 h-5" />} variant="success" />
-                  <KPICard title="أبطأ توصيل" value={slowestDelivery} suffix="دقيقة" icon={<AlertTriangle className="w-5 h-5" />} variant="warning" />
-                  <KPICard title="متوسط الطلب" value={Math.round(averageOrderValue)} suffix="د.ع" icon={<TrendingUp className="w-5 h-5" />} variant="info" />
-                  <KPICard title="العملاء" value={uniqueCustomers} icon={<Users className="w-5 h-5" />} />
-                </div>
-                <WeeklyChart orders={ordersForCharts} />
-              </TabsContent>
 
               <TabsContent value="items" className="space-y-4 mt-4">
                 {/* Items Summary */}
