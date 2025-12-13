@@ -4,7 +4,6 @@ import CashierDashboard from './dashboard/CashierDashboard';
 import FieldDashboard from './dashboard/FieldDashboard';
 import DeliveryDashboard from './dashboard/DeliveryDashboard';
 import TakeawayDashboard from './dashboard/TakeawayDashboard';
-import KitchenDashboard from './dashboard/KitchenDashboard';
 import AdminDashboard from './dashboard/AdminDashboard';
 
 export default function Dashboard() {
@@ -23,8 +22,6 @@ export default function Dashboard() {
       return <DeliveryDashboard />;
     case 'takeaway':
       return <TakeawayDashboard />;
-    case 'kitchen':
-      return <KitchenDashboard />;
     case 'admin':
       return <AdminDashboard />;
     default:
