@@ -16,7 +16,7 @@ import { DriverPerformance } from '@/components/admin/DriverPerformance';
 import { ActivityLogList } from '@/components/admin/ActivityLogList';
 import { CustomerAnalytics } from '@/components/admin/CustomerAnalytics';
 import { FinanceBreakdown } from '@/components/admin/FinanceBreakdown';
-import { ShiftHeader } from '@/components/admin/ShiftHeader';
+
 import { MenuManagement } from '@/components/admin/MenuManagement';
 import { toast } from 'sonner';
 import { format } from 'date-fns';
@@ -185,17 +185,6 @@ export default function AdminDashboard() {
         {/* HOME TAB - Dashboard Overview */}
         {activeTab === 'home' && (
           <div className="space-y-4">
-            {/* Shift Header */}
-            <ShiftHeader
-              restaurantName="مطعمي"
-              branchName="الفرع الرئيسي"
-              shiftNumber={currentShift.shiftNumber}
-              shiftStartTime={currentShift.startTime}
-              lastUpdated={lastUpdated}
-              onReset={handleResetShift}
-              onRefresh={handleRefresh}
-            />
-
             {/* Quick Stats */}
             <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
               <KPICard
