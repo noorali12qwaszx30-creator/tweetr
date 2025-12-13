@@ -140,38 +140,6 @@ export function FinanceBreakdown({ orders }: FinanceBreakdownProps) {
           </div>
         </div>
 
-        {/* Comparison */}
-        <div className="bg-card border border-border rounded-xl p-4 shadow-soft">
-          <h3 className="font-bold mb-4 flex items-center gap-2">
-            {finance.changePercent >= 0 ? 
-              <TrendingUp className="w-5 h-5 text-success" /> : 
-              <TrendingDown className="w-5 h-5 text-destructive" />
-            }
-            مقارنة مع أمس
-          </h3>
-          
-          <div className="space-y-4">
-            <div className={`p-4 rounded-xl ${finance.changePercent >= 0 ? 'bg-success/10 border border-success/30' : 'bg-destructive/10 border border-destructive/30'}`}>
-              <p className="text-sm text-muted-foreground mb-1">التغير في المبيعات</p>
-              <p className={`text-3xl font-bold ${finance.changePercent >= 0 ? 'text-success' : 'text-destructive'}`}>
-                {finance.changePercent >= 0 ? '+' : ''}{finance.changePercent}%
-              </p>
-            </div>
-            
-            <div className="bg-destructive/10 border border-destructive/30 rounded-xl p-4">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm text-muted-foreground">خسائر الإلغاء</p>
-                  <p className="text-xl font-bold text-destructive">{finance.cancelledValue.toLocaleString()} د.ع</p>
-                </div>
-                <div className="text-left">
-                  <p className="text-2xl font-bold text-destructive">{finance.cancelledCount}</p>
-                  <p className="text-xs text-muted-foreground">طلب ملغي</p>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
       </div>
     </div>
   );
