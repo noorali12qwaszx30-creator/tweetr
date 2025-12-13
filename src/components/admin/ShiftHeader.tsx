@@ -13,6 +13,8 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from '@/components/ui/alert-dialog';
+import { supabase } from '@/integrations/supabase/client';
+import { toast } from 'sonner';
 
 interface ShiftHeaderProps {
   restaurantName: string;
@@ -33,13 +35,30 @@ export function ShiftHeader({
   onReset,
   onRefresh,
 }: ShiftHeaderProps) {
-  const handleFullReset = () => {
-    // Clear all localStorage data
-    localStorage.clear();
-    // Call the original reset function
-    onReset();
-    // Reload the page to start fresh
-    window.location.reload();
+  const handleFullReset = async () => {
+    try {
+      // Call edge function to reset order counter in database
+      const { data, error } = await supabase.functions.invoke('reset-order-counter');
+      
+      if (error) {
+        console.error('Error resetting order counter:', error);
+        toast.error('خطأ في إعادة ضبط عداد الطلبات');
+        return;
+      }
+      
+      // Clear all localStorage data
+      localStorage.clear();
+      // Call the original reset function
+      onReset();
+      
+      toast.success('تم إعادة ضبط الشفت وعداد الطلبات بنجاح');
+      
+      // Reload the page to start fresh
+      window.location.reload();
+    } catch (err) {
+      console.error('Unexpected error:', err);
+      toast.error('خطأ غير متوقع');
+    }
   };
 
   return (
