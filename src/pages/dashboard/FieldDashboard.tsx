@@ -6,7 +6,7 @@ import { OrderCard } from '@/components/OrderCard';
 import { DeliveryPersonSelector } from '@/components/DeliveryPersonSelector';
 import { QuickAccessReturnButton } from '@/components/admin/QuickAccessReturnButton';
 import { LogoutConfirmButton } from '@/components/LogoutConfirmButton';
-import { FieldAccounting } from '@/components/admin/FieldAccounting';
+
 import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
 import { ROLE_LABELS } from '@/types';
@@ -17,7 +17,6 @@ import {
   Truck,
   XCircle,
   Settings,
-  Calculator,
   Clock,
   Loader2
 } from 'lucide-react';
@@ -228,10 +227,9 @@ export default function FieldDashboard() {
         {activeTab === 'admin' && (
           <div className="space-y-4">
             <h2 className="text-xl font-bold flex items-center gap-2">
-              <Calculator className="w-6 h-6 text-primary" />
-              المحاسبة
+              <Settings className="w-6 h-6 text-primary" />
+              الإعدادات
             </h2>
-            <FieldAccounting />
             <div className="mt-6">
               <LogoutConfirmButton />
             </div>
