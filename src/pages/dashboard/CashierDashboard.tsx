@@ -717,26 +717,8 @@ export default function CashierDashboard() {
         {/* Cancel Order Dialog */}
         {cancellingOrder && (
           <CancelOrderDialog
-            order={{
-              id: cancellingOrder.id,
-              orderNumber: cancellingOrder.order_number,
-              customer: {
-                name: cancellingOrder.customer_name,
-                phone: cancellingOrder.customer_phone,
-                address: cancellingOrder.customer_address || '',
-              },
-              items: cancellingOrder.items.map(i => ({
-                menuItem: { id: i.menu_item_id || '', name: i.menu_item_name, price: Number(i.menu_item_price), image: '', category: '' },
-                quantity: i.quantity,
-                notes: i.notes || undefined,
-              })),
-              status: cancellingOrder.status,
-              type: cancellingOrder.type,
-              notes: cancellingOrder.notes || undefined,
-              totalPrice: Number(cancellingOrder.total_price),
-              createdAt: new Date(cancellingOrder.created_at),
-              cashierName: cancellingOrder.cashier_name || '',
-            }}
+            orderId={cancellingOrder.id}
+            orderNumber={cancellingOrder.order_number}
             open={!!cancellingOrder}
             onOpenChange={(open) => !open && setCancellingOrder(null)}
             onCancel={handleCancelOrder}

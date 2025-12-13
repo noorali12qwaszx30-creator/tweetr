@@ -470,32 +470,8 @@ export default function TakeawayDashboard() {
             {/* Cancel Order Dialog */}
             {orderToCancel && (
               <CancelOrderDialog
-                order={{
-                  id: orderToCancel.id,
-                  orderNumber: orderToCancel.order_number,
-                  customer: {
-                    name: orderToCancel.customer_name,
-                    phone: orderToCancel.customer_phone,
-                    address: orderToCancel.customer_address || '',
-                  },
-                  items: orderToCancel.items.map(item => ({
-                    menuItem: {
-                      id: item.menu_item_id || item.id,
-                      name: item.menu_item_name,
-                      price: item.menu_item_price,
-                      image: '',
-                      category: '',
-                    },
-                    quantity: item.quantity,
-                    notes: item.notes || undefined,
-                  })),
-                  totalPrice: Number(orderToCancel.total_price),
-                  status: orderToCancel.status as any,
-                  type: orderToCancel.type,
-                  notes: orderToCancel.notes || undefined,
-                  createdAt: new Date(orderToCancel.created_at),
-                  cashierName: orderToCancel.cashier_name || '',
-                }}
+                orderId={orderToCancel.id}
+                orderNumber={orderToCancel.order_number}
                 open={cancelDialogOpen}
                 onOpenChange={setCancelDialogOpen}
                 onCancel={handleCancelConfirm}
