@@ -56,7 +56,7 @@ export default function AdminDashboard() {
   const { role } = useRole();
   const { user } = useAuth();
   const { orders, loading, refetch } = useSupabaseOrders();
-  const { currentShift, previousShift, activityLogs, lastUpdated, resetShift, addActivityLog } = useShift();
+  const { activityLogs, addActivityLog } = useShift();
   
   const [activeTab, setActiveTab] = useState<MainTab>('home');
   const [ordersSubTab, setOrdersSubTab] = useState<OrdersSubTab>('completed');
@@ -109,21 +109,12 @@ export default function AdminDashboard() {
     arr.findIndex(x => x.customer_phone === o.customer_phone) === idx
   ).length;
 
-  const handleResetShift = () => {
-    resetShift();
-    addActivityLog('إعادة ضبط الشفت', 'تم إعادة ضبط الشفت وتصفير الإحصائيات', role ? ROLE_LABELS[role] : 'مدير');
-    toast.success('تم إعادة ضبط الشفت بنجاح');
-  };
 
   const handleRefresh = () => {
     refetch();
     toast.success('تم تحديث البيانات');
   };
 
-  const getTrend = (current: number, previous: number | undefined) => {
-    if (!previous || previous === 0) return 0;
-    return Math.round(((current - previous) / previous) * 100);
-  };
 
   // Main navigation tabs
   const mainTabs: { id: MainTab; label: string; icon: React.ReactNode }[] = [
@@ -191,7 +182,6 @@ export default function AdminDashboard() {
                 title="إجمالي الطلبات"
                 value={totalOrders}
                 icon={<ClipboardList className="w-5 h-5" />}
-                trend={getTrend(totalOrders, previousShift?.totalOrders)}
               />
               <KPICard
                 title="المكتملة"
@@ -484,18 +474,6 @@ export default function AdminDashboard() {
                   </div>
                 </Button>
                 
-                <Button 
-                  variant="outline" 
-                  size="lg" 
-                  className="w-full justify-start h-auto py-4 border-destructive/30 hover:bg-destructive/10"
-                  onClick={handleResetShift}
-                >
-                  <RefreshCcw className="w-5 h-5 ml-3 text-destructive" />
-                  <div className="text-right">
-                    <p className="font-semibold text-destructive">إعادة ضبط الشفت</p>
-                    <p className="text-sm text-muted-foreground">إعادة العداد وتصفير الإحصائيات</p>
-                  </div>
-                </Button>
                 
                 <LogoutConfirmButton />
               </TabsContent>
