@@ -4,6 +4,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useSupabaseOrders, OrderWithItems } from '@/hooks/useSupabaseOrders';
 import { OrderCard } from '@/components/OrderCard';
 import { DeliveryPersonSelector } from '@/components/DeliveryPersonSelector';
+import { DeliveryAccountingDialog } from '@/components/DeliveryAccountingDialog';
 import { QuickAccessReturnButton } from '@/components/admin/QuickAccessReturnButton';
 import { LogoutConfirmButton } from '@/components/LogoutConfirmButton';
 
@@ -228,8 +229,13 @@ export default function FieldDashboard() {
           <div className="space-y-4">
             <h2 className="text-xl font-bold flex items-center gap-2">
               <Settings className="w-6 h-6 text-primary" />
-              الإعدادات
+              الإدارة
             </h2>
+            
+            <div className="space-y-3">
+              <DeliveryAccountingDialog orders={orders} />
+            </div>
+
             <div className="mt-6">
               <LogoutConfirmButton />
             </div>
