@@ -69,7 +69,9 @@ export function OrderCard({
             </span>
           )}
         </div>
-        <OrderTimer startTime={new Date(order.created_at)} />
+        {order.status !== 'cancelled' && order.status !== 'delivered' && (
+          <OrderTimer startTime={new Date(order.created_at)} />
+        )}
       </div>
 
       {/* Customer Info */}
