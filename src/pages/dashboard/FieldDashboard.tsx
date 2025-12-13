@@ -7,7 +7,7 @@ import { DeliveryPersonSelector } from '@/components/DeliveryPersonSelector';
 import { DeliveryAccountingDialog } from '@/components/DeliveryAccountingDialog';
 import { QuickAccessReturnButton } from '@/components/admin/QuickAccessReturnButton';
 import { LogoutConfirmButton } from '@/components/LogoutConfirmButton';
-
+import { CancelOrderDialog } from '@/components/CancelOrderDialog';
 import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
 import { ROLE_LABELS } from '@/types';
@@ -31,6 +31,8 @@ export default function FieldDashboard() {
   const [activeTab, setActiveTab] = useState<TabType>('orders');
   const [selectorOpen, setSelectorOpen] = useState(false);
   const [selectedOrder, setSelectedOrder] = useState<OrderWithItems | null>(null);
+  const [cancelDialogOpen, setCancelDialogOpen] = useState(false);
+  const [orderToCancel, setOrderToCancel] = useState<OrderWithItems | null>(null);
 
   const pendingOrders = orders.filter(o => o.status === 'pending');
   const preparingOrders = orders.filter(o => o.status === 'preparing');
@@ -53,8 +55,15 @@ export default function FieldDashboard() {
     }
   };
 
-  const handleCancelOrder = async (orderId: string) => {
-    await cancelOrder(orderId);
+  const handleOpenCancelDialog = (order: OrderWithItems) => {
+    setOrderToCancel(order);
+    setCancelDialogOpen(true);
+  };
+
+  const handleCancelWithReason = async (orderId: string, reason: string) => {
+    await cancelOrder(orderId, reason);
+    setCancelDialogOpen(false);
+    setOrderToCancel(null);
   };
 
   const handleMarkReady = async (orderId: string) => {
@@ -117,7 +126,7 @@ export default function FieldDashboard() {
                           <CheckCircle className="w-3 h-3 ml-1" />
                           نقل للجاهز
                         </Button>
-                        <Button variant="destructive" size="sm" onClick={() => handleCancelOrder(order.id)}>
+                        <Button variant="destructive" size="sm" onClick={() => handleOpenCancelDialog(order)}>
                           <XCircle className="w-3 h-3 ml-1" />
                           إلغاء
                         </Button>
@@ -176,7 +185,7 @@ export default function FieldDashboard() {
                           <Truck className="w-3 h-3 ml-1" />
                           تعيين موظف توصيل
                         </Button>
-                        <Button variant="destructive" size="sm" onClick={() => handleCancelOrder(order.id)}>
+                        <Button variant="destructive" size="sm" onClick={() => handleOpenCancelDialog(order)}>
                           <XCircle className="w-3 h-3 ml-1" />
                           إلغاء
                         </Button>
@@ -272,6 +281,17 @@ export default function FieldDashboard() {
         onSelect={handleAssignDelivery}
         orderNumber={selectedOrder?.order_number || 0}
       />
+
+      {/* Cancel Order Dialog */}
+      {orderToCancel && (
+        <CancelOrderDialog
+          orderId={orderToCancel.id}
+          orderNumber={orderToCancel.order_number}
+          open={cancelDialogOpen}
+          onOpenChange={setCancelDialogOpen}
+          onCancel={handleCancelWithReason}
+        />
+      )}
     </div>
   );
 }

@@ -1,5 +1,4 @@
 import { useState } from 'react';
-import { Order } from '@/types';
 import { useCancellationReasons } from '@/contexts/CancellationReasonsContext';
 import { Button } from '@/components/ui/button';
 import {
@@ -7,6 +6,7 @@ import {
   DialogContent,
   DialogHeader,
   DialogTitle,
+  DialogDescription,
 } from '@/components/ui/dialog';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Label } from '@/components/ui/label';
@@ -14,13 +14,14 @@ import { XCircle } from 'lucide-react';
 import { toast } from 'sonner';
 
 interface CancelOrderDialogProps {
-  order: Order;
+  orderId: string;
+  orderNumber: number;
   open: boolean;
   onOpenChange: (open: boolean) => void;
   onCancel: (orderId: string, reason: string) => void;
 }
 
-export function CancelOrderDialog({ order, open, onOpenChange, onCancel }: CancelOrderDialogProps) {
+export function CancelOrderDialog({ orderId, orderNumber, open, onOpenChange, onCancel }: CancelOrderDialogProps) {
   const { reasons } = useCancellationReasons();
   const [selectedReason, setSelectedReason] = useState<string>('');
 
@@ -30,7 +31,7 @@ export function CancelOrderDialog({ order, open, onOpenChange, onCancel }: Cance
       return;
     }
 
-    onCancel(order.id, selectedReason);
+    onCancel(orderId, selectedReason);
     toast.success('تم إلغاء الطلب');
     onOpenChange(false);
     setSelectedReason('');
@@ -42,8 +43,9 @@ export function CancelOrderDialog({ order, open, onOpenChange, onCancel }: Cance
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2 text-destructive">
             <XCircle className="w-5 h-5" />
-            إلغاء الطلب #{order.orderNumber}
+            إلغاء الطلب #{orderNumber}
           </DialogTitle>
+          <DialogDescription>اختر سبب الإلغاء من القائمة أدناه</DialogDescription>
         </DialogHeader>
 
         <div className="space-y-4">
