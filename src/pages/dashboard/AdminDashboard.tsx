@@ -12,7 +12,7 @@ import { QuickAccessPanel } from '@/components/admin/QuickAccessPanel';
 import { LogoutConfirmButton } from '@/components/LogoutConfirmButton';
 import { KPICard } from '@/components/admin/KPICard';
 import { OrdersChart, WeeklyChart } from '@/components/admin/OrdersChart';
-import { DriverPerformance } from '@/components/admin/DriverPerformance';
+
 import { ActivityLogList } from '@/components/admin/ActivityLogList';
 import { CustomerAnalytics } from '@/components/admin/CustomerAnalytics';
 import { FinanceBreakdown } from '@/components/admin/FinanceBreakdown';
@@ -34,18 +34,18 @@ import {
   ClipboardList,
   TrendingUp,
   DollarSign,
-  Truck,
   Timer,
   Zap,
   AlertTriangle,
   Home,
   Package,
   Loader2,
-  UtensilsCrossed
+  UtensilsCrossed,
+  Truck
 } from 'lucide-react';
 
 // Main navigation tabs (6 total)
-type MainTab = 'home' | 'menu' | 'orders' | 'stats' | 'delivery' | 'settings';
+type MainTab = 'home' | 'menu' | 'orders' | 'stats' | 'settings';
 
 // Sub-tabs for each main section
 type OrdersSubTab = 'completed' | 'cancelled';
@@ -122,7 +122,6 @@ export default function AdminDashboard() {
     { id: 'menu', label: 'المنيو', icon: <UtensilsCrossed className="w-5 h-5" /> },
     { id: 'orders', label: 'الطلبات', icon: <Package className="w-5 h-5" /> },
     { id: 'stats', label: 'الإحصائيات', icon: <BarChart3 className="w-5 h-5" /> },
-    { id: 'delivery', label: 'التوصيل', icon: <Truck className="w-5 h-5" /> },
     { id: 'settings', label: 'الإعدادات', icon: <Settings className="w-5 h-5" /> },
   ];
 
@@ -444,13 +443,6 @@ export default function AdminDashboard() {
           </div>
         )}
 
-        {/* DELIVERY TAB - Driver Performance */}
-        {activeTab === 'delivery' && (
-          <div className="space-y-4">
-            <h2 className="text-xl font-bold">أداء موظفي التوصيل</h2>
-            <DriverPerformance orders={ordersForCharts} />
-          </div>
-        )}
 
         {/* SETTINGS TAB - Configuration & Management */}
         {activeTab === 'settings' && (
