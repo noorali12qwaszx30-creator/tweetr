@@ -299,116 +299,119 @@ function SortableMenuItem({
     <div
       ref={setNodeRef}
       style={style}
-      className={`bg-card border border-border rounded-xl p-3 shadow-soft flex items-center gap-3 transition-all hover:shadow-elevated ${
+      className={`bg-card border border-border rounded-xl p-3 shadow-soft transition-all hover:shadow-elevated ${
         !item.is_available ? 'opacity-60 bg-muted/50' : ''
       }`}
     >
-      {/* Drag Handle */}
-      <button
-        {...attributes}
-        {...listeners}
-        className="touch-none p-1 text-muted-foreground hover:text-foreground transition-colors cursor-grab active:cursor-grabbing"
-      >
-        <GripVertical className="w-5 h-5" />
-      </button>
+      <div className="flex items-center gap-2 sm:gap-3">
+        {/* Drag Handle */}
+        <button
+          {...attributes}
+          {...listeners}
+          className="touch-none p-1 text-muted-foreground hover:text-foreground transition-colors cursor-grab active:cursor-grabbing"
+        >
+          <GripVertical className="w-4 h-4 sm:w-5 sm:h-5" />
+        </button>
 
-      {/* Image */}
-      <button
-        onClick={() => onImageClick(item)}
-        className="relative w-16 h-16 rounded-lg overflow-hidden bg-muted flex-shrink-0 group"
-      >
-        {item.image ? (
-          <img
-            src={item.image}
-            alt={item.name}
-            className="w-full h-full object-cover"
-          />
-        ) : (
-          <div className="w-full h-full flex items-center justify-center">
-            <UtensilsCrossed className="w-6 h-6 text-muted-foreground" />
+        {/* Image */}
+        <button
+          onClick={() => onImageClick(item)}
+          className="relative w-12 h-12 sm:w-16 sm:h-16 rounded-lg overflow-hidden bg-muted flex-shrink-0 group"
+        >
+          {item.image ? (
+            <img
+              src={item.image}
+              alt={item.name}
+              className="w-full h-full object-cover"
+            />
+          ) : (
+            <div className="w-full h-full flex items-center justify-center">
+              <UtensilsCrossed className="w-5 h-5 sm:w-6 sm:h-6 text-muted-foreground" />
+            </div>
+          )}
+          <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+            <ImageIcon className="w-4 h-4 sm:w-5 sm:h-5 text-white" />
           </div>
-        )}
-        <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-          <ImageIcon className="w-5 h-5 text-white" />
+        </button>
+
+        {/* Details */}
+        <div className="flex-1 min-w-0">
+          {/* Name */}
+          {editingField === 'name' ? (
+            <div className="flex items-center gap-1">
+              <Input
+                ref={inputRef}
+                value={tempValue}
+                onChange={(e) => setTempValue(e.target.value)}
+                onKeyDown={handleKeyDown}
+                onBlur={handleSaveEdit}
+                className="h-7 sm:h-8 text-xs sm:text-sm font-semibold"
+              />
+              <Button size="icon" variant="ghost" className="h-6 w-6 sm:h-7 sm:w-7" onClick={handleSaveEdit}>
+                <Check className="w-3 h-3 sm:w-4 sm:h-4 text-success" />
+              </Button>
+              <Button size="icon" variant="ghost" className="h-6 w-6 sm:h-7 sm:w-7" onClick={handleCancelEdit}>
+                <X className="w-3 h-3 sm:w-4 sm:h-4 text-destructive" />
+              </Button>
+            </div>
+          ) : (
+            <button
+              onClick={() => handleStartEdit('name')}
+              className="block w-full text-right font-semibold text-foreground text-xs sm:text-sm truncate hover:text-primary transition-colors group"
+            >
+              {item.name}
+              <Edit3 className="w-3 h-3 inline mr-1 opacity-0 group-hover:opacity-100 transition-opacity" />
+            </button>
+          )}
+
+          {/* Price */}
+          {editingField === 'price' ? (
+            <div className="flex items-center gap-1 mt-1">
+              <Input
+                ref={inputRef}
+                type="number"
+                value={tempValue}
+                onChange={(e) => setTempValue(e.target.value)}
+                onKeyDown={handleKeyDown}
+                onBlur={handleSaveEdit}
+                className="h-6 sm:h-7 text-xs sm:text-sm w-20 sm:w-24"
+              />
+              <span className="text-xs text-muted-foreground">د.ع</span>
+              <Button size="icon" variant="ghost" className="h-5 w-5 sm:h-6 sm:w-6" onClick={handleSaveEdit}>
+                <Check className="w-3 h-3 text-success" />
+              </Button>
+            </div>
+          ) : (
+            <button
+              onClick={() => handleStartEdit('price')}
+              className="text-xs sm:text-sm text-primary font-bold hover:underline"
+            >
+              {item.price.toLocaleString()} د.ع
+            </button>
+          )}
         </div>
-      </button>
 
-      {/* Details */}
-      <div className="flex-1 min-w-0">
-        {/* Name */}
-        {editingField === 'name' ? (
-          <div className="flex items-center gap-1">
-            <Input
-              ref={inputRef}
-              value={tempValue}
-              onChange={(e) => setTempValue(e.target.value)}
-              onKeyDown={handleKeyDown}
-              onBlur={handleSaveEdit}
-              className="h-8 text-sm font-semibold"
-            />
-            <Button size="icon" variant="ghost" className="h-7 w-7" onClick={handleSaveEdit}>
-              <Check className="w-4 h-4 text-success" />
-            </Button>
-            <Button size="icon" variant="ghost" className="h-7 w-7" onClick={handleCancelEdit}>
-              <X className="w-4 h-4 text-destructive" />
-            </Button>
-          </div>
-        ) : (
-          <button
-            onClick={() => handleStartEdit('name')}
-            className="block w-full text-right font-semibold text-foreground truncate hover:text-primary transition-colors group"
-          >
-            {item.name}
-            <Edit3 className="w-3 h-3 inline mr-1 opacity-0 group-hover:opacity-100 transition-opacity" />
-          </button>
-        )}
+        {/* Availability Toggle */}
+        <div className="flex flex-col sm:flex-row items-center gap-1 sm:gap-2">
+          <span className={`text-[10px] sm:text-xs ${item.is_available ? 'text-success' : 'text-destructive'}`}>
+            {item.is_available ? 'متوفر' : 'نفذ'}
+          </span>
+          <Switch
+            checked={item.is_available}
+            onCheckedChange={(checked) => onToggleAvailability(item.id, checked)}
+            className="scale-75 sm:scale-100"
+          />
+        </div>
 
-        {/* Price */}
-        {editingField === 'price' ? (
-          <div className="flex items-center gap-1 mt-1">
-            <Input
-              ref={inputRef}
-              type="number"
-              value={tempValue}
-              onChange={(e) => setTempValue(e.target.value)}
-              onKeyDown={handleKeyDown}
-              onBlur={handleSaveEdit}
-              className="h-7 text-sm w-24"
-            />
-            <span className="text-xs text-muted-foreground">د.ع</span>
-            <Button size="icon" variant="ghost" className="h-6 w-6" onClick={handleSaveEdit}>
-              <Check className="w-3 h-3 text-success" />
-            </Button>
-          </div>
-        ) : (
-          <button
-            onClick={() => handleStartEdit('price')}
-            className="text-sm text-primary font-bold hover:underline"
-          >
-            {item.price.toLocaleString()} د.ع
-          </button>
-        )}
+        {/* Delete Button */}
+        <button
+          onClick={() => onDelete(item)}
+          className="p-1.5 sm:p-2 text-muted-foreground hover:text-destructive hover:bg-destructive/10 rounded-lg transition-colors"
+          title="حذف الصنف"
+        >
+          <Trash2 className="w-4 h-4" />
+        </button>
       </div>
-
-      {/* Availability Toggle */}
-      <div className="flex items-center gap-2">
-        <span className={`text-xs ${item.is_available ? 'text-success' : 'text-destructive'}`}>
-          {item.is_available ? 'متوفر' : 'نفذ'}
-        </span>
-        <Switch
-          checked={item.is_available}
-          onCheckedChange={(checked) => onToggleAvailability(item.id, checked)}
-        />
-      </div>
-
-      {/* Delete Button */}
-      <button
-        onClick={() => onDelete(item)}
-        className="p-2 text-muted-foreground hover:text-destructive hover:bg-destructive/10 rounded-lg transition-colors"
-        title="حذف الصنف"
-      >
-        <Trash2 className="w-4 h-4" />
-      </button>
     </div>
   );
 }
@@ -803,7 +806,7 @@ export function MenuManagement() {
   }
 
   return (
-    <div className="relative h-[calc(100vh-12rem)]">
+    <div className="relative min-h-[60vh]">
       {/* Search Bar */}
       <div className="mb-4">
         <div className="relative">
@@ -817,75 +820,71 @@ export function MenuManagement() {
         </div>
       </div>
 
-      <div className="flex gap-4 h-full">
-        {/* Categories Sidebar */}
-        <div className="w-32 shrink-0">
-          <ScrollArea className="h-full">
-            <div className="space-y-2">
-              {/* Category Management Button */}
-              <button
-                onClick={() => setCategoryManagementOpen(true)}
-                className="w-full text-center px-3 py-2 rounded-xl font-medium text-xs transition-all bg-muted/50 border border-dashed border-border hover:border-primary hover:text-primary"
-              >
-                <Settings className="w-4 h-4 mx-auto mb-1" />
-                إدارة الأقسام
-              </button>
-
-              {categories.map((category) => (
-                <button
-                  key={category}
-                  onClick={() => setActiveCategory(category)}
-                  className={`w-full text-right px-3 py-3 rounded-xl font-medium text-sm transition-all ${
-                    activeCategory === category
-                      ? 'bg-primary text-primary-foreground shadow-soft'
-                      : 'bg-card border border-border hover:bg-muted'
-                  }`}
-                >
-                  {category}
-                  <span className="block text-xs mt-0.5 opacity-80">
-                    {menuItems.filter((i) => i.category === category).length} صنف
-                  </span>
-                </button>
-              ))}
-            </div>
-          </ScrollArea>
-        </div>
-
-        {/* Menu Items Grid */}
-        <div className="flex-1">
-          <ScrollArea className="h-full">
-            <DndContext
-              sensors={sensors}
-              collisionDetection={closestCenter}
-              onDragEnd={handleDragEnd}
+      {/* Categories - Horizontal scroll on mobile, sidebar on desktop */}
+      <div className="mb-4">
+        <ScrollArea className="w-full">
+          <div className="flex md:flex-col gap-2 pb-2 md:pb-0">
+            {/* Category Management Button */}
+            <button
+              onClick={() => setCategoryManagementOpen(true)}
+              className="flex-shrink-0 text-center px-4 py-2 md:px-3 md:py-2 rounded-xl font-medium text-xs transition-all bg-muted/50 border border-dashed border-border hover:border-primary hover:text-primary whitespace-nowrap"
             >
-              <SortableContext
-                items={filteredItems.map((i) => i.id)}
-                strategy={verticalListSortingStrategy}
+              <Settings className="w-4 h-4 inline-block md:block md:mx-auto md:mb-1 ml-1 md:ml-0" />
+              <span className="md:block">إدارة الأقسام</span>
+            </button>
+
+            {categories.map((category) => (
+              <button
+                key={category}
+                onClick={() => setActiveCategory(category)}
+                className={`flex-shrink-0 text-center md:text-right px-4 py-2 md:px-3 md:py-3 rounded-xl font-medium text-sm transition-all whitespace-nowrap ${
+                  activeCategory === category
+                    ? 'bg-primary text-primary-foreground shadow-soft'
+                    : 'bg-card border border-border hover:bg-muted'
+                }`}
               >
-                <div className="space-y-3 pb-20">
-                  {filteredItems.length === 0 ? (
-                    <div className="text-center py-12 text-muted-foreground">
-                      <UtensilsCrossed className="w-12 h-12 mx-auto mb-4 opacity-50" />
-                      <p>لا توجد أصناف في هذا القسم</p>
-                    </div>
-                  ) : (
-                    filteredItems.map((item) => (
-                      <SortableMenuItem
-                        key={item.id}
-                        item={item}
-                        onToggleAvailability={handleToggleAvailability}
-                        onUpdateField={handleUpdateField}
-                        onImageClick={setImageUpdateItem}
-                        onDelete={setDeleteItem}
-                      />
-                    ))
-                  )}
+                <span>{category}</span>
+                <span className="inline md:block text-xs mr-1 md:mr-0 md:mt-0.5 opacity-80">
+                  ({menuItems.filter((i) => i.category === category).length})
+                </span>
+              </button>
+            ))}
+          </div>
+        </ScrollArea>
+      </div>
+
+      {/* Menu Items List */}
+      <div className="flex-1">
+        <DndContext
+          sensors={sensors}
+          collisionDetection={closestCenter}
+          onDragEnd={handleDragEnd}
+        >
+          <SortableContext
+            items={filteredItems.map((i) => i.id)}
+            strategy={verticalListSortingStrategy}
+          >
+            <div className="space-y-3 pb-24">
+              {filteredItems.length === 0 ? (
+                <div className="text-center py-12 text-muted-foreground">
+                  <UtensilsCrossed className="w-12 h-12 mx-auto mb-4 opacity-50" />
+                  <p>لا توجد أصناف في هذا القسم</p>
                 </div>
-              </SortableContext>
-            </DndContext>
-          </ScrollArea>
-        </div>
+              ) : (
+                filteredItems.map((item) => (
+                  <SortableMenuItem
+                    key={item.id}
+                    item={item}
+                    onToggleAvailability={handleToggleAvailability}
+                    onUpdateField={handleUpdateField}
+                    onImageClick={setImageUpdateItem}
+                    onDelete={setDeleteItem}
+                  />
+                ))
+              )}
+            </div>
+          </SortableContext>
+        </DndContext>
       </div>
 
       {/* Floating Add Button */}
