@@ -86,59 +86,32 @@ export function CustomerAnalytics({ orders }: CustomerAnalyticsProps) {
         </div>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-        {/* Top Customers */}
-        <div className="bg-card border border-border rounded-xl p-4 shadow-soft">
-          <h3 className="font-bold mb-4 flex items-center gap-2">
-            <TrendingUp className="w-5 h-5 text-primary" />
-            أعلى العملاء صرفاً
-          </h3>
-          {analytics.topCustomers.length === 0 ? (
-            <p className="text-muted-foreground text-center py-4">لا توجد بيانات</p>
-          ) : (
-            <div className="space-y-2">
-              {analytics.topCustomers.map((customer, idx) => (
-                <div key={idx} className="flex items-center justify-between p-2 bg-muted/30 rounded-lg">
-                  <div className="flex items-center gap-2">
-                    <span className="w-6 h-6 flex items-center justify-center bg-primary/10 text-primary rounded-full text-xs font-bold">
-                      {idx + 1}
-                    </span>
-                    <span className="font-medium">{customer.name}</span>
-                  </div>
-                  <div className="text-left">
-                    <p className="font-bold text-success">{customer.totalSpent.toLocaleString()} د.ع</p>
-                    <p className="text-xs text-muted-foreground">{customer.orders} طلب</p>
-                  </div>
+      {/* Top Customers */}
+      <div className="bg-card border border-border rounded-xl p-4 shadow-soft">
+        <h3 className="font-bold mb-4 flex items-center gap-2">
+          <TrendingUp className="w-5 h-5 text-primary" />
+          أعلى العملاء صرفاً
+        </h3>
+        {analytics.topCustomers.length === 0 ? (
+          <p className="text-muted-foreground text-center py-4">لا توجد بيانات</p>
+        ) : (
+          <div className="space-y-2">
+            {analytics.topCustomers.map((customer, idx) => (
+              <div key={idx} className="flex items-center justify-between p-2 bg-muted/30 rounded-lg">
+                <div className="flex items-center gap-2">
+                  <span className="w-6 h-6 flex items-center justify-center bg-primary/10 text-primary rounded-full text-xs font-bold">
+                    {idx + 1}
+                  </span>
+                  <span className="font-medium">{customer.name}</span>
                 </div>
-              ))}
-            </div>
-          )}
-        </div>
-
-        {/* Top Areas */}
-        <div className="bg-card border border-border rounded-xl p-4 shadow-soft">
-          <h3 className="font-bold mb-4 flex items-center gap-2">
-            <MapPin className="w-5 h-5 text-primary" />
-            المناطق الأكثر طلباً
-          </h3>
-          {analytics.topAreas.length === 0 ? (
-            <p className="text-muted-foreground text-center py-4">لا توجد بيانات</p>
-          ) : (
-            <div className="space-y-2">
-              {analytics.topAreas.map(([area, count], idx) => (
-                <div key={area} className="flex items-center justify-between p-2 bg-muted/30 rounded-lg">
-                  <div className="flex items-center gap-2">
-                    <span className="w-6 h-6 flex items-center justify-center bg-info/10 text-info rounded-full text-xs font-bold">
-                      {idx + 1}
-                    </span>
-                    <span className="font-medium">{area}</span>
-                  </div>
-                  <span className="font-bold text-info">{count} طلب</span>
+                <div className="text-left">
+                  <p className="font-bold text-success">{customer.totalSpent.toLocaleString()} د.ع</p>
+                  <p className="text-xs text-muted-foreground">{customer.orders} طلب</p>
                 </div>
-              ))}
-            </div>
-          )}
-        </div>
+              </div>
+            ))}
+          </div>
+        )}
       </div>
     </div>
   );
