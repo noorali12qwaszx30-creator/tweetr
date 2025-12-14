@@ -38,7 +38,65 @@ const ROLE_DESCRIPTIONS: Record<UserRole, string> = {
   admin: 'إدارة النظام الكاملة',
 };
 
-const ROLES: UserRole[] = ['admin', 'cashier', 'field', 'delivery', 'takeaway'];
+// First row: 2 items, Second row: admin centered, Third row: 2 items
+const ROLES_TOP: UserRole[] = ['cashier', 'field'];
+const ROLES_CENTER: UserRole[] = ['admin'];
+const ROLES_BOTTOM: UserRole[] = ['delivery', 'takeaway'];
+
+// RoleButton component
+interface RoleButtonProps {
+  role: UserRole;
+  index: number;
+  mounted: boolean;
+  onSelect: (role: UserRole) => void;
+  isCenter?: boolean;
+}
+
+const RoleButton = ({ role, index, mounted, onSelect, isCenter }: RoleButtonProps) => (
+  <button
+    onClick={() => onSelect(role)}
+    className={`
+      group relative bg-card/60 backdrop-blur-xl border-2 border-border/50 rounded-2xl sm:rounded-3xl p-4 sm:p-6 
+      transition-all duration-500 active:scale-95 hover:scale-105 hover:border-primary/50
+      hover:shadow-2xl hover:shadow-primary/20
+      focus:outline-none focus:ring-4 focus:ring-primary/20
+      ${isCenter ? 'w-full max-w-xs' : ''}
+      ${mounted ? 'opacity-100' : 'opacity-0'}
+    `}
+    style={{ 
+      animation: mounted 
+        ? `slide-up 0.6s cubic-bezier(0.16, 1, 0.3, 1) ${0.1 + index * 0.1}s forwards` 
+        : 'none',
+      opacity: 0,
+    }}
+  >
+    {/* Glow effect on hover */}
+    <div className="absolute inset-0 rounded-3xl bg-gradient-to-br from-primary/0 via-primary/0 to-primary/0 group-hover:from-primary/10 group-hover:via-primary/5 group-hover:to-transparent transition-all duration-500" />
+    
+    {/* Selected indicator */}
+    <div className="absolute top-3 right-3 w-3 h-3 rounded-full bg-primary/0 group-hover:bg-primary group-hover:animate-pulse transition-all duration-300" />
+
+    <div className="relative flex flex-col items-center gap-2 sm:gap-4">
+      {/* Icon container */}
+      <div className={`${isCenter ? 'w-16 h-16 sm:w-20 sm:h-20 md:w-24 md:h-24' : 'w-12 h-12 sm:w-16 sm:h-16 md:w-20 md:h-20'} rounded-xl sm:rounded-2xl bg-gradient-to-br from-muted to-muted/50 flex items-center justify-center text-muted-foreground group-hover:from-primary group-hover:to-primary/80 group-hover:text-primary-foreground transition-all duration-500 group-hover:scale-110 group-hover:rotate-3 group-hover:shadow-lg group-hover:shadow-primary/30`}>
+        <div className={isCenter ? 'scale-100 sm:scale-125' : 'scale-75 sm:scale-100'}>{ROLE_ICONS[role]}</div>
+      </div>
+
+      {/* Role name */}
+      <div className="text-center">
+        <h3 className={`font-bold ${isCenter ? 'text-base sm:text-lg md:text-xl' : 'text-sm sm:text-base md:text-lg'} text-foreground group-hover:text-primary transition-colors duration-300`}>
+          {ROLE_LABELS[role]}
+        </h3>
+        <p className="text-[10px] sm:text-xs text-muted-foreground mt-1 opacity-0 group-hover:opacity-100 transition-opacity duration-300 hidden sm:block">
+          {ROLE_DESCRIPTIONS[role]}
+        </p>
+      </div>
+    </div>
+
+    {/* Bottom accent line */}
+    <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-0 h-1 bg-gradient-to-r from-transparent via-primary to-transparent rounded-full group-hover:w-3/4 transition-all duration-500" />
+  </button>
+);
 
 export default function RoleSelector() {
   const navigate = useNavigate();
@@ -240,53 +298,28 @@ export default function RoleSelector() {
           </p>
         </div>
 
-        {/* Role Selection Grid */}
-        <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 sm:gap-4 md:gap-6 px-2">
-          {ROLES.map((role, index) => (
-            <button
-              key={role}
-              onClick={() => handleSelectRole(role)}
-              className={`
-                group relative bg-card/60 backdrop-blur-xl border-2 border-border/50 rounded-2xl sm:rounded-3xl p-4 sm:p-6 
-                transition-all duration-500 active:scale-95 hover:scale-105 hover:border-primary/50
-                hover:shadow-2xl hover:shadow-primary/20
-                focus:outline-none focus:ring-4 focus:ring-primary/20
-                ${mounted ? 'opacity-100' : 'opacity-0'}
-              `}
-              style={{ 
-                animation: mounted 
-                  ? `slide-up 0.6s cubic-bezier(0.16, 1, 0.3, 1) ${0.1 + index * 0.1}s forwards` 
-                  : 'none',
-                opacity: 0,
-              }}
-            >
-              {/* Glow effect on hover */}
-              <div className="absolute inset-0 rounded-3xl bg-gradient-to-br from-primary/0 via-primary/0 to-primary/0 group-hover:from-primary/10 group-hover:via-primary/5 group-hover:to-transparent transition-all duration-500" />
-              
-              {/* Selected indicator */}
-              <div className="absolute top-3 right-3 w-3 h-3 rounded-full bg-primary/0 group-hover:bg-primary group-hover:animate-pulse transition-all duration-300" />
-
-              <div className="relative flex flex-col items-center gap-2 sm:gap-4">
-                {/* Icon container */}
-                <div className="w-12 h-12 sm:w-16 sm:h-16 md:w-20 md:h-20 rounded-xl sm:rounded-2xl bg-gradient-to-br from-muted to-muted/50 flex items-center justify-center text-muted-foreground group-hover:from-primary group-hover:to-primary/80 group-hover:text-primary-foreground transition-all duration-500 group-hover:scale-110 group-hover:rotate-3 group-hover:shadow-lg group-hover:shadow-primary/30">
-                  <div className="scale-75 sm:scale-100">{ROLE_ICONS[role]}</div>
-                </div>
-
-                {/* Role name */}
-                <div className="text-center">
-                  <h3 className="font-bold text-sm sm:text-base md:text-lg text-foreground group-hover:text-primary transition-colors duration-300">
-                    {ROLE_LABELS[role]}
-                  </h3>
-                  <p className="text-[10px] sm:text-xs text-muted-foreground mt-1 opacity-0 group-hover:opacity-100 transition-opacity duration-300 hidden sm:block">
-                    {ROLE_DESCRIPTIONS[role]}
-                  </p>
-                </div>
-              </div>
-
-              {/* Bottom accent line */}
-              <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-0 h-1 bg-gradient-to-r from-transparent via-primary to-transparent rounded-full group-hover:w-3/4 transition-all duration-500" />
-            </button>
-          ))}
+        {/* Role Selection Grid - Symmetric layout with admin centered */}
+        <div className="flex flex-col gap-3 sm:gap-4 md:gap-6 px-2">
+          {/* Top row - 2 items */}
+          <div className="grid grid-cols-2 gap-3 sm:gap-4 md:gap-6 max-w-2xl mx-auto w-full">
+            {ROLES_TOP.map((role, index) => (
+              <RoleButton key={role} role={role} index={index} mounted={mounted} onSelect={handleSelectRole} />
+            ))}
+          </div>
+          
+          {/* Center row - Admin centered */}
+          <div className="flex justify-center">
+            {ROLES_CENTER.map((role, index) => (
+              <RoleButton key={role} role={role} index={index + 2} mounted={mounted} onSelect={handleSelectRole} isCenter />
+            ))}
+          </div>
+          
+          {/* Bottom row - 2 items */}
+          <div className="grid grid-cols-2 gap-3 sm:gap-4 md:gap-6 max-w-2xl mx-auto w-full">
+            {ROLES_BOTTOM.map((role, index) => (
+              <RoleButton key={role} role={role} index={index + 3} mounted={mounted} onSelect={handleSelectRole} />
+            ))}
+          </div>
         </div>
 
         {/* Footer */}
