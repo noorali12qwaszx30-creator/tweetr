@@ -137,7 +137,7 @@ export default function RoleSelector() {
     setIsLoading(true);
     setError(null);
 
-    const { error: loginError } = await login(username, password);
+    const { error: loginError } = await login(username, password, selectedRole!);
 
     if (loginError) {
       setError(loginError);
