@@ -42,7 +42,8 @@ import {
   Loader2,
   UtensilsCrossed,
   Truck,
-  Trash2
+  Trash2,
+  Archive
 } from 'lucide-react';
 import {
   AlertDialog,
@@ -128,34 +129,26 @@ export default function AdminDashboard() {
     toast.success('تم تحديث البيانات');
   };
 
-  const [isDeletingOrders, setIsDeletingOrders] = useState(false);
+  const [isArchivingOrders, setIsArchivingOrders] = useState(false);
 
-  const handleDeleteAllOrders = async () => {
-    setIsDeletingOrders(true);
+  const handleArchiveAllOrders = async () => {
+    setIsArchivingOrders(true);
     try {
-      // Delete all order_items first (due to foreign key constraint)
-      const { error: itemsError } = await supabase
-        .from('order_items')
-        .delete()
-        .neq('id', '00000000-0000-0000-0000-000000000000'); // Delete all
-
-      if (itemsError) throw itemsError;
-
-      // Then delete all orders
+      // Archive all non-archived orders (set is_archived = true)
       const { error: ordersError } = await supabase
         .from('orders')
-        .delete()
-        .neq('id', '00000000-0000-0000-0000-000000000000'); // Delete all
+        .update({ is_archived: true })
+        .eq('is_archived', false);
 
       if (ordersError) throw ordersError;
 
-      toast.success('تم حذف جميع الطلبات بنجاح');
+      toast.success('تم أرشفة جميع الطلبات بنجاح');
       refetch();
     } catch (error: any) {
-      console.error('Error deleting orders:', error);
-      toast.error('حدث خطأ أثناء حذف الطلبات');
+      console.error('Error archiving orders:', error);
+      toast.error('حدث خطأ أثناء أرشفة الطلبات');
     } finally {
-      setIsDeletingOrders(false);
+      setIsArchivingOrders(false);
     }
   };
 
@@ -498,34 +491,41 @@ export default function AdminDashboard() {
                 
                 <AlertDialog>
                   <AlertDialogTrigger asChild>
-                    <Button variant="destructive" size="lg" className="w-full justify-start h-auto py-4">
-                      <Trash2 className="w-5 h-5 ml-3" />
+                    <Button 
+                      variant="outline" 
+                      size="lg" 
+                      className="w-full justify-start h-auto py-4 border-2 border-amber-500 bg-amber-50 hover:bg-amber-100 text-amber-700 hover:text-amber-800"
+                    >
+                      <Archive className="w-6 h-6 ml-3 text-amber-600" />
                       <div className="text-right">
-                        <p className="font-semibold">حذف جميع الطلبات</p>
-                        <p className="text-sm opacity-80">حذف كل الطلبات من النظام نهائياً</p>
+                        <p className="font-bold text-lg">أرشفة جميع الطلبات</p>
+                        <p className="text-sm opacity-80">إخفاء الطلبات من التطبيق مع الاحتفاظ بها في قاعدة البيانات</p>
                       </div>
                     </Button>
                   </AlertDialogTrigger>
                   <AlertDialogContent>
                     <AlertDialogHeader>
-                      <AlertDialogTitle>هل أنت متأكد؟</AlertDialogTitle>
+                      <AlertDialogTitle className="flex items-center gap-2">
+                        <Archive className="w-5 h-5 text-amber-600" />
+                        أرشفة جميع الطلبات
+                      </AlertDialogTitle>
                       <AlertDialogDescription>
-                        سيتم حذف جميع الطلبات ({orders.length} طلب) نهائياً من النظام. هذا الإجراء لا يمكن التراجع عنه.
+                        سيتم أرشفة جميع الطلبات ({orders.length} طلب) من التطبيق. الطلبات ستبقى محفوظة في قاعدة البيانات ويمكن استرجاعها لاحقاً.
                       </AlertDialogDescription>
                     </AlertDialogHeader>
                     <AlertDialogFooter className="flex-row-reverse gap-2">
                       <AlertDialogCancel>إلغاء</AlertDialogCancel>
                       <AlertDialogAction
-                        onClick={handleDeleteAllOrders}
-                        className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-                        disabled={isDeletingOrders}
+                        onClick={handleArchiveAllOrders}
+                        className="bg-amber-600 text-white hover:bg-amber-700"
+                        disabled={isArchivingOrders}
                       >
-                        {isDeletingOrders ? (
+                        {isArchivingOrders ? (
                           <Loader2 className="w-4 h-4 animate-spin ml-2" />
                         ) : (
-                          <Trash2 className="w-4 h-4 ml-2" />
+                          <Archive className="w-4 h-4 ml-2" />
                         )}
-                        حذف الكل
+                        أرشفة الكل
                       </AlertDialogAction>
                     </AlertDialogFooter>
                   </AlertDialogContent>
