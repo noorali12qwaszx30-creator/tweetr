@@ -12,50 +12,17 @@ import { QuickAccessPanel } from '@/components/admin/QuickAccessPanel';
 import { LogoutConfirmButton } from '@/components/LogoutConfirmButton';
 import { KPICard } from '@/components/admin/KPICard';
 import { OrdersChart, WeeklyChart } from '@/components/admin/OrdersChart';
-
 import { ActivityLogList } from '@/components/admin/ActivityLogList';
 import { CustomerAnalytics } from '@/components/admin/CustomerAnalytics';
 import { FinanceBreakdown } from '@/components/admin/FinanceBreakdown';
-
 import { MenuManagement } from '@/components/admin/MenuManagement';
 import { toast } from 'sonner';
 import { format } from 'date-fns';
 import { ar } from 'date-fns/locale';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { ROLE_LABELS } from '@/types';
-import {
-  Settings,
-  Users,
-  BarChart3,
-  RefreshCcw,
-  ShieldCheck,
-  XCircle,
-  CheckCircle,
-  ClipboardList,
-  TrendingUp,
-  DollarSign,
-  Timer,
-  Zap,
-  AlertTriangle,
-  Home,
-  Package,
-  Loader2,
-  UtensilsCrossed,
-  Truck,
-  Trash2,
-  Archive
-} from 'lucide-react';
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-  AlertDialogTrigger,
-} from '@/components/ui/alert-dialog';
+import { Settings, Users, BarChart3, RefreshCcw, ShieldCheck, XCircle, CheckCircle, ClipboardList, TrendingUp, DollarSign, Timer, Zap, AlertTriangle, Home, Package, Loader2, UtensilsCrossed, Truck, Trash2, Archive } from 'lucide-react';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 import { supabase } from '@/integrations/supabase/client';
 
 // Main navigation tabs (6 total)
@@ -65,13 +32,22 @@ type MainTab = 'home' | 'menu' | 'orders' | 'stats' | 'settings';
 type OrdersSubTab = 'completed' | 'cancelled';
 type StatsSubTab = 'items' | 'customers' | 'finance' | 'areas';
 type SettingsSubTab = 'general' | 'users' | 'reasons' | 'quickaccess' | 'areas';
-
 export default function AdminDashboard() {
-  const { role } = useRole();
-  const { user } = useAuth();
-  const { orders, loading, refetch } = useSupabaseOrders();
-  const { activityLogs, addActivityLog } = useShift();
-  
+  const {
+    role
+  } = useRole();
+  const {
+    user
+  } = useAuth();
+  const {
+    orders,
+    loading,
+    refetch
+  } = useSupabaseOrders();
+  const {
+    activityLogs,
+    addActivityLog
+  } = useShift();
   const [activeTab, setActiveTab] = useState<MainTab>('home');
   const [ordersSubTab, setOrdersSubTab] = useState<OrdersSubTab>('completed');
   const [statsSubTab, setStatsSubTab] = useState<StatsSubTab>('items');
@@ -84,7 +60,6 @@ export default function AdminDashboard() {
   const cancelledOrders = orders.filter(o => o.status === 'cancelled');
   const pendingOrders = orders.filter(o => o.status === 'pending');
   const inProgressOrders = orders.filter(o => ['preparing', 'ready', 'delivering'].includes(o.status));
-  
   const totalRevenue = completedOrders.reduce((sum, o) => sum + Number(o.total_price), 0);
   const cancelledRevenue = cancelledOrders.reduce((sum, o) => sum + Number(o.total_price), 0);
   const averageOrderValue = completedOrders.length > 0 ? totalRevenue / completedOrders.length : 0;
@@ -96,18 +71,27 @@ export default function AdminDashboard() {
   const slowestDelivery = 45;
 
   // Count items sold
-  const itemsStats: Record<string, { quantity: number; revenue: number; price: number; category: string }> = {};
+  const itemsStats: Record<string, {
+    quantity: number;
+    revenue: number;
+    price: number;
+    category: string;
+  }> = {};
   completedOrders.forEach(order => {
     order.items.forEach(item => {
       const key = item.menu_item_name;
       if (!itemsStats[key]) {
-        itemsStats[key] = { quantity: 0, revenue: 0, price: Number(item.menu_item_price), category: '' };
+        itemsStats[key] = {
+          quantity: 0,
+          revenue: 0,
+          price: Number(item.menu_item_price),
+          category: ''
+        };
       }
       itemsStats[key].quantity += item.quantity;
       itemsStats[key].revenue += Number(item.menu_item_price) * item.quantity;
     });
   });
-
   const sortedItems = Object.entries(itemsStats).sort(([, a], [, b]) => b.quantity - a.quantity);
 
   // Cancellation reasons stats
@@ -119,29 +103,22 @@ export default function AdminDashboard() {
 
   // Unique customers
   const uniqueCustomers = new Set(orders.map(o => o.customer_phone)).size;
-  const newCustomers = orders.filter((o, idx, arr) => 
-    arr.findIndex(x => x.customer_phone === o.customer_phone) === idx
-  ).length;
-
-
+  const newCustomers = orders.filter((o, idx, arr) => arr.findIndex(x => x.customer_phone === o.customer_phone) === idx).length;
   const handleRefresh = () => {
     refetch();
     toast.success('تم تحديث البيانات');
   };
-
   const [isArchivingOrders, setIsArchivingOrders] = useState(false);
-
   const handleArchiveAllOrders = async () => {
     setIsArchivingOrders(true);
     try {
       // Archive all non-archived orders (set is_archived = true)
-      const { error: ordersError } = await supabase
-        .from('orders')
-        .update({ is_archived: true })
-        .eq('is_archived', false);
-
+      const {
+        error: ordersError
+      } = await supabase.from('orders').update({
+        is_archived: true
+      }).eq('is_archived', false);
       if (ordersError) throw ordersError;
-
       toast.success('تم أرشفة جميع الطلبات بنجاح');
       refetch();
     } catch (error: any) {
@@ -152,15 +129,32 @@ export default function AdminDashboard() {
     }
   };
 
-
   // Main navigation tabs
-  const mainTabs: { id: MainTab; label: string; icon: React.ReactNode }[] = [
-    { id: 'home', label: 'الرئيسية', icon: <Home className="w-5 h-5" /> },
-    { id: 'menu', label: 'المنيو', icon: <UtensilsCrossed className="w-5 h-5" /> },
-    { id: 'orders', label: 'الطلبات', icon: <Package className="w-5 h-5" /> },
-    { id: 'stats', label: 'الإحصائيات', icon: <BarChart3 className="w-5 h-5" /> },
-    { id: 'settings', label: 'الإعدادات', icon: <Settings className="w-5 h-5" /> },
-  ];
+  const mainTabs: {
+    id: MainTab;
+    label: string;
+    icon: React.ReactNode;
+  }[] = [{
+    id: 'home',
+    label: 'الرئيسية',
+    icon: <Home className="w-5 h-5" />
+  }, {
+    id: 'menu',
+    label: 'المنيو',
+    icon: <UtensilsCrossed className="w-5 h-5" />
+  }, {
+    id: 'orders',
+    label: 'الطلبات',
+    icon: <Package className="w-5 h-5" />
+  }, {
+    id: 'stats',
+    label: 'الإحصائيات',
+    icon: <BarChart3 className="w-5 h-5" />
+  }, {
+    id: 'settings',
+    label: 'الإعدادات',
+    icon: <Settings className="w-5 h-5" />
+  }];
 
   // Transform orders for charts (compatibility)
   const ordersForCharts = orders.map(o => ({
@@ -171,26 +165,27 @@ export default function AdminDashboard() {
     customer: {
       name: o.customer_name,
       phone: o.customer_phone,
-      address: o.customer_address || '',
+      address: o.customer_address || ''
     },
     items: o.items.map(i => ({
-      menuItem: { id: i.menu_item_id || '', name: i.menu_item_name, price: Number(i.menu_item_price), image: '', category: '' },
+      menuItem: {
+        id: i.menu_item_id || '',
+        name: i.menu_item_name,
+        price: Number(i.menu_item_price),
+        image: '',
+        category: ''
+      },
       quantity: i.quantity,
-      notes: i.notes || undefined,
+      notes: i.notes || undefined
     })),
-    cashierName: o.cashier_name || '',
+    cashierName: o.cashier_name || ''
   }));
-
   if (loading) {
-    return (
-      <div className="min-h-screen bg-background flex items-center justify-center">
+    return <div className="min-h-screen bg-background flex items-center justify-center">
         <Loader2 className="w-8 h-8 animate-spin text-primary" />
-      </div>
-    );
+      </div>;
   }
-
-  return (
-    <div className="min-h-screen bg-background">
+  return <div className="min-h-screen bg-background">
       {/* Header */}
       <header className="bg-card border-b border-border shadow-soft sticky top-0 z-50">
         <div className="container flex items-center justify-between h-14">
@@ -210,34 +205,13 @@ export default function AdminDashboard() {
       <main className="container py-4 pb-24">
         
         {/* HOME TAB - Dashboard Overview */}
-        {activeTab === 'home' && (
-          <div className="space-y-4">
+        {activeTab === 'home' && <div className="space-y-4">
             {/* Quick Stats */}
             <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-              <KPICard
-                title="إجمالي الطلبات"
-                value={totalOrders}
-                icon={<ClipboardList className="w-5 h-5" />}
-              />
-              <KPICard
-                title="المكتملة"
-                value={completedOrders.length}
-                icon={<CheckCircle className="w-5 h-5" />}
-                variant="success"
-              />
-              <KPICard
-                title="الملغية"
-                value={cancelledOrders.length}
-                icon={<XCircle className="w-5 h-5" />}
-                variant="destructive"
-              />
-              <KPICard
-                title="الإيرادات"
-                value={totalRevenue}
-                suffix="د.ع"
-                icon={<DollarSign className="w-5 h-5" />}
-                variant="success"
-              />
+              <KPICard title="إجمالي الطلبات" value={totalOrders} icon={<ClipboardList className="w-5 h-5" />} />
+              <KPICard title="المكتملة" value={completedOrders.length} icon={<CheckCircle className="w-5 h-5" />} variant="success" />
+              <KPICard title="الملغية" value={cancelledOrders.length} icon={<XCircle className="w-5 h-5" />} variant="destructive" />
+              <KPICard title="الإيرادات" value={totalRevenue} suffix="د.ع" icon={<DollarSign className="w-5 h-5" />} variant="success" />
             </div>
 
             {/* Charts */}
@@ -249,44 +223,34 @@ export default function AdminDashboard() {
                 <TrendingUp className="w-5 h-5 text-primary" />
                 أكثر الأصناف مبيعاً
               </h3>
-              {sortedItems.length === 0 ? (
-                <p className="text-muted-foreground text-center py-4">لا توجد بيانات</p>
-              ) : (
-                <div className="space-y-2">
-                  {sortedItems.slice(0, 5).map(([name, stats], idx) => (
-                    <div key={name} className="flex items-center gap-3 p-2 bg-muted/50 rounded-lg">
+              {sortedItems.length === 0 ? <p className="text-muted-foreground text-center py-4">لا توجد بيانات</p> : <div className="space-y-2">
+                  {sortedItems.slice(0, 5).map(([name, stats], idx) => <div key={name} className="flex items-center gap-3 p-2 bg-muted/50 rounded-lg">
                       <span className="w-7 h-7 flex items-center justify-center bg-primary/10 text-primary rounded-lg font-bold text-sm">
                         {idx + 1}
                       </span>
                       <span className="flex-1 font-medium">{name}</span>
                       <span className="font-bold text-primary">{stats.quantity}</span>
-                    </div>
-                  ))}
-                </div>
-              )}
+                    </div>)}
+                </div>}
             </div>
 
             {/* Activity Log */}
             <ActivityLogList logs={activityLogs} />
-          </div>
-        )}
+          </div>}
 
         {/* MENU TAB - Quick Menu Management */}
-        {activeTab === 'menu' && (
-          <div className="space-y-4">
+        {activeTab === 'menu' && <div className="space-y-4">
             <h2 className="text-xl font-bold flex items-center gap-2">
               <UtensilsCrossed className="w-6 h-6 text-primary" />
               إدارة المنيو السريع
             </h2>
             <MenuManagement />
-          </div>
-        )}
+          </div>}
 
         {/* ORDERS TAB - Completed & Cancelled Orders */}
-        {activeTab === 'orders' && (
-          <div className="space-y-4">
+        {activeTab === 'orders' && <div className="space-y-4">
             {/* Sub-tabs */}
-            <Tabs value={ordersSubTab} onValueChange={(v) => setOrdersSubTab(v as OrdersSubTab)}>
+            <Tabs value={ordersSubTab} onValueChange={v => setOrdersSubTab(v as OrdersSubTab)}>
               <TabsList className="grid w-full grid-cols-2">
                 <TabsTrigger value="completed" className="gap-2">
                   <CheckCircle className="w-4 h-4" />
@@ -304,18 +268,10 @@ export default function AdminDashboard() {
                   <span className="font-bold text-success">{totalRevenue.toLocaleString()} د.ع</span>
                 </div>
                 
-                {completedOrders.length === 0 ? (
-                  <div className="text-center py-12 text-muted-foreground">
+                {completedOrders.length === 0 ? <div className="text-center py-12 text-muted-foreground">
                     <CheckCircle className="w-12 h-12 mx-auto mb-4 opacity-50" />
                     <p>لا توجد طلبات مكتملة</p>
-                  </div>
-                ) : (
-                  completedOrders.map(order => (
-                    <div 
-                      key={order.id} 
-                      className="bg-card border border-success/30 rounded-xl p-4 shadow-soft cursor-pointer hover:shadow-elevated transition-shadow"
-                      onClick={() => setSelectedOrder(order)}
-                    >
+                  </div> : completedOrders.map(order => <div key={order.id} className="bg-card border border-success/30 rounded-xl p-4 shadow-soft cursor-pointer hover:shadow-elevated transition-shadow" onClick={() => setSelectedOrder(order)}>
                       <div className="flex items-center justify-between mb-2">
                         <div className="flex items-center gap-2">
                           <span className="text-lg font-bold text-primary">#{order.order_number}</span>
@@ -324,40 +280,28 @@ export default function AdminDashboard() {
                         <span className="font-bold text-success">{Number(order.total_price).toLocaleString()} د.ع</span>
                       </div>
                       <div className="text-sm text-muted-foreground">
-                        {order.customer_name} • {format(new Date(order.created_at), 'HH:mm', { locale: ar })}
+                        {order.customer_name} • {format(new Date(order.created_at), 'HH:mm', {
+                  locale: ar
+                })}
                       </div>
-                    </div>
-                  ))
-                )}
+                    </div>)}
               </TabsContent>
 
               <TabsContent value="cancelled" className="space-y-3 mt-4">
                 {/* Cancellation Summary */}
-                {Object.keys(cancellationReasonStats).length > 0 && (
-                  <div className="bg-destructive/5 border border-destructive/20 rounded-xl p-3">
+                {Object.keys(cancellationReasonStats).length > 0 && <div className="bg-destructive/5 border border-destructive/20 rounded-xl p-3">
                     <p className="text-sm font-medium text-destructive mb-2">ملخص الأسباب</p>
                     <div className="flex flex-wrap gap-2">
-                      {Object.entries(cancellationReasonStats).map(([reason, count]) => (
-                        <span key={reason} className="px-2 py-1 bg-card rounded-lg text-xs">
+                      {Object.entries(cancellationReasonStats).map(([reason, count]) => <span key={reason} className="px-2 py-1 bg-card rounded-lg text-xs">
                           {reason}: <strong>{count}</strong>
-                        </span>
-                      ))}
+                        </span>)}
                     </div>
-                  </div>
-                )}
+                  </div>}
                 
-                {cancelledOrders.length === 0 ? (
-                  <div className="text-center py-12 text-muted-foreground">
+                {cancelledOrders.length === 0 ? <div className="text-center py-12 text-muted-foreground">
                     <XCircle className="w-12 h-12 mx-auto mb-4 opacity-50" />
                     <p>لا توجد طلبات ملغية</p>
-                  </div>
-                ) : (
-                  cancelledOrders.map(order => (
-                    <div 
-                      key={order.id} 
-                      className="bg-card border border-destructive/30 rounded-xl p-4 shadow-soft cursor-pointer hover:shadow-elevated transition-shadow"
-                      onClick={() => setSelectedOrder(order)}
-                    >
+                  </div> : cancelledOrders.map(order => <div key={order.id} className="bg-card border border-destructive/30 rounded-xl p-4 shadow-soft cursor-pointer hover:shadow-elevated transition-shadow" onClick={() => setSelectedOrder(order)}>
                       <div className="flex items-center justify-between mb-2">
                         <div className="flex items-center gap-2">
                           <span className="text-lg font-bold text-primary">#{order.order_number}</span>
@@ -365,25 +309,21 @@ export default function AdminDashboard() {
                         </div>
                         <span className="font-bold text-destructive">{Number(order.total_price).toLocaleString()} د.ع</span>
                       </div>
-                      {order.cancellation_reason && (
-                        <p className="text-sm text-destructive mb-1">السبب: {order.cancellation_reason}</p>
-                      )}
+                      {order.cancellation_reason && <p className="text-sm text-destructive mb-1">السبب: {order.cancellation_reason}</p>}
                       <div className="text-sm text-muted-foreground">
-                        {order.customer_name} • {format(new Date(order.created_at), 'HH:mm', { locale: ar })}
+                        {order.customer_name} • {format(new Date(order.created_at), 'HH:mm', {
+                  locale: ar
+                })}
                       </div>
-                    </div>
-                  ))
-                )}
+                    </div>)}
               </TabsContent>
             </Tabs>
-          </div>
-        )}
+          </div>}
 
         {/* STATS TAB - Statistics & Analytics */}
-        {activeTab === 'stats' && (
-          <div className="space-y-4">
+        {activeTab === 'stats' && <div className="space-y-4">
             {/* Sub-tabs */}
-            <Tabs value={statsSubTab} onValueChange={(v) => setStatsSubTab(v as StatsSubTab)}>
+            <Tabs value={statsSubTab} onValueChange={v => setStatsSubTab(v as StatsSubTab)}>
               <TabsList className="grid w-full grid-cols-4">
                 <TabsTrigger value="items" className="text-xs px-1">المبيعات</TabsTrigger>
                 <TabsTrigger value="areas" className="text-xs px-1">المناطق</TabsTrigger>
@@ -412,8 +352,7 @@ export default function AdminDashboard() {
                 <div className="bg-card border border-border rounded-xl p-4 shadow-soft">
                   <h3 className="font-bold mb-3 text-success">الأكثر مبيعاً</h3>
                   <div className="space-y-2">
-                    {sortedItems.slice(0, 5).map(([name, stats], idx) => (
-                      <div key={name} className="flex items-center justify-between p-2 bg-muted/50 rounded-lg">
+                    {sortedItems.slice(0, 5).map(([name, stats], idx) => <div key={name} className="flex items-center justify-between p-2 bg-muted/50 rounded-lg">
                         <div className="flex items-center gap-2">
                           <span className="w-6 h-6 flex items-center justify-center bg-success/10 text-success rounded font-bold text-xs">
                             {idx + 1}
@@ -424,8 +363,7 @@ export default function AdminDashboard() {
                           <p className="text-sm font-bold">{stats.quantity}</p>
                           <p className="text-xs text-muted-foreground">{stats.revenue.toLocaleString()} د.ع</p>
                         </div>
-                      </div>
-                    ))}
+                      </div>)}
                   </div>
                 </div>
 
@@ -433,8 +371,7 @@ export default function AdminDashboard() {
                 <div className="bg-card border border-border rounded-xl p-4 shadow-soft">
                   <h3 className="font-bold mb-3 text-destructive">الأقل مبيعاً</h3>
                   <div className="space-y-2">
-                    {sortedItems.slice(-3).reverse().map(([name, stats], idx) => (
-                      <div key={name} className="flex items-center justify-between p-2 bg-muted/50 rounded-lg">
+                    {sortedItems.slice(-3).reverse().map(([name, stats], idx) => <div key={name} className="flex items-center justify-between p-2 bg-muted/50 rounded-lg">
                         <div className="flex items-center gap-2">
                           <span className="w-6 h-6 flex items-center justify-center bg-destructive/10 text-destructive rounded font-bold text-xs">
                             {sortedItems.length - idx}
@@ -445,8 +382,7 @@ export default function AdminDashboard() {
                           <p className="text-sm font-bold">{stats.quantity}</p>
                           <p className="text-xs text-muted-foreground">{stats.revenue.toLocaleString()} د.ع</p>
                         </div>
-                      </div>
-                    ))}
+                      </div>)}
                   </div>
                 </div>
               </TabsContent>
@@ -463,15 +399,13 @@ export default function AdminDashboard() {
                 <FinanceBreakdown orders={ordersForCharts} />
               </TabsContent>
             </Tabs>
-          </div>
-        )}
+          </div>}
 
 
         {/* SETTINGS TAB - Configuration & Management */}
-        {activeTab === 'settings' && (
-          <div className="space-y-4">
+        {activeTab === 'settings' && <div className="space-y-4">
             {/* Sub-tabs */}
-            <Tabs value={settingsSubTab} onValueChange={(v) => setSettingsSubTab(v as SettingsSubTab)}>
+            <Tabs value={settingsSubTab} onValueChange={v => setSettingsSubTab(v as SettingsSubTab)}>
               <TabsList className="grid w-full grid-cols-5">
                 <TabsTrigger value="general" className="text-xs px-1">عام</TabsTrigger>
                 <TabsTrigger value="quickaccess" className="text-xs px-1">دخول سريع</TabsTrigger>
@@ -491,15 +425,11 @@ export default function AdminDashboard() {
                 
                 <AlertDialog>
                   <AlertDialogTrigger asChild>
-                    <Button 
-                      variant="outline" 
-                      size="lg" 
-                      className="w-full justify-start h-auto py-4 border-2 border-amber-500 bg-amber-50 hover:bg-amber-100 text-amber-700 hover:text-amber-800"
-                    >
+                    <Button variant="outline" size="lg" className="w-full justify-start h-auto py-4 border-2 border-amber-500 bg-amber-50 hover:bg-amber-100 text-amber-700 hover:text-amber-800">
                       <Archive className="w-6 h-6 ml-3 text-amber-600" />
                       <div className="text-right">
                         <p className="font-bold text-lg">أرشفة جميع الطلبات</p>
-                        <p className="text-sm opacity-80">إخفاء الطلبات من التطبيق مع الاحتفاظ بها في قاعدة البيانات</p>
+                        
                       </div>
                     </Button>
                   </AlertDialogTrigger>
@@ -515,16 +445,8 @@ export default function AdminDashboard() {
                     </AlertDialogHeader>
                     <AlertDialogFooter className="flex-row-reverse gap-2">
                       <AlertDialogCancel>إلغاء</AlertDialogCancel>
-                      <AlertDialogAction
-                        onClick={handleArchiveAllOrders}
-                        className="bg-amber-600 text-white hover:bg-amber-700"
-                        disabled={isArchivingOrders}
-                      >
-                        {isArchivingOrders ? (
-                          <Loader2 className="w-4 h-4 animate-spin ml-2" />
-                        ) : (
-                          <Archive className="w-4 h-4 ml-2" />
-                        )}
+                      <AlertDialogAction onClick={handleArchiveAllOrders} className="bg-amber-600 text-white hover:bg-amber-700" disabled={isArchivingOrders}>
+                        {isArchivingOrders ? <Loader2 className="w-4 h-4 animate-spin ml-2" /> : <Archive className="w-4 h-4 ml-2" />}
                         أرشفة الكل
                       </AlertDialogAction>
                     </AlertDialogFooter>
@@ -550,39 +472,25 @@ export default function AdminDashboard() {
                 <CancellationReasonsManager />
               </TabsContent>
             </Tabs>
-          </div>
-        )}
+          </div>}
       </main>
 
       {/* BOTTOM NAVIGATION - 5 Main Tabs Only */}
       <nav className="fixed bottom-0 left-0 right-0 bg-card border-t border-border shadow-elevated safe-area-pb">
         <div className="container">
           <div className="flex justify-around items-center">
-            {mainTabs.map(tab => (
-              <button
-                key={tab.id}
-                onClick={() => setActiveTab(tab.id)}
-                className={`flex-1 py-3 flex flex-col items-center gap-1 transition-all ${
-                  activeTab === tab.id 
-                    ? 'text-primary' 
-                    : 'text-muted-foreground hover:text-foreground'
-                }`}
-              >
-                <div className={`p-1.5 rounded-lg transition-colors ${
-                  activeTab === tab.id ? 'bg-primary/10' : ''
-                }`}>
+            {mainTabs.map(tab => <button key={tab.id} onClick={() => setActiveTab(tab.id)} className={`flex-1 py-3 flex flex-col items-center gap-1 transition-all ${activeTab === tab.id ? 'text-primary' : 'text-muted-foreground hover:text-foreground'}`}>
+                <div className={`p-1.5 rounded-lg transition-colors ${activeTab === tab.id ? 'bg-primary/10' : ''}`}>
                   {tab.icon}
                 </div>
                 <span className="text-xs font-medium">{tab.label}</span>
-              </button>
-            ))}
+              </button>)}
           </div>
         </div>
       </nav>
 
       {/* Order Details Dialog */}
-      {selectedOrder && (
-        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4" onClick={() => setSelectedOrder(null)}>
+      {selectedOrder && <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4" onClick={() => setSelectedOrder(null)}>
           <div className="bg-card rounded-xl p-6 max-w-md w-full max-h-[80vh] overflow-auto" onClick={e => e.stopPropagation()}>
             <h2 className="text-xl font-bold mb-4">تفاصيل الطلب #{selectedOrder.order_number}</h2>
             <div className="space-y-3">
@@ -601,12 +509,10 @@ export default function AdminDashboard() {
               <div>
                 <p className="text-sm text-muted-foreground">الأصناف</p>
                 <div className="space-y-1 mt-1">
-                  {selectedOrder.items.map((item, idx) => (
-                    <div key={idx} className="flex justify-between text-sm">
+                  {selectedOrder.items.map((item, idx) => <div key={idx} className="flex justify-between text-sm">
                       <span>{item.menu_item_name} × {item.quantity}</span>
                       <span>{(Number(item.menu_item_price) * item.quantity).toLocaleString()} د.ع</span>
-                    </div>
-                  ))}
+                    </div>)}
                 </div>
               </div>
               <div className="pt-2 border-t">
@@ -618,8 +524,6 @@ export default function AdminDashboard() {
             </div>
             <Button className="w-full mt-4" onClick={() => setSelectedOrder(null)}>إغلاق</Button>
           </div>
-        </div>
-      )}
-    </div>
-  );
+        </div>}
+    </div>;
 }
