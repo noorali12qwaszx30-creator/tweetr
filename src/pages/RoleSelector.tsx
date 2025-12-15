@@ -100,8 +100,8 @@ const RoleButton = ({ role, index, mounted, onSelect, isCenter }: RoleButtonProp
 
 export default function RoleSelector() {
   const navigate = useNavigate();
-  const { setRole } = useRole();
-  const { login } = useAuth();
+  const { role: savedRole, setRole } = useRole();
+  const { login, isAuthenticated, user, loading: authLoading } = useAuth();
   
   const [selectedRole, setSelectedRole] = useState<UserRole | null>(null);
   const [username, setUsername] = useState('');
@@ -109,6 +109,13 @@ export default function RoleSelector() {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [mounted, setMounted] = useState(false);
+
+  // Auto-redirect if already authenticated with a valid role
+  useEffect(() => {
+    if (!authLoading && isAuthenticated && user?.role && savedRole) {
+      navigate('/dashboard', { replace: true });
+    }
+  }, [authLoading, isAuthenticated, user, savedRole, navigate]);
 
   useEffect(() => {
     setMounted(true);
