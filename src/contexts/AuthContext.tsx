@@ -15,7 +15,7 @@ interface AuthContextType {
   user: AuthUser | null;
   session: Session | null;
   loading: boolean;
-  login: (username: string, password: string) => Promise<{ error: string | null }>;
+  login: (username: string, password: string, selectedRole?: UserRole) => Promise<{ error: string | null }>;
   logout: () => Promise<void>;
   isAuthenticated: boolean;
 }
@@ -103,7 +103,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return () => subscription.unsubscribe();
   }, []);
 
-  const login = async (username: string, password: string): Promise<{ error: string | null }> => {
+  const login = async (username: string, password: string, selectedRole?: UserRole): Promise<{ error: string | null }> => {
     try {
       // Convert username to email format for Supabase auth
       const email = `${username.toLowerCase().trim()}@restaurant.local`;
@@ -120,7 +120,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         return { error: error.message };
       }
 
-      // Check if user is active
+      // Check if user is active and has the correct role
       if (data.user) {
         const { data: profile } = await supabase
           .from('profiles')
@@ -129,9 +129,22 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           .maybeSingle();
 
         if (profile && profile.is_active === false) {
-          // Sign out the user immediately
           await supabase.auth.signOut();
           return { error: 'هذا الحساب معطّل. تواصل مع المدير التنفيذي' };
+        }
+
+        // Validate that user has the selected role
+        if (selectedRole) {
+          const { data: roleData } = await supabase
+            .from('user_roles')
+            .select('role')
+            .eq('user_id', data.user.id)
+            .maybeSingle();
+
+          if (!roleData || roleData.role !== selectedRole) {
+            await supabase.auth.signOut();
+            return { error: 'هذا الحساب غير مخصص لهذا الدور. اختر الدور الصحيح' };
+          }
         }
       }
 
