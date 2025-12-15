@@ -135,13 +135,22 @@
     font-feature-settings: "tnum";
   }
 
-  /* Force English/Western numerals throughout the app */
+  /* Force English/Western numerals - use Roboto for numbers */
+  @font-face {
+    font-family: 'EnglishNums';
+    src: local('Roboto'), local('Arial'), local('Helvetica');
+    unicode-range: U+0030-0039; /* 0-9 */
+  }
+
   * {
     font-variant-numeric: lining-nums tabular-nums;
+    -webkit-font-feature-settings: "tnum" on, "lnum" on;
+    font-feature-settings: "tnum" on, "lnum" on;
   }
   
-  input, textarea, select, button, span, p, div, h1, h2, h3, h4, h5, h6, td, th, li {
-    font-feature-settings: "tnum" on, "lnum" on;
+  /* Apply EnglishNums font first for numerals, then Cairo for Arabic text */
+  body, input, textarea, select, button, span, p, div, h1, h2, h3, h4, h5, h6, td, th, li, label, time {
+    font-family: 'EnglishNums', 'Roboto', 'Cairo', sans-serif;
   }
 }
 
