@@ -14,6 +14,7 @@ import { QuickAccessReturnButton } from '@/components/admin/QuickAccessReturnBut
 import { LogoutConfirmButton } from '@/components/LogoutConfirmButton';
 import { toast } from 'sonner';
 import { ROLE_LABELS } from '@/types';
+import { toEnglishNumbers, formatNumberWithCommas, formatDateEnglish, formatTimeEnglish } from '@/lib/formatNumber';
 import { 
   ShoppingCart, 
   Trash2, 
@@ -115,7 +116,7 @@ function SortableMenuItem({ item, onSelect }: SortableMenuItemProps) {
       
       <div className="flex-1 min-w-0">
         <h3 className="font-semibold text-sm text-foreground truncate">{item.name}</h3>
-        <p className="text-primary font-bold text-sm">{item.price.toLocaleString()} د.ع</p>
+        <p className="text-primary font-bold text-sm">{formatNumberWithCommas(item.price)} د.ع</p>
       </div>
       
       <Button
@@ -467,9 +468,9 @@ export default function CashierDashboard() {
                 <div className="flex items-center justify-between mb-2">
                   <h2 className="font-bold text-sm flex items-center gap-2">
                     <ShoppingCart className="w-4 h-4 text-primary" />
-                    السلة ({cart.length})
+                    السلة ({toEnglishNumbers(cart.length)})
                   </h2>
-                  <span className="font-bold text-primary">{totalPrice.toLocaleString()} د.ع</span>
+                  <span className="font-bold text-primary">{formatNumberWithCommas(totalPrice)} د.ع</span>
                 </div>
                 <div className="space-y-2 max-h-32 overflow-y-auto">
                   {cart.map(item => (
@@ -478,13 +479,13 @@ export default function CashierDashboard() {
                         <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => updateQuantity(item.menuItem.id, -1)}>
                           <Minus className="w-3 h-3" />
                         </Button>
-                        <span className="w-5 text-center font-semibold text-xs">{item.quantity}</span>
+                        <span className="w-5 text-center font-semibold text-xs">{toEnglishNumbers(item.quantity)}</span>
                         <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => updateQuantity(item.menuItem.id, 1)}>
                           <Plus className="w-3 h-3" />
                         </Button>
                       </div>
                       <span className="flex-1 truncate text-xs">{item.menuItem.name}</span>
-                      <span className="text-xs text-muted-foreground">{(item.menuItem.price * item.quantity).toLocaleString()}</span>
+                      <span className="text-xs text-muted-foreground">{formatNumberWithCommas(item.menuItem.price * item.quantity)}</span>
                       <Button variant="ghost" size="icon" className="h-6 w-6 text-destructive" onClick={() => removeFromCart(item.menuItem.id)}>
                         <Trash2 className="w-3 h-3" />
                       </Button>
@@ -627,7 +628,7 @@ export default function CashierDashboard() {
             <div className="bg-card border border-border rounded-xl p-4">
               <h3 className="font-bold text-sm mb-3 flex items-center gap-2 text-success">
                 <CheckCircle className="w-4 h-4" />
-                الطلبات المكتملة ({orders.filter(o => o.status === 'delivered' && o.type === 'delivery').length})
+                الطلبات المكتملة ({toEnglishNumbers(orders.filter(o => o.status === 'delivered' && o.type === 'delivery').length)})
               </h3>
               <div className="space-y-3 max-h-64 overflow-y-auto">
                 {orders.filter(o => o.status === 'delivered' && o.type === 'delivery').length === 0 ? (
@@ -640,9 +641,9 @@ export default function CashierDashboard() {
                       onClick={() => setSelectedOrderDetails(order)}
                     >
                       <div className="flex items-center justify-between mb-2">
-                        <span className="font-bold text-success">طلب #{order.order_number}</span>
+                        <span className="font-bold text-success">طلب #{toEnglishNumbers(order.order_number)}</span>
                         <span className="text-xs text-muted-foreground">
-                          {new Date(order.delivered_at || order.updated_at).toLocaleString('ar-IQ')}
+                          {formatDateEnglish(order.delivered_at || order.updated_at)} {formatTimeEnglish(order.delivered_at || order.updated_at)}
                         </span>
                       </div>
                       <div className="text-sm space-y-1">
@@ -657,7 +658,7 @@ export default function CashierDashboard() {
                           </p>
                         )}
                         <p className="font-semibold text-primary">
-                          المجموع: {Number(order.total_price).toLocaleString()} د.ع
+                          المجموع: {formatNumberWithCommas(Number(order.total_price))} د.ع
                         </p>
                       </div>
                     </div>
@@ -670,7 +671,7 @@ export default function CashierDashboard() {
             <div className="bg-card border border-border rounded-xl p-4">
               <h3 className="font-bold text-sm mb-3 flex items-center gap-2 text-destructive">
                 <XCircle className="w-4 h-4" />
-                الطلبات الملغية ({orders.filter(o => o.status === 'cancelled' && o.type === 'delivery').length})
+                الطلبات الملغية ({toEnglishNumbers(orders.filter(o => o.status === 'cancelled' && o.type === 'delivery').length)})
               </h3>
               <div className="space-y-3 max-h-64 overflow-y-auto">
                 {orders.filter(o => o.status === 'cancelled' && o.type === 'delivery').length === 0 ? (
@@ -683,9 +684,9 @@ export default function CashierDashboard() {
                       onClick={() => setSelectedOrderDetails(order)}
                     >
                       <div className="flex items-center justify-between mb-2">
-                        <span className="font-bold text-destructive">طلب #{order.order_number}</span>
+                        <span className="font-bold text-destructive">طلب #{toEnglishNumbers(order.order_number)}</span>
                         <span className="text-xs text-muted-foreground">
-                          {new Date(order.cancelled_at || order.updated_at).toLocaleString('ar-IQ')}
+                          {formatDateEnglish(order.cancelled_at || order.updated_at)} {formatTimeEnglish(order.cancelled_at || order.updated_at)}
                         </span>
                       </div>
                       <div className="text-sm space-y-1">
@@ -699,7 +700,7 @@ export default function CashierDashboard() {
                           </p>
                         )}
                         <p className="font-semibold text-primary">
-                          المجموع: {Number(order.total_price).toLocaleString()} د.ع
+                          المجموع: {formatNumberWithCommas(Number(order.total_price))} د.ع
                         </p>
                       </div>
                     </div>

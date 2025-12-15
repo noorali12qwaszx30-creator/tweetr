@@ -11,6 +11,7 @@ import { QuickAccessReturnButton } from '@/components/admin/QuickAccessReturnBut
 import { LogoutConfirmButton } from '@/components/LogoutConfirmButton';
 import { toast } from 'sonner';
 import { ROLE_LABELS, Order } from '@/types';
+import { toEnglishNumbers, formatNumberWithCommas, formatTimeEnglish } from '@/lib/formatNumber';
 import {
   UtensilsCrossed,
   ShoppingCart,
@@ -100,7 +101,7 @@ function SortableMenuItem({ item, onSelect }: SortableMenuItemProps) {
       
       <div className="flex-1 min-w-0">
         <h3 className="font-semibold text-sm text-foreground truncate">{item.name}</h3>
-        <p className="text-warning font-bold text-sm">{item.price.toLocaleString()} د.ع</p>
+        <p className="text-warning font-bold text-sm">{formatNumberWithCommas(item.price)} د.ع</p>
       </div>
       
       <Button
@@ -318,9 +319,9 @@ export default function TakeawayDashboard() {
                 <div className="flex items-center justify-between mb-2">
                   <h2 className="font-bold text-sm flex items-center gap-2 text-warning">
                     <ShoppingCart className="w-4 h-4" />
-                    طلب سفري ({cart.length})
+                    طلب سفري ({toEnglishNumbers(cart.length)})
                   </h2>
-                  <span className="font-bold text-warning">{totalPrice.toLocaleString()} د.ع</span>
+                  <span className="font-bold text-warning">{formatNumberWithCommas(totalPrice)} د.ع</span>
                 </div>
                 <div className="space-y-2 max-h-32 overflow-y-auto">
                   {cart.map(item => (
@@ -329,13 +330,13 @@ export default function TakeawayDashboard() {
                         <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => updateQuantity(item.menuItem.id, -1)}>
                           <Minus className="w-3 h-3" />
                         </Button>
-                        <span className="w-5 text-center font-semibold text-xs">{item.quantity}</span>
+                        <span className="w-5 text-center font-semibold text-xs">{toEnglishNumbers(item.quantity)}</span>
                         <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => updateQuantity(item.menuItem.id, 1)}>
                           <Plus className="w-3 h-3" />
                         </Button>
                       </div>
                       <span className="flex-1 truncate text-xs">{item.menuItem.name}</span>
-                      <span className="text-xs text-muted-foreground">{(item.menuItem.price * item.quantity).toLocaleString()}</span>
+                      <span className="text-xs text-muted-foreground">{formatNumberWithCommas(item.menuItem.price * item.quantity)}</span>
                       <Button variant="ghost" size="icon" className="h-6 w-6 text-destructive" onClick={() => removeFromCart(item.menuItem.id)}>
                         <Trash2 className="w-3 h-3" />
                       </Button>
@@ -489,18 +490,18 @@ export default function TakeawayDashboard() {
                 className="bg-card border border-border rounded-xl p-3 shadow-soft hover:border-success transition-colors text-right"
               >
                 <p className="text-muted-foreground text-xs">الطلبات المكتملة</p>
-                <p className="text-2xl font-bold text-success">{completedOrders.length}</p>
+                <p className="text-2xl font-bold text-success">{toEnglishNumbers(completedOrders.length)}</p>
               </button>
               <button
                 onClick={() => setShowCancelledOrders(!showCancelledOrders)}
                 className="bg-card border border-border rounded-xl p-3 shadow-soft hover:border-destructive transition-colors text-right"
               >
                 <p className="text-muted-foreground text-xs">الطلبات الملغية</p>
-                <p className="text-2xl font-bold text-destructive">{cancelledOrders.length}</p>
+                <p className="text-2xl font-bold text-destructive">{toEnglishNumbers(cancelledOrders.length)}</p>
               </button>
               <div className="col-span-2 bg-card border border-border rounded-xl p-3 shadow-soft">
                 <p className="text-muted-foreground text-xs">إجمالي المبيعات</p>
-                <p className="text-2xl font-bold text-warning">{totalSales.toLocaleString()} د.ع</p>
+                <p className="text-2xl font-bold text-warning">{formatNumberWithCommas(totalSales)} د.ع</p>
               </div>
             </div>
 
@@ -509,28 +510,28 @@ export default function TakeawayDashboard() {
               <div className="space-y-3">
                 <h3 className="font-semibold text-success flex items-center gap-2">
                   <ClipboardList className="w-4 h-4" />
-                  الطلبات المكتملة ({completedOrders.length})
+                  الطلبات المكتملة ({toEnglishNumbers(completedOrders.length)})
                 </h3>
                 <div className="grid gap-2">
                   {completedOrders.map(order => (
                     <div key={order.id} className="bg-success/10 border border-success/30 rounded-xl p-3">
                       <div className="flex items-center justify-between mb-2">
-                        <span className="font-bold text-success">طلب #{order.order_number}</span>
+                        <span className="font-bold text-success">طلب #{toEnglishNumbers(order.order_number)}</span>
                         <span className="text-xs text-muted-foreground">
-                          {new Date(order.delivered_at || order.updated_at).toLocaleTimeString('ar-IQ')}
+                          {formatTimeEnglish(order.delivered_at || order.updated_at)}
                         </span>
                       </div>
                       <div className="space-y-1 text-sm">
                         {order.items.map(item => (
                           <div key={item.id} className="flex justify-between">
-                            <span>{item.menu_item_name} × {item.quantity}</span>
-                            <span className="text-muted-foreground">{(item.menu_item_price * item.quantity).toLocaleString()} د.ع</span>
+                            <span>{item.menu_item_name} × {toEnglishNumbers(item.quantity)}</span>
+                            <span className="text-muted-foreground">{formatNumberWithCommas(item.menu_item_price * item.quantity)} د.ع</span>
                           </div>
                         ))}
                       </div>
                       <div className="mt-2 pt-2 border-t border-success/20 flex justify-between font-bold">
                         <span>المجموع</span>
-                        <span className="text-success">{Number(order.total_price).toLocaleString()} د.ع</span>
+                        <span className="text-success">{formatNumberWithCommas(Number(order.total_price))} د.ع</span>
                       </div>
                     </div>
                   ))}
@@ -543,15 +544,15 @@ export default function TakeawayDashboard() {
               <div className="space-y-3">
                 <h3 className="font-semibold text-destructive flex items-center gap-2">
                   <ClipboardList className="w-4 h-4" />
-                  الطلبات الملغية ({cancelledOrders.length})
+                  الطلبات الملغية ({toEnglishNumbers(cancelledOrders.length)})
                 </h3>
                 <div className="grid gap-2">
                   {cancelledOrders.map(order => (
                     <div key={order.id} className="bg-destructive/10 border border-destructive/30 rounded-xl p-3">
                       <div className="flex items-center justify-between mb-2">
-                        <span className="font-bold text-destructive">طلب #{order.order_number}</span>
+                        <span className="font-bold text-destructive">طلب #{toEnglishNumbers(order.order_number)}</span>
                         <span className="text-xs text-muted-foreground">
-                          {new Date(order.cancelled_at || order.updated_at).toLocaleTimeString('ar-IQ')}
+                          {formatTimeEnglish(order.cancelled_at || order.updated_at)}
                         </span>
                       </div>
                       {order.cancellation_reason && (
@@ -562,14 +563,14 @@ export default function TakeawayDashboard() {
                       <div className="space-y-1 text-sm">
                         {order.items.map(item => (
                           <div key={item.id} className="flex justify-between">
-                            <span>{item.menu_item_name} × {item.quantity}</span>
-                            <span className="text-muted-foreground">{(item.menu_item_price * item.quantity).toLocaleString()} د.ع</span>
+                            <span>{item.menu_item_name} × {toEnglishNumbers(item.quantity)}</span>
+                            <span className="text-muted-foreground">{formatNumberWithCommas(item.menu_item_price * item.quantity)} د.ع</span>
                           </div>
                         ))}
                       </div>
                       <div className="mt-2 pt-2 border-t border-destructive/20 flex justify-between font-bold">
                         <span>المجموع</span>
-                        <span className="text-destructive line-through">{Number(order.total_price).toLocaleString()} د.ع</span>
+                        <span className="text-destructive line-through">{formatNumberWithCommas(Number(order.total_price))} د.ع</span>
                       </div>
                     </div>
                   ))}

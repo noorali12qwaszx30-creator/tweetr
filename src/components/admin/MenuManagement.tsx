@@ -2,6 +2,7 @@ import { useState, useRef, useEffect } from 'react';
 import { useMenuItems, MenuItem } from '@/hooks/useMenuItems';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
+import { formatNumberWithCommas } from '@/lib/formatNumber';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Switch } from '@/components/ui/switch';
@@ -386,7 +387,7 @@ function SortableMenuItem({
               onClick={() => handleStartEdit('price')}
               className="text-xs sm:text-sm text-primary font-bold hover:underline"
             >
-              {item.price.toLocaleString()} د.ع
+              {formatNumberWithCommas(item.price)} د.ع
             </button>
           )}
         </div>
