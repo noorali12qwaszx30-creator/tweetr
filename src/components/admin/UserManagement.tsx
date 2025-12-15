@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -28,7 +28,7 @@ import {
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
 import { toast } from 'sonner';
-import { UserPlus, Trash2, Edit, User, Shield, Loader2, Key, Eye, EyeOff, UserCheck, UserX } from 'lucide-react';
+import { UserPlus, Trash2, Edit, User, Shield, Loader2, Key, Eye, EyeOff, UserCheck, UserX, Copy, ShieldAlert } from 'lucide-react';
 import { ROLE_LABELS, UserRole } from '@/types';
 import { Switch } from '@/components/ui/switch';
 
@@ -67,6 +67,9 @@ export function UserManagement() {
   const [newPassword, setNewPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [showNewPassword, setShowNewPassword] = useState(false);
+  const [usernameError, setUsernameError] = useState('');
+  const [checkingUsername, setCheckingUsername] = useState(false);
+  const [createdCredentials, setCreatedCredentials] = useState<{ username: string; password: string } | null>(null);
 
   // Form state for new user
   const [newUser, setNewUser] = useState({
@@ -149,9 +152,54 @@ export function UserManagement() {
     }
   };
 
+  // Check username availability
+  const checkUsernameAvailability = useCallback(async (username: string) => {
+    if (username.length < 5) {
+      setUsernameError('اسم المستخدم يجب أن يكون 5 أحرف على الأقل');
+      return false;
+    }
+
+    setCheckingUsername(true);
+    try {
+      const { data: existingUser } = await supabase
+        .from('profiles')
+        .select('username')
+        .eq('username', username)
+        .maybeSingle();
+
+      if (existingUser) {
+        setUsernameError('اسم المستخدم مستخدم مسبقاً، اختر اسماً آخر');
+        return false;
+      }
+      
+      setUsernameError('');
+      return true;
+    } catch {
+      return true;
+    } finally {
+      setCheckingUsername(false);
+    }
+  }, []);
+
+  const handleUsernameChange = (value: string) => {
+    setNewUser({ ...newUser, username: value });
+    setUsernameError('');
+    
+    if (value.length > 0 && value.length < 5) {
+      setUsernameError('اسم المستخدم يجب أن يكون 5 أحرف على الأقل');
+    } else if (value.length >= 5) {
+      checkUsernameAvailability(value);
+    }
+  };
+
   const handleAddUser = async () => {
     if (!newUser.password || !newUser.username) {
       toast.error('يرجى ملء جميع الحقول المطلوبة');
+      return;
+    }
+
+    if (newUser.username.length < 5) {
+      toast.error('اسم المستخدم يجب أن يكون 5 أحرف على الأقل');
       return;
     }
 
@@ -160,9 +208,14 @@ export function UserManagement() {
       return;
     }
 
+    // Final check for username availability
+    const isAvailable = await checkUsernameAvailability(newUser.username);
+    if (!isAvailable) {
+      return;
+    }
+
     setSubmitting(true);
     try {
-      // Get current session token
       const { data: { session } } = await supabase.auth.getSession();
       
       if (!session) {
@@ -170,7 +223,6 @@ export function UserManagement() {
         return;
       }
 
-      // Call edge function to create user (email will be auto-generated from username)
       const response = await supabase.functions.invoke('create-user', {
         body: {
           username: newUser.username,
@@ -194,6 +246,12 @@ export function UserManagement() {
         return;
       }
 
+      // Show credentials dialog
+      setCreatedCredentials({
+        username: newUser.username,
+        password: newUser.password,
+      });
+
       toast.success('تم إنشاء المستخدم بنجاح');
       setIsAddDialogOpen(false);
       setNewUser({
@@ -203,11 +261,10 @@ export function UserManagement() {
         phone: '',
         role: 'cashier',
       });
-      // Wait a moment for the database to update before fetching
+      setUsernameError('');
       await new Promise(resolve => setTimeout(resolve, 1000));
       fetchUsers();
     } catch (error: any) {
-      console.error('Error creating user:', error);
       toast.error(error.message || 'حدث خطأ في إنشاء المستخدم');
     } finally {
       setSubmitting(false);
@@ -382,13 +439,22 @@ export function UserManagement() {
             </DialogHeader>
             <div className="space-y-4 py-4">
               <div className="space-y-2">
-                <Label htmlFor="username">اسم المستخدم *</Label>
-                <Input
-                  id="username"
-                  placeholder="اسم المستخدم"
-                  value={newUser.username}
-                  onChange={(e) => setNewUser({ ...newUser, username: e.target.value })}
-                />
+                <Label htmlFor="username">اسم المستخدم * (5 أحرف على الأقل)</Label>
+                <div className="relative">
+                  <Input
+                    id="username"
+                    placeholder="اسم المستخدم"
+                    value={newUser.username}
+                    onChange={(e) => handleUsernameChange(e.target.value)}
+                    className={usernameError ? 'border-destructive' : ''}
+                  />
+                  {checkingUsername && (
+                    <Loader2 className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 animate-spin text-muted-foreground" />
+                  )}
+                </div>
+                {usernameError && (
+                  <p className="text-xs text-destructive">{usernameError}</p>
+                )}
               </div>
               <div className="space-y-2">
                 <Label htmlFor="password">كلمة المرور *</Label>
@@ -529,14 +595,26 @@ export function UserManagement() {
                     >
                       <Edit className="w-3 h-3" />
                     </Button>
-                    <Button
-                      variant="destructive"
-                      size="sm"
-                      onClick={() => setDeleteUserId(user.user_id)}
-                      title="حذف"
-                    >
-                      <Trash2 className="w-3 h-3" />
-                    </Button>
+                    {user.role !== 'admin' ? (
+                      <Button
+                        variant="destructive"
+                        size="sm"
+                        onClick={() => setDeleteUserId(user.user_id)}
+                        title="حذف"
+                      >
+                        <Trash2 className="w-3 h-3" />
+                      </Button>
+                    ) : (
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        disabled
+                        title="لا يمكن حذف المدير التنفيذي"
+                        className="opacity-50 cursor-not-allowed"
+                      >
+                        <ShieldAlert className="w-3 h-3" />
+                      </Button>
+                    )}
                   </div>
                 </div>
               </div>
@@ -674,6 +752,66 @@ export function UserManagement() {
             <Button onClick={handleChangePassword} className="w-full" disabled={submitting}>
               {submitting ? <Loader2 className="w-4 h-4 animate-spin ml-2" /> : null}
               تغيير كلمة المرور
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Created Credentials Dialog */}
+      <Dialog open={!!createdCredentials} onOpenChange={(open) => !open && setCreatedCredentials(null)}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <UserCheck className="w-5 h-5 text-green-500" />
+              تم إنشاء الحساب بنجاح
+            </DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <p className="text-sm text-muted-foreground">
+              احفظ بيانات الدخول التالية، لن تتمكن من رؤية كلمة المرور مرة أخرى:
+            </p>
+            
+            <div className="bg-muted rounded-lg p-4 space-y-3">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-xs text-muted-foreground">اسم المستخدم</p>
+                  <p className="font-mono font-semibold">{createdCredentials?.username}</p>
+                </div>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => {
+                    navigator.clipboard.writeText(createdCredentials?.username || '');
+                    toast.success('تم نسخ اسم المستخدم');
+                  }}
+                >
+                  <Copy className="w-4 h-4" />
+                </Button>
+              </div>
+              
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-xs text-muted-foreground">كلمة المرور</p>
+                  <p className="font-mono font-semibold">{createdCredentials?.password}</p>
+                </div>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => {
+                    navigator.clipboard.writeText(createdCredentials?.password || '');
+                    toast.success('تم نسخ كلمة المرور');
+                  }}
+                >
+                  <Copy className="w-4 h-4" />
+                </Button>
+              </div>
+            </div>
+
+            <Button 
+              onClick={() => setCreatedCredentials(null)} 
+              className="w-full"
+            >
+              تم الحفظ
             </Button>
           </div>
         </DialogContent>
