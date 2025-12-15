@@ -8,6 +8,7 @@ import { Calculator, Loader2, Phone, User, CheckCircle, XCircle, Truck, RotateCc
 import { OrderWithItems } from '@/hooks/useSupabaseOrders';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
+import { toEnglishNumbers, formatNumberWithCommas } from '@/lib/formatNumber';
 
 interface DeliveryAccountingDialogProps {
   orders: OrderWithItems[];
@@ -117,7 +118,7 @@ export function DeliveryAccountingDialog({ orders, onOrdersUpdated }: DeliveryAc
             <div className="bg-primary/10 border border-primary/20 rounded-lg p-4 mb-4">
               <div className="flex items-center justify-between">
                 <span className="font-medium">إجمالي المستحقات للمطعم</span>
-                <span className="text-xl font-bold text-primary">{totalOwed.toLocaleString()} د.ع</span>
+                <span className="text-xl font-bold text-primary">{formatNumberWithCommas(totalOwed)} د.ع</span>
               </div>
             </div>
 
@@ -134,11 +135,11 @@ export function DeliveryAccountingDialog({ orders, onOrdersUpdated }: DeliveryAc
                         <div className="text-right">
                           <p className="font-medium">{driver.name}</p>
                           {driver.phone && (
-                            <p className="text-sm text-muted-foreground">{driver.phone}</p>
+                            <p className="text-sm text-muted-foreground">{toEnglishNumbers(driver.phone)}</p>
                           )}
                         </div>
                       </div>
-                      <span className="font-bold text-primary">{driver.totalAmount.toLocaleString()} د.ع</span>
+                      <span className="font-bold text-primary">{formatNumberWithCommas(driver.totalAmount)} د.ع</span>
                     </div>
                   </AccordionTrigger>
                   <AccordionContent className="pb-4">
@@ -147,17 +148,17 @@ export function DeliveryAccountingDialog({ orders, onOrdersUpdated }: DeliveryAc
                       <div className="grid grid-cols-3 gap-2">
                         <div className="bg-green-50 border border-green-200 rounded-lg p-3 text-center">
                           <CheckCircle className="w-5 h-5 text-green-600 mx-auto mb-1" />
-                          <p className="text-lg font-bold text-green-700">{driver.deliveredOrders.length}</p>
+                          <p className="text-lg font-bold text-green-700">{toEnglishNumbers(driver.deliveredOrders.length)}</p>
                           <p className="text-xs text-green-600">مكتملة</p>
                         </div>
                         <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 text-center">
                           <Truck className="w-5 h-5 text-blue-600 mx-auto mb-1" />
-                          <p className="text-lg font-bold text-blue-700">{driver.deliveringOrders.length}</p>
+                          <p className="text-lg font-bold text-blue-700">{toEnglishNumbers(driver.deliveringOrders.length)}</p>
                           <p className="text-xs text-blue-600">قيد التوصيل</p>
                         </div>
                         <div className="bg-red-50 border border-red-200 rounded-lg p-3 text-center">
                           <XCircle className="w-5 h-5 text-red-600 mx-auto mb-1" />
-                          <p className="text-lg font-bold text-red-700">{driver.cancelledOrders.length}</p>
+                          <p className="text-lg font-bold text-red-700">{toEnglishNumbers(driver.cancelledOrders.length)}</p>
                           <p className="text-xs text-red-600">ملغية</p>
                         </div>
                       </div>
@@ -192,8 +193,8 @@ export function DeliveryAccountingDialog({ orders, onOrdersUpdated }: DeliveryAc
                             <AlertDialogHeader>
                               <AlertDialogTitle>تصفير حساب {driver.name}؟</AlertDialogTitle>
                               <AlertDialogDescription>
-                                سيتم إزالة جميع الطلبات المكتملة ({driver.deliveredOrders.length} طلب) من حساب هذا الموظف.
-                                المبلغ المستحق: {driver.totalAmount.toLocaleString()} د.ع
+                                سيتم إزالة جميع الطلبات المكتملة ({toEnglishNumbers(driver.deliveredOrders.length)} طلب) من حساب هذا الموظف.
+                                المبلغ المستحق: {formatNumberWithCommas(driver.totalAmount)} د.ع
                               </AlertDialogDescription>
                             </AlertDialogHeader>
                             <AlertDialogFooter>

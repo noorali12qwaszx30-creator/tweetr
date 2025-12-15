@@ -2,6 +2,7 @@ import { useMemo } from 'react';
 import { Order } from '@/types';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, LineChart, Line } from 'recharts';
 import { Clock, TrendingUp } from 'lucide-react';
+import { toEnglishNumbers, formatNumberWithCommas } from '@/lib/formatNumber';
 
 interface OrdersChartProps {
   orders: Order[];
@@ -24,7 +25,7 @@ export function OrdersChart({ orders, title = 'الطلبات حسب الساع�
     });
 
     return Object.entries(hours).map(([hour, count]) => ({
-      hour: `${hour}:00`,
+      hour: toEnglishNumbers(`${hour}:00`),
       orders: count,
       hourNum: parseInt(hour),
     }));
@@ -77,8 +78,8 @@ export function OrdersChart({ orders, title = 'الطلبات حسب الساع�
                 borderRadius: '8px',
                 direction: 'rtl'
               }}
-              labelFormatter={(label) => `الساعة ${label}`}
-              formatter={(value: number) => [`${value} طلب`, 'العدد']}
+            labelFormatter={(label) => `الساعة ${toEnglishNumbers(label)}`}
+            formatter={(value: number) => [`${toEnglishNumbers(value)} طلب`, 'العدد']}
             />
             <Bar 
               dataKey="orders" 
@@ -148,7 +149,7 @@ export function WeeklyChart({ orders }: WeeklyChartProps) {
               direction: 'rtl'
             }}
             formatter={(value: number, name: string) => [
-              name === 'orders' ? `${value} طلب` : `${value.toLocaleString()} د.ع`,
+              name === 'orders' ? `${toEnglishNumbers(value)} طلب` : `${formatNumberWithCommas(value)} د.ع`,
               name === 'orders' ? 'الطلبات' : 'الإيراد'
             ]}
           />

@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Clock } from 'lucide-react';
+import { toEnglishNumbers } from '@/lib/formatNumber';
 
 interface OrderTimerProps {
   startTime: Date;
@@ -15,7 +16,8 @@ export function OrderTimer({ startTime, className = '' }: OrderTimerProps) {
       const diff = Math.floor((now.getTime() - new Date(startTime).getTime()) / 1000);
       const minutes = Math.floor(diff / 60);
       const seconds = diff % 60;
-      setElapsed(`${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`);
+      const timeStr = `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+      setElapsed(toEnglishNumbers(timeStr));
     };
 
     updateTimer();

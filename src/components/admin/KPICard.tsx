@@ -1,5 +1,6 @@
 import { ReactNode } from 'react';
 import { TrendingUp, TrendingDown, Minus } from 'lucide-react';
+import { toEnglishNumbers, formatNumberWithCommas } from '@/lib/formatNumber';
 
 interface KPICardProps {
   title: string;
@@ -48,13 +49,13 @@ export function KPICard({ title, value, icon, trend, suffix, variant = 'default'
             {trend > 0 ? <TrendingUp className="w-3 h-3" /> : 
              trend < 0 ? <TrendingDown className="w-3 h-3" /> : 
              <Minus className="w-3 h-3" />}
-            {Math.abs(trend)}%
+            {toEnglishNumbers(Math.abs(trend))}%
           </div>
         )}
       </div>
       <p className="text-muted-foreground text-sm mb-1">{title}</p>
       <p className={`text-2xl font-bold ${valueColors[variant]}`}>
-        {typeof value === 'number' ? value.toLocaleString() : value}
+        {typeof value === 'number' ? formatNumberWithCommas(value) : toEnglishNumbers(value)}
         {suffix && <span className="text-sm font-normal text-muted-foreground mr-1">{suffix}</span>}
       </p>
     </div>
