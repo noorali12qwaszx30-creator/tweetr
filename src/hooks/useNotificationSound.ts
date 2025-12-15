@@ -75,8 +75,8 @@ export const playNotificationSound = (type: 'newOrder' | 'orderReady' | 'orderCa
         oscillator.stop(ctx.currentTime + 0.45);
         break;
     }
-  } catch (error) {
-    console.log('Audio notification not available');
+  } catch {
+    // Audio not available - silently fail
   }
 };
 
