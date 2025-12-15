@@ -175,6 +175,7 @@ export type Database = {
           delivery_person_name: string | null
           edited_at: string | null
           id: string
+          is_archived: boolean
           is_edited: boolean | null
           notes: string | null
           order_number: number
@@ -200,6 +201,7 @@ export type Database = {
           delivery_person_name?: string | null
           edited_at?: string | null
           id?: string
+          is_archived?: boolean
           is_edited?: boolean | null
           notes?: string | null
           order_number?: number
@@ -225,6 +227,7 @@ export type Database = {
           delivery_person_name?: string | null
           edited_at?: string | null
           id?: string
+          is_archived?: boolean
           is_edited?: boolean | null
           notes?: string | null
           order_number?: number

@@ -79,6 +79,7 @@ export function useSupabaseOrders() {
     const { data: ordersData, error: ordersError } = await supabase
       .from('orders')
       .select('*')
+      .eq('is_archived', false)
       .order('created_at', { ascending: false });
 
     if (ordersError) {
