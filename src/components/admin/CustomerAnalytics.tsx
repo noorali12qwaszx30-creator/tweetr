@@ -2,6 +2,7 @@ import { useMemo, useState } from 'react';
 import { Order } from '@/types';
 import { Users, UserPlus, UserCheck, DollarSign, TrendingUp, Phone, MapPin, ChevronDown, ChevronUp, MessageCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { toEnglishNumbers, formatNumberWithCommas } from '@/lib/formatNumber';
 
 interface CustomerAnalyticsProps {
   orders: Order[];
@@ -79,28 +80,28 @@ export function CustomerAnalytics({ orders }: CustomerAnalyticsProps) {
             <Users className="w-5 h-5 text-primary" />
             <p className="text-muted-foreground text-sm">عملاء الدلفري</p>
           </div>
-          <p className="text-2xl font-bold">{analytics.totalCustomers}</p>
+          <p className="text-2xl font-bold">{toEnglishNumbers(analytics.totalCustomers)}</p>
         </div>
         <div className="bg-card border border-border rounded-xl p-4 shadow-soft">
           <div className="flex items-center gap-2 mb-2">
             <UserPlus className="w-5 h-5 text-success" />
             <p className="text-muted-foreground text-sm">عملاء جدد</p>
           </div>
-          <p className="text-2xl font-bold text-success">{analytics.newCustomers}</p>
+          <p className="text-2xl font-bold text-success">{toEnglishNumbers(analytics.newCustomers)}</p>
         </div>
         <div className="bg-card border border-border rounded-xl p-4 shadow-soft">
           <div className="flex items-center gap-2 mb-2">
             <UserCheck className="w-5 h-5 text-info" />
             <p className="text-muted-foreground text-sm">عملاء عائدون</p>
           </div>
-          <p className="text-2xl font-bold text-info">{analytics.returningCustomers}</p>
+          <p className="text-2xl font-bold text-info">{toEnglishNumbers(analytics.returningCustomers)}</p>
         </div>
         <div className="bg-card border border-border rounded-xl p-4 shadow-soft">
           <div className="flex items-center gap-2 mb-2">
             <DollarSign className="w-5 h-5 text-warning" />
             <p className="text-muted-foreground text-sm">متوسط الطلب</p>
           </div>
-          <p className="text-2xl font-bold text-warning">{Math.round(analytics.avgOrderValue).toLocaleString()}</p>
+          <p className="text-2xl font-bold text-warning">{formatNumberWithCommas(Math.round(analytics.avgOrderValue))}</p>
         </div>
       </div>
 
@@ -122,7 +123,7 @@ export function CustomerAnalytics({ orders }: CustomerAnalyticsProps) {
                 >
                   <div className="flex items-center gap-2">
                     <span className="w-6 h-6 flex items-center justify-center bg-primary/10 text-primary rounded-full text-xs font-bold">
-                      {idx + 1}
+                      {toEnglishNumbers(idx + 1)}
                     </span>
                     <span className="font-medium">{customer.name}</span>
                     {expandedCustomer === customer.phone ? (
@@ -132,8 +133,8 @@ export function CustomerAnalytics({ orders }: CustomerAnalyticsProps) {
                     )}
                   </div>
                   <div className="text-left">
-                    <p className="font-bold text-success">{customer.totalSpent.toLocaleString()} د.ع</p>
-                    <p className="text-xs text-muted-foreground">{customer.orders} طلب</p>
+                    <p className="font-bold text-success">{formatNumberWithCommas(customer.totalSpent)} د.ع</p>
+                    <p className="text-xs text-muted-foreground">{toEnglishNumbers(customer.orders)} طلب</p>
                   </div>
                 </button>
                 

@@ -19,6 +19,7 @@ import {
   Calendar
 } from 'lucide-react';
 import { OrderWithItems } from '@/hooks/useSupabaseOrders';
+import { toEnglishNumbers, formatNumberWithCommas, formatDateEnglish, formatTimeEnglish } from '@/lib/formatNumber';
 
 interface OrderDetailsDialogProps {
   order: OrderWithItems | null;
@@ -37,7 +38,7 @@ export function OrderDetailsDialog({ order, open, onOpenChange }: OrderDetailsDi
       <DialogContent className="max-w-md max-h-[85vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="flex items-center justify-between">
-            <span>طلب #{order.order_number}</span>
+            <span>طلب #{toEnglishNumbers(order.order_number)}</span>
             <Badge 
               variant={isDelivered ? 'default' : 'destructive'}
               className={isDelivered ? 'bg-success text-success-foreground' : ''}
@@ -61,7 +62,7 @@ export function OrderDetailsDialog({ order, open, onOpenChange }: OrderDetailsDi
               </p>
               <p className="flex items-center gap-2">
                 <Phone className="w-3 h-3 text-muted-foreground" />
-                {order.customer_phone}
+                {toEnglishNumbers(order.customer_phone)}
               </p>
               {order.customer_address && (
                 <p className="flex items-center gap-2">
@@ -85,12 +86,12 @@ export function OrderDetailsDialog({ order, open, onOpenChange }: OrderDetailsDi
                 <div key={index} className="flex items-center justify-between bg-muted/30 rounded-lg p-2">
                   <div className="flex items-center gap-2">
                     <span className="w-6 h-6 bg-primary/10 text-primary rounded-full flex items-center justify-center text-xs font-bold">
-                      {item.quantity}
+                      {toEnglishNumbers(item.quantity)}
                     </span>
                     <span className="text-sm">{item.menu_item_name}</span>
                   </div>
                   <span className="text-sm font-semibold">
-                    {(Number(item.menu_item_price) * item.quantity).toLocaleString()} د.ع
+                    {formatNumberWithCommas(Number(item.menu_item_price) * item.quantity)} د.ع
                   </span>
                 </div>
               ))}
@@ -98,7 +99,7 @@ export function OrderDetailsDialog({ order, open, onOpenChange }: OrderDetailsDi
             <div className="flex items-center justify-between pt-2 border-t border-border">
               <span className="font-bold">المجموع الكلي</span>
               <span className="font-bold text-primary text-lg">
-                {Number(order.total_price).toLocaleString()} د.ع
+                {formatNumberWithCommas(Number(order.total_price))} د.ع
               </span>
             </div>
           </div>
@@ -142,20 +143,20 @@ export function OrderDetailsDialog({ order, open, onOpenChange }: OrderDetailsDi
               <p className="flex items-center gap-2">
                 <Calendar className="w-3 h-3 text-muted-foreground" />
                 <span className="text-muted-foreground">تاريخ الإنشاء:</span>
-                <span className="font-medium">{new Date(order.created_at).toLocaleString('ar-IQ')}</span>
+                <span className="font-medium">{formatDateEnglish(order.created_at)} {formatTimeEnglish(order.created_at)}</span>
               </p>
               {isDelivered && order.delivered_at && (
                 <p className="flex items-center gap-2 text-success">
                   <CheckCircle className="w-3 h-3" />
                   <span>تم التوصيل:</span>
-                  <span className="font-medium">{new Date(order.delivered_at).toLocaleString('ar-IQ')}</span>
+                  <span className="font-medium">{formatDateEnglish(order.delivered_at)} {formatTimeEnglish(order.delivered_at)}</span>
                 </p>
               )}
               {isCancelled && order.cancelled_at && (
                 <p className="flex items-center gap-2 text-destructive">
                   <XCircle className="w-3 h-3" />
                   <span>تم الإلغاء:</span>
-                  <span className="font-medium">{new Date(order.cancelled_at).toLocaleString('ar-IQ')}</span>
+                  <span className="font-medium">{formatDateEnglish(order.cancelled_at)} {formatTimeEnglish(order.cancelled_at)}</span>
                 </p>
               )}
             </div>

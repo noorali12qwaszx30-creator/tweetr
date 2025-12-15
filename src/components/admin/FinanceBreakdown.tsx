@@ -2,6 +2,7 @@ import { useMemo } from 'react';
 import { Order } from '@/types';
 import { DollarSign, CreditCard, Banknote, TrendingUp, Percent, PieChart } from 'lucide-react';
 import { PieChart as RechartsPie, Pie, Cell, ResponsiveContainer, Tooltip } from 'recharts';
+import { formatNumberWithCommas, toEnglishNumbers } from '@/lib/formatNumber';
 
 interface FinanceBreakdownProps {
   orders: Order[];
@@ -50,8 +51,8 @@ export function FinanceBreakdown({ orders }: FinanceBreakdownProps) {
             <DollarSign className="w-5 h-5 text-success" />
             <p className="text-success text-sm font-medium">إجمالي المبيعات</p>
           </div>
-          <p className="text-2xl font-bold text-success">{finance.totalSales.toLocaleString()}</p>
-          <p className="text-xs text-success/70">{finance.completedCount} طلب مكتمل</p>
+          <p className="text-2xl font-bold text-success">{formatNumberWithCommas(finance.totalSales)}</p>
+          <p className="text-xs text-success/70">{toEnglishNumbers(finance.completedCount)} طلب مكتمل</p>
         </div>
         
         <div className="bg-gradient-to-br from-warning/20 to-warning/5 border border-warning/30 rounded-xl p-4">
@@ -59,7 +60,7 @@ export function FinanceBreakdown({ orders }: FinanceBreakdownProps) {
             <Percent className="w-5 h-5 text-warning" />
             <p className="text-warning text-sm font-medium">الخصومات</p>
           </div>
-          <p className="text-2xl font-bold text-warning">{finance.totalDiscounts.toLocaleString()}</p>
+          <p className="text-2xl font-bold text-warning">{formatNumberWithCommas(finance.totalDiscounts)}</p>
         </div>
         
         <div className="bg-gradient-to-br from-primary/20 to-primary/5 border border-primary/30 rounded-xl p-4">
@@ -67,7 +68,7 @@ export function FinanceBreakdown({ orders }: FinanceBreakdownProps) {
             <TrendingUp className="w-5 h-5 text-primary" />
             <p className="text-primary text-sm font-medium">إجمالي الأرباح</p>
           </div>
-          <p className="text-2xl font-bold text-primary">{finance.grossProfit.toLocaleString()}</p>
+          <p className="text-2xl font-bold text-primary">{formatNumberWithCommas(finance.grossProfit)}</p>
         </div>
         
         <div className="bg-gradient-to-br from-info/20 to-info/5 border border-info/30 rounded-xl p-4">
@@ -75,7 +76,7 @@ export function FinanceBreakdown({ orders }: FinanceBreakdownProps) {
             <DollarSign className="w-5 h-5 text-info" />
             <p className="text-info text-sm font-medium">صافي الربح</p>
           </div>
-          <p className="text-2xl font-bold text-info">{Math.round(finance.netProfit).toLocaleString()}</p>
+          <p className="text-2xl font-bold text-info">{formatNumberWithCommas(Math.round(finance.netProfit))}</p>
         </div>
       </div>
 
@@ -105,7 +106,7 @@ export function FinanceBreakdown({ orders }: FinanceBreakdownProps) {
                     ))}
                   </Pie>
                   <Tooltip 
-                    formatter={(value: number) => `${value.toLocaleString()} د.ع`}
+                    formatter={(value: number) => `${formatNumberWithCommas(value)} د.ع`}
                     contentStyle={{ 
                       background: 'hsl(var(--card))', 
                       border: '1px solid hsl(var(--border))',
@@ -122,14 +123,14 @@ export function FinanceBreakdown({ orders }: FinanceBreakdownProps) {
                   <Banknote className="w-5 h-5 text-success" />
                   <span>نقدي</span>
                 </div>
-                <span className="font-bold text-success">{finance.cashRevenue.toLocaleString()} د.ع</span>
+                <span className="font-bold text-success">{formatNumberWithCommas(finance.cashRevenue)} د.ع</span>
               </div>
               <div className="flex items-center justify-between p-2 bg-info/10 rounded-lg">
                 <div className="flex items-center gap-2">
                   <CreditCard className="w-5 h-5 text-info" />
                   <span>إلكتروني</span>
                 </div>
-                <span className="font-bold text-info">{finance.onlineRevenue.toLocaleString()} د.ع</span>
+                <span className="font-bold text-info">{formatNumberWithCommas(finance.onlineRevenue)} د.ع</span>
               </div>
             </div>
           </div>

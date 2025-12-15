@@ -1,6 +1,7 @@
 import { OrderTimer } from './OrderTimer';
 import { MessageSquare, Truck, Pencil } from 'lucide-react';
 import { OrderWithItems, DbOrderItem } from '@/hooks/useSupabaseOrders';
+import { toEnglishNumbers, formatNumberWithCommas } from '@/lib/formatNumber';
 
 // Status labels in Arabic
 const ORDER_STATUS_LABELS: Record<string, string> = {
@@ -53,7 +54,7 @@ export function OrderCard({
       {/* Header */}
       <div className="flex items-center justify-between mb-2 sm:mb-3 flex-wrap gap-2">
         <div className="flex items-center gap-2 sm:gap-3 flex-wrap">
-          <span className="text-xl sm:text-2xl font-bold text-primary">#{order.order_number}</span>
+          <span className="text-xl sm:text-2xl font-bold text-primary">#{toEnglishNumbers(order.order_number)}</span>
           <span className={`px-2 py-0.5 rounded-full text-[10px] sm:text-xs font-medium border ${statusColors[order.status]}`}>
             {ORDER_STATUS_LABELS[order.status]}
           </span>
@@ -79,7 +80,7 @@ export function OrderCard({
         <div className="mb-2 sm:mb-3 p-2 sm:p-3 bg-muted/50 rounded-lg">
           <p className="font-semibold text-foreground text-sm sm:text-base">{order.customer_name}</p>
           {order.customer_phone && (
-            <p className="text-xs sm:text-sm text-muted-foreground">{order.customer_phone}</p>
+            <p className="text-xs sm:text-sm text-muted-foreground">{toEnglishNumbers(order.customer_phone)}</p>
           )}
           {order.customer_address && (
             <p className="text-xs sm:text-sm text-muted-foreground">{order.customer_address}</p>
@@ -94,7 +95,7 @@ export function OrderCard({
             <div key={idx} className="flex items-center justify-between text-xs sm:text-sm">
               <div className="flex items-center gap-1.5 sm:gap-2">
                 <span className="w-5 h-5 sm:w-6 sm:h-6 flex items-center justify-center bg-primary/10 text-primary rounded-md text-[10px] sm:text-xs font-bold">
-                  {item.quantity}
+                  {toEnglishNumbers(item.quantity)}
                 </span>
                 <span className="text-foreground truncate max-w-[120px] sm:max-w-none">{item.menu_item_name}</span>
                 {item.notes && (
@@ -102,13 +103,13 @@ export function OrderCard({
                 )}
               </div>
               <span className="text-muted-foreground text-[10px] sm:text-xs">
-                {(Number(item.menu_item_price) * item.quantity).toLocaleString()} د.ع
+                {formatNumberWithCommas(Number(item.menu_item_price) * item.quantity)} د.ع
               </span>
             </div>
           ))}
           <div className="flex items-center justify-between pt-2 border-t border-border font-semibold text-sm sm:text-base">
             <span>المجموع</span>
-            <span className="text-primary">{Number(order.total_price).toLocaleString()} د.ع</span>
+            <span className="text-primary">{formatNumberWithCommas(Number(order.total_price))} د.ع</span>
           </div>
         </div>
       )}

@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Menu as MenuIcon, GripVertical } from 'lucide-react';
 import { MenuItem } from '@/hooks/useMenuItems';
+import { formatNumberWithCommas } from '@/lib/formatNumber';
 import {
   DndContext,
   closestCenter,
@@ -78,7 +79,7 @@ function SortableMenuItem({ item, onSelect, accentColor = 'primary' }: SortableM
           </div>
         )}
         <h3 className="font-semibold text-sm text-foreground truncate">{item.name}</h3>
-        <p className={`${priceClass} font-bold text-sm`}>{item.price.toLocaleString()} د.ع</p>
+        <p className={`${priceClass} font-bold text-sm`}>{formatNumberWithCommas(item.price)} د.ع</p>
       </button>
     </div>
   );

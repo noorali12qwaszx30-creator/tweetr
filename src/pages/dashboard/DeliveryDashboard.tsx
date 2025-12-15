@@ -8,6 +8,7 @@ import { LogoutConfirmButton } from '@/components/LogoutConfirmButton';
 import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
 import { ROLE_LABELS } from '@/types';
+import { toEnglishNumbers, formatNumberWithCommas } from '@/lib/formatNumber';
 import {
   Truck,
   ClipboardList,
@@ -91,7 +92,7 @@ export default function DeliveryDashboard() {
       <main className="container py-3 sm:py-4 pb-24">
         {activeTab === 'orders' && (
           <div className="space-y-3 sm:space-y-4">
-            <h2 className="text-lg sm:text-xl font-bold">الطلبات المحولة إليك ({pendingAcceptanceOrders.length})</h2>
+            <h2 className="text-lg sm:text-xl font-bold">الطلبات المحولة إليك ({toEnglishNumbers(pendingAcceptanceOrders.length)})</h2>
             {pendingAcceptanceOrders.length === 0 ? (
               <div className="text-center py-8 sm:py-12 text-muted-foreground">
                 <ClipboardList className="w-10 h-10 sm:w-12 sm:h-12 mx-auto mb-4 opacity-50" />
@@ -124,7 +125,7 @@ export default function DeliveryDashboard() {
 
         {activeTab === 'delivering' && (
           <div className="space-y-4">
-            <h2 className="text-xl font-bold">قيد التوصيل ({deliveringOrders.length})</h2>
+            <h2 className="text-xl font-bold">قيد التوصيل ({toEnglishNumbers(deliveringOrders.length)})</h2>
             {deliveringOrders.length === 0 ? (
               <div className="text-center py-12 text-muted-foreground">
                 <Truck className="w-12 h-12 mx-auto mb-4 opacity-50" />
@@ -173,15 +174,15 @@ export default function DeliveryDashboard() {
             <div className="grid grid-cols-2 gap-2 sm:gap-4">
               <div className="bg-card border border-border rounded-xl p-3 sm:p-4 shadow-soft">
                 <p className="text-muted-foreground text-xs sm:text-sm">الطلبات المكتملة</p>
-                <p className="text-2xl sm:text-3xl font-bold text-success">{totalDelivered}</p>
+                <p className="text-2xl sm:text-3xl font-bold text-success">{toEnglishNumbers(totalDelivered)}</p>
               </div>
               <div className="bg-card border border-border rounded-xl p-3 sm:p-4 shadow-soft">
                 <p className="text-muted-foreground text-xs sm:text-sm">إجمالي الأرباح</p>
-                <p className="text-2xl sm:text-3xl font-bold text-primary">{totalEarnings.toLocaleString()} د.ع</p>
+                <p className="text-2xl sm:text-3xl font-bold text-primary">{formatNumberWithCommas(totalEarnings)} د.ع</p>
               </div>
               <div className="bg-card border border-border rounded-xl p-3 sm:p-4 shadow-soft">
                 <p className="text-muted-foreground text-xs sm:text-sm">الطلبات الملغية</p>
-                <p className="text-2xl sm:text-3xl font-bold text-destructive">{cancelledByDelivery.length}</p>
+                <p className="text-2xl sm:text-3xl font-bold text-destructive">{toEnglishNumbers(cancelledByDelivery.length)}</p>
               </div>
               <div className="bg-card border border-border rounded-xl p-3 sm:p-4 shadow-soft">
                 <p className="text-muted-foreground text-xs sm:text-sm">الفائدة لكل طلب</p>
@@ -193,7 +194,7 @@ export default function DeliveryDashboard() {
 
         {activeTab === 'ready' && (
           <div className="space-y-4">
-            <h2 className="text-xl font-bold">الطلبات الجاهزة ({readyOrders.length})</h2>
+            <h2 className="text-xl font-bold">الطلبات الجاهزة ({toEnglishNumbers(readyOrders.length)})</h2>
             {readyOrders.length === 0 ? (
               <div className="text-center py-12 text-muted-foreground">
                 <Package className="w-12 h-12 mx-auto mb-4 opacity-50" />
@@ -238,7 +239,7 @@ export default function DeliveryDashboard() {
               <span className="text-xs font-medium">{tab.label}</span>
               {tab.count !== undefined && tab.count > 0 && (
                 <span className="absolute top-1 right-1/2 translate-x-4 w-5 h-5 bg-destructive text-destructive-foreground rounded-full text-xs flex items-center justify-center">
-                  {tab.count}
+                  {toEnglishNumbers(tab.count)}
                 </span>
               )}
             </button>
