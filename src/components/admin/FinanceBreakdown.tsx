@@ -1,7 +1,7 @@
 import { useMemo } from 'react';
 import { Order } from '@/types';
-import { DollarSign, CreditCard, Banknote, TrendingUp, TrendingDown, Percent, PieChart } from 'lucide-react';
-import { PieChart as RechartsPie, Pie, Cell, ResponsiveContainer, Tooltip, Legend } from 'recharts';
+import { DollarSign, CreditCard, Banknote, TrendingUp, Percent, PieChart } from 'lucide-react';
+import { PieChart as RechartsPie, Pie, Cell, ResponsiveContainer, Tooltip } from 'recharts';
 
 interface FinanceBreakdownProps {
   orders: Order[];
@@ -13,19 +13,15 @@ export function FinanceBreakdown({ orders }: FinanceBreakdownProps) {
     const cancelled = orders.filter(o => o.status === 'cancelled');
     
     const totalSales = completed.reduce((sum, o) => sum + o.totalPrice, 0);
-    const totalDiscounts = 0; // Would come from order data
+    const totalDiscounts = 0;
     const grossProfit = totalSales - totalDiscounts;
-    const netProfit = grossProfit * 0.3; // Simplified: 30% margin
+    const netProfit = grossProfit * 0.3;
     
-    // Simulate payment methods distribution
-    const cashRevenue = totalSales * 0.65; // 65% cash
-    const onlineRevenue = totalSales * 0.35; // 35% online
+    // Payment method distribution - all orders are cash for now
+    const cashRevenue = totalSales;
+    const onlineRevenue = 0;
     
     const cancelledValue = cancelled.reduce((sum, o) => sum + o.totalPrice, 0);
-    
-    // Yesterday comparison (simulated)
-    const yesterdayTotal = totalSales * (Math.random() * 0.4 + 0.8); // 80-120% of today
-    const changePercent = totalSales > 0 ? ((totalSales - yesterdayTotal) / yesterdayTotal) * 100 : 0;
 
     return {
       totalSales,
@@ -35,7 +31,6 @@ export function FinanceBreakdown({ orders }: FinanceBreakdownProps) {
       cashRevenue,
       onlineRevenue,
       cancelledValue,
-      changePercent: Math.round(changePercent),
       completedCount: completed.length,
       cancelledCount: cancelled.length,
     };
