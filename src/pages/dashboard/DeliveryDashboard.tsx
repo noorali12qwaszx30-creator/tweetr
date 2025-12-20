@@ -71,7 +71,7 @@ export default function DeliveryDashboard() {
 
   const handleDelivered = async (orderId: string) => {
     await updateOrderStatus(orderId, 'delivered');
-    toast.success('تم التسليم بنجاح!');
+    // Toast is handled by the hook
   };
 
   const handleReturnOrder = (orderId: string) => {
