@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useRole } from '@/contexts/RoleContext';
 import { useAuth } from '@/contexts/AuthContext';
 import { useSupabaseOrders } from '@/hooks/useSupabaseOrders';
+import { useCancellationReasons } from '@/contexts/CancellationReasonsContext';
 import { OrderCard } from '@/components/OrderCard';
 import { QuickAccessReturnButton } from '@/components/admin/QuickAccessReturnButton';
 import { LogoutConfirmButton } from '@/components/LogoutConfirmButton';
@@ -19,6 +20,14 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
+import { Label } from '@/components/ui/label';
 import {
   Truck,
   ClipboardList,
@@ -39,9 +48,11 @@ export default function DeliveryDashboard() {
   const { role } = useRole();
   const { user } = useAuth();
   const { orders, updateOrderStatus, acceptDelivery, rejectDelivery, returnOrder, loading } = useSupabaseOrders();
+  const { reasons } = useCancellationReasons();
   const [activeTab, setActiveTab] = useState<TabType>('orders');
   const [returnDialogOpen, setReturnDialogOpen] = useState(false);
   const [orderToReturn, setOrderToReturn] = useState<string | null>(null);
+  const [selectedReturnReason, setSelectedReturnReason] = useState<string>('');
 
   // Orders assigned to this delivery person (pending acceptance)
   const pendingAcceptanceOrders = orders.filter(o => o.status === 'ready' && o.pending_delivery_acceptance);
@@ -65,14 +76,20 @@ export default function DeliveryDashboard() {
 
   const handleReturnOrder = (orderId: string) => {
     setOrderToReturn(orderId);
+    setSelectedReturnReason('');
     setReturnDialogOpen(true);
   };
 
   const confirmReturnOrder = async () => {
     if (orderToReturn) {
-      await returnOrder(orderToReturn);
+      if (!selectedReturnReason) {
+        toast.error('الرجاء اختيار سبب الإرجاع');
+        return;
+      }
+      await returnOrder(orderToReturn, selectedReturnReason);
       setReturnDialogOpen(false);
       setOrderToReturn(null);
+      setSelectedReturnReason('');
     }
   };
 
@@ -301,17 +318,43 @@ export default function DeliveryDashboard() {
       </nav>
 
       {/* Return Confirmation Dialog */}
-      <AlertDialog open={returnDialogOpen} onOpenChange={setReturnDialogOpen}>
+      <AlertDialog open={returnDialogOpen} onOpenChange={(open) => {
+        setReturnDialogOpen(open);
+        if (!open) {
+          setSelectedReturnReason('');
+        }
+      }}>
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>تأكيد إرجاع الطلب</AlertDialogTitle>
             <AlertDialogDescription>
-              هل أنت متأكد من إرجاع هذا الطلب؟ سيتم نقله إلى قسم الملغي.
+              الرجاء اختيار سبب إرجاع الطلب
             </AlertDialogDescription>
           </AlertDialogHeader>
+          
+          <div className="py-4">
+            <Label htmlFor="return-reason" className="mb-2 block">سبب الإرجاع</Label>
+            <Select value={selectedReturnReason} onValueChange={setSelectedReturnReason}>
+              <SelectTrigger id="return-reason" className="w-full">
+                <SelectValue placeholder="اختر سبب الإرجاع" />
+              </SelectTrigger>
+              <SelectContent className="bg-popover z-50">
+                {reasons.map((reason) => (
+                  <SelectItem key={reason.id} value={reason.text}>
+                    {reason.text}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
           <AlertDialogFooter className="gap-2">
             <AlertDialogCancel>إلغاء</AlertDialogCancel>
-            <AlertDialogAction onClick={confirmReturnOrder} className="bg-warning hover:bg-warning/90 text-warning-foreground">
+            <AlertDialogAction 
+              onClick={confirmReturnOrder} 
+              className="bg-warning hover:bg-warning/90 text-warning-foreground"
+              disabled={!selectedReturnReason}
+            >
               تأكيد الإرجاع
             </AlertDialogAction>
           </AlertDialogFooter>

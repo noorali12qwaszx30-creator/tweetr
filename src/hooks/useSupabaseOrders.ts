@@ -291,13 +291,15 @@ export function useSupabaseOrders() {
     return true;
   };
 
-  // Return order (delivery person returns order - marks as cancelled with "راجع" reason)
-  const returnOrder = async (orderId: string) => {
+  // Return order (delivery person returns order - marks as cancelled with reason)
+  const returnOrder = async (orderId: string, reason?: string) => {
+    const cancellationReason = reason || 'راجع';
+    
     // Optimistic update
     setOrders(prevOrders => 
       prevOrders.map(order => 
         order.id === orderId 
-          ? { ...order, status: 'cancelled' as const, cancellation_reason: 'راجع' } 
+          ? { ...order, status: 'cancelled' as const, cancellation_reason: cancellationReason } 
           : order
       )
     );
@@ -306,7 +308,7 @@ export function useSupabaseOrders() {
       .from('orders')
       .update({
         status: 'cancelled',
-        cancellation_reason: 'راجع',
+        cancellation_reason: cancellationReason,
       })
       .eq('id', orderId);
 
