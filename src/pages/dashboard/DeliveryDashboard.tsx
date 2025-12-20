@@ -28,7 +28,7 @@ type TabType = 'orders' | 'delivering' | 'stats' | 'ready' | 'settings';
 export default function DeliveryDashboard() {
   const { role } = useRole();
   const { user } = useAuth();
-  const { orders, updateOrderStatus, acceptDelivery, rejectDelivery, loading } = useSupabaseOrders();
+  const { orders, updateOrderStatus, acceptDelivery, rejectDelivery, returnOrder, loading } = useSupabaseOrders();
   const [activeTab, setActiveTab] = useState<TabType>('orders');
 
   // Orders assigned to this delivery person (pending acceptance)
@@ -49,6 +49,10 @@ export default function DeliveryDashboard() {
   const handleDelivered = async (orderId: string) => {
     await updateOrderStatus(orderId, 'delivered');
     toast.success('تم التسليم بنجاح!');
+  };
+
+  const handleReturnOrder = async (orderId: string) => {
+    await returnOrder(orderId);
   };
 
   const totalDelivered = deliveredOrders.length;
@@ -155,7 +159,7 @@ export default function DeliveryDashboard() {
                           <CheckCircle className="w-3 h-3 ml-1" />
                           تم التوصيل
                         </Button>
-                        <Button variant="warning" size="sm">
+                        <Button variant="warning" size="sm" onClick={() => handleReturnOrder(order.id)}>
                           <Undo2 className="w-3 h-3 ml-1" />
                           راجع
                         </Button>
