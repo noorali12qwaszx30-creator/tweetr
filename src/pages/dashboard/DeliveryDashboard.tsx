@@ -10,6 +10,16 @@ import { toast } from 'sonner';
 import { ROLE_LABELS } from '@/types';
 import { toEnglishNumbers, formatNumberWithCommas } from '@/lib/formatNumber';
 import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
+import {
   Truck,
   ClipboardList,
   Package,
@@ -30,6 +40,8 @@ export default function DeliveryDashboard() {
   const { user } = useAuth();
   const { orders, updateOrderStatus, acceptDelivery, rejectDelivery, returnOrder, loading } = useSupabaseOrders();
   const [activeTab, setActiveTab] = useState<TabType>('orders');
+  const [returnDialogOpen, setReturnDialogOpen] = useState(false);
+  const [orderToReturn, setOrderToReturn] = useState<string | null>(null);
 
   // Orders assigned to this delivery person (pending acceptance)
   const pendingAcceptanceOrders = orders.filter(o => o.status === 'ready' && o.pending_delivery_acceptance);
@@ -51,8 +63,17 @@ export default function DeliveryDashboard() {
     toast.success('تم التسليم بنجاح!');
   };
 
-  const handleReturnOrder = async (orderId: string) => {
-    await returnOrder(orderId);
+  const handleReturnOrder = (orderId: string) => {
+    setOrderToReturn(orderId);
+    setReturnDialogOpen(true);
+  };
+
+  const confirmReturnOrder = async () => {
+    if (orderToReturn) {
+      await returnOrder(orderToReturn);
+      setReturnDialogOpen(false);
+      setOrderToReturn(null);
+    }
   };
 
   // Format phone number for WhatsApp (add Iraq country code if missing)
@@ -278,6 +299,24 @@ export default function DeliveryDashboard() {
           ))}
         </div>
       </nav>
+
+      {/* Return Confirmation Dialog */}
+      <AlertDialog open={returnDialogOpen} onOpenChange={setReturnDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>تأكيد إرجاع الطلب</AlertDialogTitle>
+            <AlertDialogDescription>
+              هل أنت متأكد من إرجاع هذا الطلب؟ سيتم نقله إلى قسم الملغي.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter className="gap-2">
+            <AlertDialogCancel>إلغاء</AlertDialogCancel>
+            <AlertDialogAction onClick={confirmReturnOrder} className="bg-warning hover:bg-warning/90 text-warning-foreground">
+              تأكيد الإرجاع
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
