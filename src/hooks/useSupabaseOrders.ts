@@ -291,6 +291,37 @@ export function useSupabaseOrders() {
     return true;
   };
 
+  // Return order (delivery person returns order - marks as cancelled with "راجع" reason)
+  const returnOrder = async (orderId: string) => {
+    // Optimistic update
+    setOrders(prevOrders => 
+      prevOrders.map(order => 
+        order.id === orderId 
+          ? { ...order, status: 'cancelled' as const, cancellation_reason: 'راجع' } 
+          : order
+      )
+    );
+
+    const { error } = await supabase
+      .from('orders')
+      .update({
+        status: 'cancelled',
+        cancellation_reason: 'راجع',
+      })
+      .eq('id', orderId);
+
+    if (error) {
+      console.error('Error returning order:', error);
+      toast.error('حدث خطأ في إرجاع الطلب');
+      // Revert on error
+      fetchOrders();
+      return false;
+    }
+
+    toast.warning('تم إرجاع الطلب');
+    return true;
+  };
+
   // Cancel order
   const cancelOrder = async (orderId: string, reason?: string) => {
     // Optimistic update - immediately update local state
@@ -373,6 +404,7 @@ export function useSupabaseOrders() {
     assignDelivery,
     acceptDelivery,
     rejectDelivery,
+    returnOrder,
     cancelOrder,
     getOrdersByStatus,
     refetch: fetchOrders,
