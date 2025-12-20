@@ -112,6 +112,9 @@ export function useSupabaseOrders() {
     fetchMenuItems();
     fetchOrders();
 
+    // Track shown notifications to prevent duplicates
+    const shownNotifications = new Set<string>();
+    
     // Subscribe to orders changes
     const ordersChannel = supabase
       .channel('orders-realtime')
@@ -122,22 +125,45 @@ export function useSupabaseOrders() {
           console.log('Order change:', payload);
           
           if (payload.eventType === 'INSERT') {
-            playNotificationSound();
-            toast.success('طلب جديد!', { duration: 3000 });
+            const newOrder = payload.new as DbOrder;
+            const notificationKey = `insert-${newOrder.id}`;
+            
+            if (!shownNotifications.has(notificationKey)) {
+              shownNotifications.add(notificationKey);
+              playNotificationSound('newOrder');
+              toast.success('طلب جديد!', { duration: 3000, id: notificationKey });
+              
+              // Clear from set after 5 seconds
+              setTimeout(() => shownNotifications.delete(notificationKey), 5000);
+            }
           } else if (payload.eventType === 'UPDATE') {
             const newOrder = payload.new as DbOrder;
-            if (newOrder.status === 'ready') {
-              playNotificationSound();
-              toast.info(`الطلب #${newOrder.order_number} جاهز!`);
-            } else if (newOrder.status === 'cancelled') {
-              playNotificationSound();
-              toast.error(`تم إلغاء الطلب #${newOrder.order_number}`);
-            } else if (newOrder.status === 'delivering') {
-              playNotificationSound();
-              toast.info(`الطلب #${newOrder.order_number} في الطريق!`);
-            } else if (newOrder.status === 'delivered') {
-              playNotificationSound();
-              toast.success(`تم تسليم الطلب #${newOrder.order_number}`);
+            const oldOrder = payload.old as Partial<DbOrder>;
+            
+            // Only show notification if status actually changed
+            if (oldOrder.status !== newOrder.status) {
+              const notificationKey = `update-${newOrder.id}-${newOrder.status}`;
+              
+              if (!shownNotifications.has(notificationKey)) {
+                shownNotifications.add(notificationKey);
+                
+                if (newOrder.status === 'ready') {
+                  playNotificationSound('orderReady');
+                  toast.info(`الطلب #${newOrder.order_number} جاهز!`, { id: notificationKey });
+                } else if (newOrder.status === 'cancelled') {
+                  playNotificationSound('orderCancelled');
+                  toast.error(`تم إلغاء الطلب #${newOrder.order_number}`, { id: notificationKey });
+                } else if (newOrder.status === 'delivering') {
+                  playNotificationSound('orderAssigned');
+                  toast.info(`الطلب #${newOrder.order_number} في الطريق!`, { id: notificationKey });
+                } else if (newOrder.status === 'delivered') {
+                  playNotificationSound('orderReady');
+                  toast.success(`تم تسليم الطلب #${newOrder.order_number}`, { id: notificationKey });
+                }
+                
+                // Clear from set after 5 seconds
+                setTimeout(() => shownNotifications.delete(notificationKey), 5000);
+              }
             }
           }
           
@@ -194,7 +220,7 @@ export function useSupabaseOrders() {
         return null;
       }
 
-      toast.success(`تم إنشاء الطلب #${data.order.order_number}`);
+      // Don't show toast here - realtime will handle it
       return data.order;
     } catch (err) {
       console.error('Unexpected error creating order:', err);
@@ -245,7 +271,8 @@ export function useSupabaseOrders() {
       return false;
     }
 
-    toast.success('تم تعيين موظف التوصيل');
+    playNotificationSound('orderAssigned');
+    toast.success('تم تعيين موظف التوصيل', { id: `assign-${orderId}` });
     return true;
   };
 
@@ -265,7 +292,8 @@ export function useSupabaseOrders() {
       return false;
     }
 
-    toast.success('تم قبول الطلب');
+    playNotificationSound('orderReady');
+    toast.success('تم قبول الطلب', { id: `accept-${orderId}` });
     return true;
   };
 
@@ -287,7 +315,8 @@ export function useSupabaseOrders() {
       return false;
     }
 
-    toast.info('تم رفض الطلب');
+    playNotificationSound('alert');
+    toast.info('تم رفض الطلب', { id: `reject-${orderId}` });
     return true;
   };
 
@@ -320,7 +349,8 @@ export function useSupabaseOrders() {
       return false;
     }
 
-    toast.warning('تم إرجاع الطلب');
+    playNotificationSound('orderCancelled');
+    toast.warning('تم إرجاع الطلب', { id: `return-${orderId}` });
     return true;
   };
 
@@ -351,7 +381,8 @@ export function useSupabaseOrders() {
       return false;
     }
 
-    toast.warning('تم إلغاء الطلب');
+    playNotificationSound('orderCancelled');
+    toast.warning('تم إلغاء الطلب', { id: `cancel-${orderId}` });
     return true;
   };
 
@@ -386,7 +417,8 @@ export function useSupabaseOrders() {
         return null;
       }
 
-      toast.success('تم تعديل الطلب بنجاح');
+      playNotificationSound('orderReady');
+      toast.success('تم تعديل الطلب بنجاح', { id: `update-order-${orderId}` });
       await fetchOrders();
       return data.order;
     } catch (err) {
