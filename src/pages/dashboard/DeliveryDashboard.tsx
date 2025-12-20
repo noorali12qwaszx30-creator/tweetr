@@ -55,6 +55,34 @@ export default function DeliveryDashboard() {
     await returnOrder(orderId);
   };
 
+  // Format phone number for WhatsApp (add Iraq country code if missing)
+  const formatPhoneForWhatsApp = (phone: string): string => {
+    // Remove any non-digit characters except +
+    let cleaned = phone.replace(/[^\d+]/g, '');
+    
+    // If already has + at start, just remove the +
+    if (cleaned.startsWith('+')) {
+      return cleaned.substring(1);
+    }
+    
+    // If starts with 00, replace with nothing (international format)
+    if (cleaned.startsWith('00')) {
+      return cleaned.substring(2);
+    }
+    
+    // If starts with 0 (local Iraqi format), replace with 964
+    if (cleaned.startsWith('0')) {
+      return '964' + cleaned.substring(1);
+    }
+    
+    // If doesn't start with 964, add it
+    if (!cleaned.startsWith('964')) {
+      return '964' + cleaned;
+    }
+    
+    return cleaned;
+  };
+
   const totalDelivered = deliveredOrders.length;
   const totalEarnings = totalDelivered * 1000; // 1000 per delivery
 
@@ -150,7 +178,7 @@ export default function DeliveryDashboard() {
                           </a>
                         </Button>
                         <Button variant="success" size="sm" asChild>
-                          <a href={`https://wa.me/${order.customer_phone}`} target="_blank" rel="noopener noreferrer">
+                          <a href={`https://wa.me/${formatPhoneForWhatsApp(order.customer_phone)}`} target="_blank" rel="noopener noreferrer">
                             <MessageCircle className="w-3 h-3 ml-1" />
                             واتساب
                           </a>
