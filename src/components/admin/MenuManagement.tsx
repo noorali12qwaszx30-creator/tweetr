@@ -134,50 +134,50 @@ function CategoryManagementModal({
       <Dialog open={open} onOpenChange={onClose}>
         <DialogContent className="max-w-md">
           <DialogHeader>
-            <DialogTitle className="flex items-center gap-٣">
-              <div className="p-٢ rounded-xl bg-primary/١٠">
-                <Settings className="w-٥ h-٥ text-primary" />
+            <DialogTitle className="flex items-center gap-3">
+              <div className="p-2 rounded-xl bg-primary/10">
+                <Settings className="w-5 h-5 text-primary" />
               </div>
               إدارة الأقسام
             </DialogTitle>
           </DialogHeader>
 
-          <div className="space-y-٤">
+          <div className="space-y-4">
             {/* Add New Category */}
-            <div className="flex gap-٢ p-٣ bg-muted/٣٠ rounded-xl border border-dashed border-border">
+            <div className="flex gap-2 p-3 bg-muted/30 rounded-xl border border-dashed border-border">
               <Input
                 placeholder="اسم القسم الجديد..."
                 value={newCategoryName}
                 onChange={(e) => setNewCategoryName(e.target.value)}
                 onKeyDown={(e) => e.key === 'Enter' && handleAddCategory()}
-                className="flex-١ bg-background"
+                className="flex-1 bg-background"
               />
               <Button
                 onClick={handleAddCategory}
                 disabled={!newCategoryName.trim()}
                 size="sm"
-                className="bg-primary hover:bg-primary/٩٠"
+                className="bg-primary hover:bg-primary/90"
               >
-                <FolderPlus className="w-٤ h-٤ ml-١" />
+                <FolderPlus className="w-4 h-4 ml-1" />
                 إضافة
               </Button>
             </div>
 
             {/* Categories List */}
-            <ScrollArea className="h-[٣٠٠px]">
-              <div className="space-y-٢">
+            <ScrollArea className="h-[300px]">
+              <div className="space-y-2">
                 {categories.length === 0 ? (
-                  <div className="text-center py-٨ text-muted-foreground">
-                    <Package className="w-١٢ h-١٢ mx-auto mb-٤ opacity-٣٠" />
+                  <div className="text-center py-8 text-muted-foreground">
+                    <Package className="w-12 h-12 mx-auto mb-4 opacity-30" />
                     <p>لا توجد أقسام</p>
                   </div>
                 ) : (
                   categories.map((category, index) => (
                     <div
                       key={category}
-                      className="flex items-center gap-٣ p-٣ bg-card rounded-xl border shadow-soft hover:shadow-elevated transition-all group"
+                      className="flex items-center gap-3 p-3 bg-card rounded-xl border shadow-soft hover:shadow-elevated transition-all group"
                     >
-                      <div className="flex items-center justify-center w-٨ h-٨ rounded-lg bg-primary/١٠ text-primary font-bold text-sm">
+                      <div className="flex items-center justify-center w-8 h-8 rounded-lg bg-primary/10 text-primary font-bold text-sm">
                         {index + 1}
                       </div>
                       
@@ -191,29 +191,29 @@ function CategoryManagementModal({
                           }}
                           onBlur={handleEditSave}
                           autoFocus
-                          className="flex-١ h-٨"
+                          className="flex-1 h-8"
                           disabled={loading}
                         />
                       ) : (
                         <>
-                          <span className="flex-١ font-semibold text-foreground">{category}</span>
+                          <span className="flex-1 font-semibold text-foreground">{category}</span>
                           <Badge variant="secondary" className="font-medium">
                             {getCategoryItemCount(category)} صنف
                           </Badge>
-                          <div className="flex gap-١ opacity-٠ group-hover:opacity-١٠٠ transition-opacity">
+                          <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
                             <button
                               onClick={() => handleEditStart(category)}
-                              className="p-٢ text-muted-foreground hover:text-primary hover:bg-primary/١٠ rounded-lg transition-colors"
+                              className="p-2 text-muted-foreground hover:text-primary hover:bg-primary/10 rounded-lg transition-colors"
                               title="تعديل"
                             >
-                              <Edit3 className="w-٤ h-٤" />
+                              <Edit3 className="w-4 h-4" />
                             </button>
                             <button
                               onClick={() => setDeleteConfirm(category)}
-                              className="p-٢ text-muted-foreground hover:text-destructive hover:bg-destructive/١٠ rounded-lg transition-colors"
+                              className="p-2 text-muted-foreground hover:text-destructive hover:bg-destructive/10 rounded-lg transition-colors"
                               title="حذف"
                             >
-                              <Trash2 className="w-٤ h-٤" />
+                              <Trash2 className="w-4 h-4" />
                             </button>
                           </div>
                         </>
@@ -240,14 +240,14 @@ function CategoryManagementModal({
               </span>
             </AlertDialogDescription>
           </AlertDialogHeader>
-          <AlertDialogFooter className="gap-٢ sm:gap-٠">
+          <AlertDialogFooter className="gap-2 sm:gap-0">
             <AlertDialogCancel disabled={loading}>إلغاء</AlertDialogCancel>
             <AlertDialogAction
               onClick={() => deleteConfirm && handleDelete(deleteConfirm)}
               disabled={loading}
-              className="bg-destructive text-destructive-foreground hover:bg-destructive/٩٠"
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
             >
-              {loading ? <Loader2 className="w-٤ h-٤ animate-spin ml-٢" /> : null}
+              {loading ? <Loader2 className="w-4 h-4 animate-spin ml-2" /> : null}
               حذف القسم والأصناف
             </AlertDialogAction>
           </AlertDialogFooter>
