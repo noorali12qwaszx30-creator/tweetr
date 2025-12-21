@@ -1050,10 +1050,37 @@ export function MenuManagement() {
         </div>
       </div>
 
-      {/* Categories Tabs */}
+      {/* Categories Tabs with Scroll Arrows */}
       {categories.length > 0 && (
-        <ScrollArea className="w-full">
-          <div className="flex gap-2 pb-2">
+        <div className="relative group">
+          {/* Left Arrow */}
+          <button
+            onClick={() => {
+              const container = document.getElementById('categories-scroll');
+              if (container) container.scrollBy({ left: -150, behavior: 'smooth' });
+            }}
+            className="absolute right-0 top-1/2 -translate-y-1/2 z-10 w-10 h-10 flex items-center justify-center bg-gradient-to-l from-transparent to-background rounded-full shadow-md opacity-0 group-hover:opacity-100 transition-opacity hover:bg-muted"
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m9 18 6-6-6-6"/></svg>
+          </button>
+          
+          {/* Right Arrow */}
+          <button
+            onClick={() => {
+              const container = document.getElementById('categories-scroll');
+              if (container) container.scrollBy({ left: 150, behavior: 'smooth' });
+            }}
+            className="absolute left-0 top-1/2 -translate-y-1/2 z-10 w-10 h-10 flex items-center justify-center bg-gradient-to-r from-transparent to-background rounded-full shadow-md opacity-0 group-hover:opacity-100 transition-opacity hover:bg-muted"
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m15 18-6-6 6-6"/></svg>
+          </button>
+
+          {/* Scrollable Categories */}
+          <div
+            id="categories-scroll"
+            className="flex gap-2 pb-2 overflow-x-auto scrollbar-hide scroll-smooth px-2"
+            style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
+          >
             {categories.map((category) => {
               const count = menuItems.filter((i) => i.category === category).length;
               return (
@@ -1077,7 +1104,7 @@ export function MenuManagement() {
               );
             })}
           </div>
-        </ScrollArea>
+        </div>
       )}
 
       {/* Menu Items */}
