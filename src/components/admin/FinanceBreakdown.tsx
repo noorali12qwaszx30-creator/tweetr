@@ -15,8 +15,8 @@ export function FinanceBreakdown({ orders }: FinanceBreakdownProps) {
     
     const totalSales = completed.reduce((sum, o) => sum + o.totalPrice, 0);
     const totalDiscounts = 0;
-    const grossProfit = totalSales - totalDiscounts;
-    const netProfit = grossProfit * 0.3;
+    const grossProfit = totalSales * 0.6; // 60% of total sales
+    const netProfit = totalSales * 0.15; // 15% of total sales
     
     // Payment method distribution - all orders are cash for now
     const cashRevenue = totalSales;
