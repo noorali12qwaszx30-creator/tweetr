@@ -17,8 +17,7 @@ import { CustomerAnalytics } from '@/components/admin/CustomerAnalytics';
 import { FinanceBreakdown } from '@/components/admin/FinanceBreakdown';
 import { MenuManagement } from '@/components/admin/MenuManagement';
 import { toast } from 'sonner';
-import { format } from 'date-fns';
-import { ar } from 'date-fns/locale';
+import { formatNumberWithCommas, formatTimeEnglish, toEnglishNumbers } from '@/lib/formatNumber';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { ROLE_LABELS } from '@/types';
 import { Settings, Users, BarChart3, RefreshCcw, ShieldCheck, XCircle, CheckCircle, ClipboardList, TrendingUp, DollarSign, Timer, Zap, AlertTriangle, Home, Package, Loader2, UtensilsCrossed, Truck, Trash2, Archive } from 'lucide-react';
@@ -272,7 +271,7 @@ export default function AdminDashboard() {
               <TabsContent value="completed" className="space-y-3 mt-4">
                 <div className="flex items-center justify-between text-sm">
                   <span className="text-muted-foreground">إجمالي الإيرادات</span>
-                  <span className="font-bold text-success">{totalRevenue.toLocaleString()} د.ع</span>
+                  <span className="font-bold text-success">{formatNumberWithCommas(totalRevenue)} د.ع</span>
                 </div>
                 
                 {completedOrders.length === 0 ? <div className="text-center py-12 text-muted-foreground">
@@ -281,15 +280,13 @@ export default function AdminDashboard() {
                   </div> : completedOrders.map(order => <div key={order.id} className="bg-card border border-success/30 rounded-xl p-4 shadow-soft cursor-pointer hover:shadow-elevated transition-shadow" onClick={() => setSelectedOrder(order)}>
                       <div className="flex items-center justify-between mb-2">
                         <div className="flex items-center gap-2">
-                          <span className="text-lg font-bold text-primary">#{order.order_number}</span>
+                          <span className="text-lg font-bold text-primary">#{toEnglishNumbers(order.order_number)}</span>
                           <span className="px-2 py-0.5 rounded-full text-xs bg-success/10 text-success">مكتمل</span>
                         </div>
-                        <span className="font-bold text-success">{Number(order.total_price).toLocaleString()} د.ع</span>
+                        <span className="font-bold text-success">{formatNumberWithCommas(Number(order.total_price))} د.ع</span>
                       </div>
                       <div className="text-sm text-muted-foreground">
-                        {order.customer_name} • {format(new Date(order.created_at), 'HH:mm', {
-                  locale: ar
-                })}
+                        {order.customer_name} • {formatTimeEnglish(order.created_at)}
                       </div>
                     </div>)}
               </TabsContent>
@@ -300,7 +297,7 @@ export default function AdminDashboard() {
                     <p className="text-sm font-medium text-destructive mb-2">ملخص الأسباب</p>
                     <div className="flex flex-wrap gap-2">
                       {Object.entries(cancellationReasonStats).map(([reason, count]) => <span key={reason} className="px-2 py-1 bg-card rounded-lg text-xs">
-                          {reason}: <strong>{count}</strong>
+                          {reason}: <strong>{toEnglishNumbers(count)}</strong>
                         </span>)}
                     </div>
                   </div>}
@@ -311,16 +308,14 @@ export default function AdminDashboard() {
                   </div> : cancelledOrders.map(order => <div key={order.id} className="bg-card border border-destructive/30 rounded-xl p-4 shadow-soft cursor-pointer hover:shadow-elevated transition-shadow" onClick={() => setSelectedOrder(order)}>
                       <div className="flex items-center justify-between mb-2">
                         <div className="flex items-center gap-2">
-                          <span className="text-lg font-bold text-primary">#{order.order_number}</span>
+                          <span className="text-lg font-bold text-primary">#{toEnglishNumbers(order.order_number)}</span>
                           <span className="px-2 py-0.5 rounded-full text-xs bg-destructive/10 text-destructive">ملغي</span>
                         </div>
-                        <span className="font-bold text-destructive">{Number(order.total_price).toLocaleString()} د.ع</span>
+                        <span className="font-bold text-destructive">{formatNumberWithCommas(Number(order.total_price))} د.ع</span>
                       </div>
                       {order.cancellation_reason && <p className="text-sm text-destructive mb-1">السبب: {order.cancellation_reason}</p>}
                       <div className="text-sm text-muted-foreground">
-                        {order.customer_name} • {format(new Date(order.created_at), 'HH:mm', {
-                  locale: ar
-                })}
+                        {order.customer_name} • {formatTimeEnglish(order.created_at)}
                       </div>
                     </div>)}
               </TabsContent>
@@ -344,13 +339,13 @@ export default function AdminDashboard() {
                   <div className="bg-card border border-border rounded-xl p-3 shadow-soft">
                     <p className="text-muted-foreground text-xs">إجمالي المباع</p>
                     <p className="text-2xl font-bold text-primary">
-                      {sortedItems.reduce((sum, [, s]) => sum + s.quantity, 0)}
+                      {toEnglishNumbers(sortedItems.reduce((sum, [, s]) => sum + s.quantity, 0))}
                     </p>
                   </div>
                   <div className="bg-card border border-border rounded-xl p-3 shadow-soft">
                     <p className="text-muted-foreground text-xs">إجمالي الإيرادات</p>
                     <p className="text-2xl font-bold text-success">
-                      {sortedItems.reduce((sum, [, s]) => sum + s.revenue, 0).toLocaleString()}
+                      {formatNumberWithCommas(sortedItems.reduce((sum, [, s]) => sum + s.revenue, 0))}
                     </p>
                   </div>
                 </div>
@@ -362,13 +357,13 @@ export default function AdminDashboard() {
                     {sortedItems.slice(0, 5).map(([name, stats], idx) => <div key={name} className="flex items-center justify-between p-2 bg-muted/50 rounded-lg">
                         <div className="flex items-center gap-2">
                           <span className="w-6 h-6 flex items-center justify-center bg-success/10 text-success rounded font-bold text-xs">
-                            {idx + 1}
+                            {toEnglishNumbers(idx + 1)}
                           </span>
                           <span className="font-medium text-sm">{name}</span>
                         </div>
                         <div className="text-left">
-                          <p className="text-sm font-bold">{stats.quantity}</p>
-                          <p className="text-xs text-muted-foreground">{stats.revenue.toLocaleString()} د.ع</p>
+                          <p className="text-sm font-bold">{toEnglishNumbers(stats.quantity)}</p>
+                          <p className="text-xs text-muted-foreground">{formatNumberWithCommas(stats.revenue)} د.ع</p>
                         </div>
                       </div>)}
                   </div>
@@ -381,13 +376,13 @@ export default function AdminDashboard() {
                     {sortedItems.slice(-3).reverse().map(([name, stats], idx) => <div key={name} className="flex items-center justify-between p-2 bg-muted/50 rounded-lg">
                         <div className="flex items-center gap-2">
                           <span className="w-6 h-6 flex items-center justify-center bg-destructive/10 text-destructive rounded font-bold text-xs">
-                            {sortedItems.length - idx}
+                            {toEnglishNumbers(sortedItems.length - idx)}
                           </span>
                           <span className="font-medium text-sm">{name}</span>
                         </div>
                         <div className="text-left">
-                          <p className="text-sm font-bold">{stats.quantity}</p>
-                          <p className="text-xs text-muted-foreground">{stats.revenue.toLocaleString()} د.ع</p>
+                          <p className="text-sm font-bold">{toEnglishNumbers(stats.quantity)}</p>
+                          <p className="text-xs text-muted-foreground">{formatNumberWithCommas(stats.revenue)} د.ع</p>
                         </div>
                       </div>)}
                   </div>
