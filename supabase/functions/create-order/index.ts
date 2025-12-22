@@ -206,11 +206,52 @@ serve(async (req) => {
 
     console.log('Server calculated total:', serverCalculatedTotal);
 
+    // Check if customer already exists by phone number, or create new one
+    let customerId: string | null = null;
+    const customerPhone = orderData.customer_phone.trim();
+    
+    if (customerPhone) {
+      // Try to find existing customer by phone
+      const { data: existingCustomer } = await supabaseAdmin
+        .from('customers')
+        .select('id')
+        .eq('phone', customerPhone)
+        .maybeSingle();
+      
+      if (existingCustomer) {
+        customerId = existingCustomer.id;
+        // Update customer info if changed
+        await supabaseAdmin
+          .from('customers')
+          .update({
+            name: orderData.customer_name.trim().slice(0, 100),
+            address: orderData.customer_address?.trim().slice(0, 500) || null,
+          })
+          .eq('id', customerId);
+      } else {
+        // Create new customer
+        const { data: newCustomer, error: customerError } = await supabaseAdmin
+          .from('customers')
+          .insert({
+            name: orderData.customer_name.trim().slice(0, 100),
+            phone: customerPhone.slice(0, 20),
+            address: orderData.customer_address?.trim().slice(0, 500) || null,
+          })
+          .select('id')
+          .single();
+        
+        if (!customerError && newCustomer) {
+          customerId = newCustomer.id;
+        }
+      }
+    }
+
     // Create the order with server-calculated total
     // Use authenticated user's ID as cashier_id for RLS policies
     const { data: newOrder, error: orderError } = await supabaseAdmin
       .from('orders')
       .insert({
+        customer_id: customerId, // Link to customers table
         customer_name: orderData.customer_name.trim().slice(0, 100),
         customer_phone: orderData.customer_phone.trim().slice(0, 20),
         customer_address: orderData.customer_address?.trim().slice(0, 500) || null,
