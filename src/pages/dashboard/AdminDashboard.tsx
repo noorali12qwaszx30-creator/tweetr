@@ -119,7 +119,14 @@ export default function AdminDashboard() {
         is_archived: true
       }).eq('is_archived', false);
       if (ordersError) throw ordersError;
-      toast.success('تم أرشفة جميع الطلبات بنجاح');
+      
+      // Reset order counter to 1
+      const { error: resetError } = await supabase.rpc('reset_order_sequence');
+      if (resetError) {
+        console.error('Error resetting order counter:', resetError);
+      }
+      
+      toast.success('تم أرشفة جميع الطلبات وإعادة تعيين العداد بنجاح');
       refetch();
     } catch (error: any) {
       console.error('Error archiving orders:', error);
