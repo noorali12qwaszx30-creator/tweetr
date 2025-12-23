@@ -1,8 +1,9 @@
-import { useState } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useRole } from '@/contexts/RoleContext';
 import { useAuth } from '@/contexts/AuthContext';
 import { useSupabaseOrders } from '@/hooks/useSupabaseOrders';
 import { useCancellationReasons } from '@/contexts/CancellationReasonsContext';
+import { useNotificationPermission } from '@/hooks/useNotificationPermission';
 import { OrderCard } from '@/components/OrderCard';
 import { QuickAccessReturnButton } from '@/components/admin/QuickAccessReturnButton';
 import { LogoutConfirmButton } from '@/components/LogoutConfirmButton';
@@ -39,7 +40,9 @@ import {
   MessageCircle,
   Undo2,
   Loader2,
-  Settings
+  Settings,
+  Bell,
+  BellOff
 } from 'lucide-react';
 
 type TabType = 'orders' | 'delivering' | 'stats' | 'ready' | 'settings';
@@ -49,10 +52,14 @@ export default function DeliveryDashboard() {
   const { user } = useAuth();
   const { orders, updateOrderStatus, acceptDelivery, rejectDelivery, returnOrder, loading } = useSupabaseOrders();
   const { reasons } = useCancellationReasons();
+  const { permission, isSupported, requestPermission, showNotification } = useNotificationPermission();
   const [activeTab, setActiveTab] = useState<TabType>('orders');
   const [returnDialogOpen, setReturnDialogOpen] = useState(false);
   const [orderToReturn, setOrderToReturn] = useState<string | null>(null);
   const [selectedReturnReason, setSelectedReturnReason] = useState<string>('');
+  
+  // Track previous pending orders count to detect new assignments
+  const prevPendingCountRef = useRef<number>(0);
 
   // Orders assigned to this delivery person (pending acceptance)
   const pendingAcceptanceOrders = orders.filter(o => o.status === 'ready' && o.pending_delivery_acceptance);
@@ -60,6 +67,21 @@ export default function DeliveryDashboard() {
   const deliveredOrders = orders.filter(o => o.status === 'delivered');
   const cancelledByDelivery = orders.filter(o => o.status === 'cancelled');
   const readyOrders = orders.filter(o => o.status === 'ready' && !o.pending_delivery_acceptance);
+
+  // Show notification when new order is assigned
+  useEffect(() => {
+    if (!loading && pendingAcceptanceOrders.length > prevPendingCountRef.current) {
+      // New order assigned
+      const newOrder = pendingAcceptanceOrders[0];
+      if (newOrder && permission === 'granted') {
+        showNotification('طلب جديد محول إليك! 🔔', {
+          body: `طلب #${newOrder.order_number} - ${newOrder.customer_name}\n${newOrder.customer_address || ''}`,
+          tag: `order-${newOrder.id}`,
+        });
+      }
+    }
+    prevPendingCountRef.current = pendingAcceptanceOrders.length;
+  }, [pendingAcceptanceOrders.length, loading, permission, showNotification]);
 
   const handleAcceptOrder = async (orderId: string) => {
     await acceptDelivery(orderId);
@@ -288,6 +310,49 @@ export default function DeliveryDashboard() {
           <div className="space-y-4">
             <h2 className="text-xl font-bold">الإعدادات</h2>
             <div className="grid gap-4">
+              {/* Notification Settings */}
+              <div className="bg-card border border-border rounded-xl p-4 shadow-soft">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    {permission === 'granted' ? (
+                      <Bell className="w-5 h-5 text-success" />
+                    ) : (
+                      <BellOff className="w-5 h-5 text-muted-foreground" />
+                    )}
+                    <div>
+                      <p className="font-medium">إشعارات الطلبات</p>
+                      <p className="text-sm text-muted-foreground">
+                        {!isSupported 
+                          ? 'المتصفح لا يدعم الإشعارات'
+                          : permission === 'granted' 
+                            ? 'الإشعارات مفعلة' 
+                            : permission === 'denied'
+                              ? 'الإشعارات محظورة - فعلها من إعدادات المتصفح'
+                              : 'فعل الإشعارات لاستلام تنبيهات الطلبات'}
+                      </p>
+                    </div>
+                  </div>
+                  {isSupported && permission === 'default' && (
+                    <Button 
+                      variant="default" 
+                      size="sm" 
+                      onClick={async () => {
+                        const granted = await requestPermission();
+                        if (granted) {
+                          toast.success('تم تفعيل الإشعارات بنجاح');
+                        }
+                      }}
+                    >
+                      <Bell className="w-4 h-4 ml-1" />
+                      تفعيل
+                    </Button>
+                  )}
+                  {permission === 'granted' && (
+                    <span className="text-success text-sm font-medium">مفعل ✓</span>
+                  )}
+                </div>
+              </div>
+
               <LogoutConfirmButton />
             </div>
           </div>
