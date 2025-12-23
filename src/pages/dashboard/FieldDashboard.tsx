@@ -40,6 +40,7 @@ export default function FieldDashboard() {
   const pendingAcceptanceOrders = orders.filter(o => o.status === 'ready' && o.pending_delivery_acceptance);
   const deliveringOrders = orders.filter(o => o.status === 'delivering');
   const cancelledOrders = orders.filter(o => o.status === 'cancelled');
+  const deliveredOrders = orders.filter(o => o.status === 'delivered');
 
   const incomingOrders = [...pendingOrders, ...preparingOrders];
 
@@ -74,7 +75,7 @@ export default function FieldDashboard() {
     { id: 'orders', label: 'الطلبات', icon: <ClipboardList className="w-5 h-5" />, count: incomingOrders.length },
     { id: 'ready', label: 'الجاهز', icon: <CheckCircle className="w-5 h-5" />, count: readyOrders.length },
     { id: 'delivering', label: 'قيد التوصيل', icon: <Truck className="w-5 h-5" />, count: deliveringOrders.length },
-    { id: 'cancelled', label: 'الملغية', icon: <XCircle className="w-5 h-5" />, count: cancelledOrders.length },
+    { id: 'cancelled', label: 'طلبات', icon: <XCircle className="w-5 h-5" />, count: cancelledOrders.length + deliveredOrders.length },
     { id: 'admin', label: 'الإدارة', icon: <Settings className="w-5 h-5" /> },
   ];
 
@@ -217,20 +218,46 @@ export default function FieldDashboard() {
         )}
 
         {activeTab === 'cancelled' && (
-          <div className="space-y-4">
-            <h2 className="text-xl font-bold">الطلبات الملغية ({cancelledOrders.length})</h2>
-            {cancelledOrders.length === 0 ? (
-              <div className="text-center py-12 text-muted-foreground">
-                <XCircle className="w-12 h-12 mx-auto mb-4 opacity-50" />
-                <p>لا توجد طلبات ملغية</p>
-              </div>
-            ) : (
-              <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
-                {cancelledOrders.map(order => (
-                  <OrderCard key={order.id} order={order} showActions={false} />
-                ))}
-              </div>
-            )}
+          <div className="space-y-6">
+            {/* Cancelled Orders Section */}
+            <div>
+              <h2 className="text-xl font-bold flex items-center gap-2 mb-4">
+                <XCircle className="w-5 h-5 text-destructive" />
+                الملغي ({cancelledOrders.length})
+              </h2>
+              {cancelledOrders.length === 0 ? (
+                <div className="text-center py-8 text-muted-foreground bg-card rounded-xl border border-border">
+                  <XCircle className="w-10 h-10 mx-auto mb-3 opacity-50" />
+                  <p>لا توجد طلبات ملغية</p>
+                </div>
+              ) : (
+                <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
+                  {cancelledOrders.map(order => (
+                    <OrderCard key={order.id} order={order} showActions={false} />
+                  ))}
+                </div>
+              )}
+            </div>
+
+            {/* Delivered (Completed) Orders Section */}
+            <div>
+              <h2 className="text-xl font-bold flex items-center gap-2 mb-4">
+                <CheckCircle className="w-5 h-5 text-success" />
+                المكتمل ({deliveredOrders.length})
+              </h2>
+              {deliveredOrders.length === 0 ? (
+                <div className="text-center py-8 text-muted-foreground bg-card rounded-xl border border-border">
+                  <CheckCircle className="w-10 h-10 mx-auto mb-3 opacity-50" />
+                  <p>لا توجد طلبات مكتملة</p>
+                </div>
+              ) : (
+                <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
+                  {deliveredOrders.map(order => (
+                    <OrderCard key={order.id} order={order} showActions={false} />
+                  ))}
+                </div>
+              )}
+            </div>
           </div>
         )}
 
