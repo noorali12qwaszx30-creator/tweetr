@@ -1,6 +1,6 @@
 import { useMemo } from 'react';
 import { Order } from '@/types';
-import { DollarSign, CreditCard, Banknote, TrendingUp, Percent, PieChart } from 'lucide-react';
+import { DollarSign, CreditCard, Banknote, TrendingUp, Truck, PieChart } from 'lucide-react';
 import { PieChart as RechartsPie, Pie, Cell, ResponsiveContainer, Tooltip } from 'recharts';
 import { formatNumberWithCommas, toEnglishNumbers } from '@/lib/formatNumber';
 
@@ -14,19 +14,18 @@ export function FinanceBreakdown({ orders }: FinanceBreakdownProps) {
     const cancelled = orders.filter(o => o.status === 'cancelled');
     
     const totalSales = completed.reduce((sum, o) => sum + o.totalPrice, 0);
-    const totalDiscounts = 0;
-    const grossProfit = totalSales * 0.6; // 60% of total sales
-    const netProfit = totalSales * 0.15; // 15% of total sales
+    const totalDeliveryFees = completed.reduce((sum, o) => sum + (o.deliveryFee || 0), 0);
+    const grossProfit = totalSales * 0.6;
+    const netProfit = totalSales * 0.15;
     
-    // Payment method distribution - all orders are cash for now
-    const cashRevenue = totalSales;
+    const cashRevenue = totalSales + totalDeliveryFees;
     const onlineRevenue = 0;
     
     const cancelledValue = cancelled.reduce((sum, o) => sum + o.totalPrice, 0);
 
     return {
       totalSales,
-      totalDiscounts,
+      totalDeliveryFees,
       grossProfit,
       netProfit,
       cashRevenue,
@@ -57,10 +56,11 @@ export function FinanceBreakdown({ orders }: FinanceBreakdownProps) {
         
         <div className="bg-gradient-to-br from-warning/20 to-warning/5 border border-warning/30 rounded-xl p-4">
           <div className="flex items-center gap-2 mb-2">
-            <Percent className="w-5 h-5 text-warning" />
-            <p className="text-warning text-sm font-medium">الخصومات</p>
+            <Truck className="w-5 h-5 text-warning" />
+            <p className="text-warning text-sm font-medium">أجور التوصيل</p>
           </div>
-          <p className="text-2xl font-bold text-warning">{formatNumberWithCommas(finance.totalDiscounts)}</p>
+          <p className="text-2xl font-bold text-warning">{formatNumberWithCommas(finance.totalDeliveryFees)}</p>
+          <p className="text-xs text-warning/70">مستحقات الدلفري</p>
         </div>
         
         <div className="bg-gradient-to-br from-primary/20 to-primary/5 border border-primary/30 rounded-xl p-4">

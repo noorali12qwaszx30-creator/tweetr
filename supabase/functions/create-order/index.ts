@@ -206,6 +206,22 @@ serve(async (req) => {
 
     console.log('Server calculated total:', serverCalculatedTotal);
 
+    // Get delivery fee from delivery area if provided
+    let deliveryFee = 0;
+    if (orderData.delivery_area_id && orderData.type === 'delivery') {
+      const { data: deliveryArea, error: areaError } = await supabaseAdmin
+        .from('delivery_areas')
+        .select('delivery_fee')
+        .eq('id', orderData.delivery_area_id)
+        .single();
+      
+      if (!areaError && deliveryArea) {
+        deliveryFee = Number(deliveryArea.delivery_fee) || 0;
+      }
+    }
+
+    console.log('Delivery fee:', deliveryFee);
+
     // Check if customer already exists by phone number, or create new one
     let customerId: string | null = null;
     const customerPhone = orderData.customer_phone.trim();
@@ -259,6 +275,7 @@ serve(async (req) => {
         type: orderData.type,
         notes: orderData.notes?.trim().slice(0, 500) || null,
         total_price: serverCalculatedTotal, // Use server-calculated total
+        delivery_fee: deliveryFee, // Add delivery fee from area
         cashier_id: user.id, // Always use the authenticated user's ID
         cashier_name: orderData.cashier_name?.trim().slice(0, 100) || null,
         status: 'pending',

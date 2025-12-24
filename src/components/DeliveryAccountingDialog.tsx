@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 import { useDeliveryDrivers } from '@/hooks/useDeliveryDrivers';
-import { Calculator, Loader2, Phone, User, CheckCircle, XCircle, Truck, RotateCcw } from 'lucide-react';
+import { Calculator, Loader2, Phone, User, CheckCircle, XCircle, Truck, RotateCcw, DollarSign, Package } from 'lucide-react';
 import { OrderWithItems } from '@/hooks/useSupabaseOrders';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
@@ -20,6 +20,8 @@ interface DriverAccounting {
   userId: string;
   name: string;
   phone: string | null;
+  orderAmount: number;
+  deliveryFees: number;
   totalAmount: number;
   deliveredOrders: OrderWithItems[];
   deliveringOrders: OrderWithItems[];
@@ -45,14 +47,17 @@ export function DeliveryAccountingDialog({ orders, onOrdersUpdated }: DeliveryAc
         order => order.delivery_person_id === driver.user_id && order.status === 'cancelled'
       );
 
-      const totalAmount = deliveredOrders.reduce((sum, order) => sum + Number(order.total_price), 0);
+      const orderAmount = deliveredOrders.reduce((sum, order) => sum + Number(order.total_price), 0);
+      const deliveryFees = deliveredOrders.reduce((sum, order) => sum + Number(order.delivery_fee || 0), 0);
+      const totalAmount = orderAmount + deliveryFees;
 
-      // Show ALL delivery drivers, not just those with orders
       accounting.push({
         id: driver.id,
         userId: driver.user_id,
         name: driver.full_name,
         phone: driver.phone,
+        orderAmount,
+        deliveryFees,
         totalAmount,
         deliveredOrders,
         deliveringOrders,
@@ -66,7 +71,6 @@ export function DeliveryAccountingDialog({ orders, onOrdersUpdated }: DeliveryAc
   const handleResetAccount = async (driverId: string, driverUserId: string) => {
     setResettingDriver(driverId);
     try {
-      // Clear delivery_person_id from all delivered orders for this driver
       const { error } = await supabase
         .from('orders')
         .update({ delivery_person_id: null, delivery_person_name: null })
@@ -85,7 +89,9 @@ export function DeliveryAccountingDialog({ orders, onOrdersUpdated }: DeliveryAc
     }
   };
 
-  const totalOwed = driverAccounting.reduce((sum, d) => sum + d.totalAmount, 0);
+  const totalOrderAmount = driverAccounting.reduce((sum, d) => sum + d.orderAmount, 0);
+  const totalDeliveryFees = driverAccounting.reduce((sum, d) => sum + d.deliveryFees, 0);
+  const totalOwed = totalOrderAmount + totalDeliveryFees;
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
@@ -115,10 +121,28 @@ export function DeliveryAccountingDialog({ orders, onOrdersUpdated }: DeliveryAc
         ) : (
           <>
             {/* Summary */}
-            <div className="bg-primary/10 border border-primary/20 rounded-lg p-4 mb-4">
-              <div className="flex items-center justify-between">
-                <span className="font-medium">إجمالي المستحقات للمطعم</span>
-                <span className="text-xl font-bold text-primary">{formatNumberWithCommas(totalOwed)} د.ع</span>
+            <div className="space-y-2 mb-4">
+              <div className="bg-primary/10 border border-primary/20 rounded-lg p-4">
+                <div className="flex items-center justify-between mb-3">
+                  <span className="font-medium">إجمالي المستحقات للمطعم</span>
+                  <span className="text-xl font-bold text-primary">{formatNumberWithCommas(totalOwed)} د.ع</span>
+                </div>
+                <div className="grid grid-cols-2 gap-2 text-sm">
+                  <div className="flex items-center justify-between bg-background/50 rounded p-2">
+                    <span className="flex items-center gap-1 text-muted-foreground">
+                      <Package className="w-4 h-4" />
+                      قيمة الطلبات
+                    </span>
+                    <span className="font-semibold">{formatNumberWithCommas(totalOrderAmount)} د.ع</span>
+                  </div>
+                  <div className="flex items-center justify-between bg-background/50 rounded p-2">
+                    <span className="flex items-center gap-1 text-muted-foreground">
+                      <Truck className="w-4 h-4" />
+                      أجور التوصيل
+                    </span>
+                    <span className="font-semibold text-success">{formatNumberWithCommas(totalDeliveryFees)} د.ع</span>
+                  </div>
+                </div>
               </div>
             </div>
 
@@ -144,6 +168,24 @@ export function DeliveryAccountingDialog({ orders, onOrdersUpdated }: DeliveryAc
                   </AccordionTrigger>
                   <AccordionContent className="pb-4">
                     <div className="space-y-4 pt-2">
+                      {/* Money breakdown */}
+                      <div className="grid grid-cols-2 gap-2 text-sm">
+                        <div className="bg-muted/50 rounded-lg p-3">
+                          <div className="flex items-center gap-2 mb-1">
+                            <Package className="w-4 h-4 text-muted-foreground" />
+                            <span className="text-muted-foreground">قيمة الطلبات</span>
+                          </div>
+                          <p className="font-bold text-lg">{formatNumberWithCommas(driver.orderAmount)} د.ع</p>
+                        </div>
+                        <div className="bg-success/10 rounded-lg p-3">
+                          <div className="flex items-center gap-2 mb-1">
+                            <Truck className="w-4 h-4 text-success" />
+                            <span className="text-success">أجور التوصيل</span>
+                          </div>
+                          <p className="font-bold text-lg text-success">{formatNumberWithCommas(driver.deliveryFees)} د.ع</p>
+                        </div>
+                      </div>
+
                       {/* Stats */}
                       <div className="grid grid-cols-3 gap-2">
                         <div className="bg-green-50 border border-green-200 rounded-lg p-3 text-center">
@@ -194,7 +236,12 @@ export function DeliveryAccountingDialog({ orders, onOrdersUpdated }: DeliveryAc
                               <AlertDialogTitle>تصفير حساب {driver.name}؟</AlertDialogTitle>
                               <AlertDialogDescription>
                                 سيتم إزالة جميع الطلبات المكتملة ({toEnglishNumbers(driver.deliveredOrders.length)} طلب) من حساب هذا الموظف.
-                                المبلغ المستحق: {formatNumberWithCommas(driver.totalAmount)} د.ع
+                                <br />
+                                قيمة الطلبات: {formatNumberWithCommas(driver.orderAmount)} د.ع
+                                <br />
+                                أجور التوصيل: {formatNumberWithCommas(driver.deliveryFees)} د.ع
+                                <br />
+                                <strong>الإجمالي: {formatNumberWithCommas(driver.totalAmount)} د.ع</strong>
                               </AlertDialogDescription>
                             </AlertDialogHeader>
                             <AlertDialogFooter>

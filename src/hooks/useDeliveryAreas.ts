@@ -7,6 +7,7 @@ export interface DeliveryArea {
   is_active: boolean;
   order_count: number;
   display_order: number;
+  delivery_fee: number;
   created_at: string;
   updated_at: string;
 }
@@ -39,7 +40,7 @@ export function useDeliveryAreas() {
     fetchAreas();
   }, []);
 
-  const addArea = async (name: string) => {
+  const addArea = async (name: string, deliveryFee: number = 0) => {
     try {
       const maxOrder = areas.length > 0 
         ? Math.max(...areas.map(a => a.display_order)) + 1 
@@ -47,7 +48,7 @@ export function useDeliveryAreas() {
       
       const { data, error } = await supabase
         .from('delivery_areas')
-        .insert({ name, display_order: maxOrder })
+        .insert({ name, display_order: maxOrder, delivery_fee: deliveryFee })
         .select()
         .single();
 
@@ -60,7 +61,7 @@ export function useDeliveryAreas() {
     }
   };
 
-  const updateArea = async (id: string, updates: Partial<Pick<DeliveryArea, 'name' | 'is_active' | 'display_order'>>) => {
+  const updateArea = async (id: string, updates: Partial<Pick<DeliveryArea, 'name' | 'is_active' | 'display_order' | 'delivery_fee'>>) => {
     try {
       const { error } = await supabase
         .from('delivery_areas')
