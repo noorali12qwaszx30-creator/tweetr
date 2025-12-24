@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Switch } from '@/components/ui/switch';
 import { toast } from 'sonner';
+import { formatNumberWithCommas, toEnglishNumbers } from '@/lib/formatNumber';
 import {
   Plus,
   Trash2,
@@ -12,7 +13,8 @@ import {
   Check,
   X,
   Loader2,
-  Package
+  Package,
+  DollarSign
 } from 'lucide-react';
 import {
   AlertDialog,
@@ -28,8 +30,10 @@ import {
 export function DeliveryAreasManager() {
   const { areas, loading, addArea, updateArea, deleteArea } = useDeliveryAreas();
   const [newAreaName, setNewAreaName] = useState('');
+  const [newAreaFee, setNewAreaFee] = useState('');
   const [editingArea, setEditingArea] = useState<DeliveryArea | null>(null);
   const [editName, setEditName] = useState('');
+  const [editFee, setEditFee] = useState('');
   const [deletingArea, setDeletingArea] = useState<DeliveryArea | null>(null);
   const [submitting, setSubmitting] = useState(false);
 
@@ -39,13 +43,20 @@ export function DeliveryAreasManager() {
       return;
     }
 
+    const fee = parseFloat(newAreaFee) || 0;
+    if (fee < 0) {
+      toast.error('سعر التوصيل يجب أن يكون صفر أو أكثر');
+      return;
+    }
+
     setSubmitting(true);
-    const result = await addArea(newAreaName.trim());
+    const result = await addArea(newAreaName.trim(), fee);
     setSubmitting(false);
 
     if (result.success) {
       toast.success('تمت إضافة المنطقة بنجاح');
       setNewAreaName('');
+      setNewAreaFee('');
     } else {
       toast.error(result.error?.includes('duplicate') ? 'هذه المنطقة موجودة مسبقاً' : 'حدث خطأ في إضافة المنطقة');
     }
@@ -54,13 +65,20 @@ export function DeliveryAreasManager() {
   const handleStartEdit = (area: DeliveryArea) => {
     setEditingArea(area);
     setEditName(area.name);
+    setEditFee(area.delivery_fee.toString());
   };
 
   const handleSaveEdit = async () => {
     if (!editingArea || !editName.trim()) return;
 
+    const fee = parseFloat(editFee) || 0;
+    if (fee < 0) {
+      toast.error('سعر التوصيل يجب أن يكون صفر أو أكثر');
+      return;
+    }
+
     setSubmitting(true);
-    const result = await updateArea(editingArea.id, { name: editName.trim() });
+    const result = await updateArea(editingArea.id, { name: editName.trim(), delivery_fee: fee });
     setSubmitting(false);
 
     if (result.success) {
@@ -111,17 +129,32 @@ export function DeliveryAreasManager() {
           <Plus className="w-4 h-4 text-primary" />
           إضافة منطقة جديدة
         </h3>
-        <div className="flex gap-2">
-          <Input
-            placeholder="اسم المنطقة (مثال: حي الجامعة)"
-            value={newAreaName}
-            onChange={(e) => setNewAreaName(e.target.value)}
-            onKeyDown={(e) => e.key === 'Enter' && handleAddArea()}
-            className="flex-1"
-          />
-          <Button onClick={handleAddArea} disabled={submitting}>
-            {submitting ? <Loader2 className="w-4 h-4 animate-spin" /> : <Plus className="w-4 h-4" />}
-          </Button>
+        <div className="flex flex-col gap-3">
+          <div className="flex gap-2">
+            <Input
+              placeholder="اسم المنطقة (مثال: حي الجامعة)"
+              value={newAreaName}
+              onChange={(e) => setNewAreaName(e.target.value)}
+              className="flex-1"
+            />
+          </div>
+          <div className="flex gap-2 items-center">
+            <div className="relative flex-1">
+              <DollarSign className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+              <Input
+                type="number"
+                placeholder="سعر التوصيل (د.ع)"
+                value={newAreaFee}
+                onChange={(e) => setNewAreaFee(e.target.value)}
+                className="pr-9"
+                min="0"
+              />
+            </div>
+            <Button onClick={handleAddArea} disabled={submitting}>
+              {submitting ? <Loader2 className="w-4 h-4 animate-spin" /> : <Plus className="w-4 h-4" />}
+              <span className="mr-1">إضافة</span>
+            </Button>
+          </div>
         </div>
       </div>
 
@@ -147,20 +180,32 @@ export function DeliveryAreasManager() {
               }`}
             >
               {editingArea?.id === area.id ? (
-                <div className="flex items-center gap-2">
+                <div className="space-y-2">
                   <Input
                     value={editName}
                     onChange={(e) => setEditName(e.target.value)}
-                    onKeyDown={(e) => e.key === 'Enter' && handleSaveEdit()}
+                    placeholder="اسم المنطقة"
                     autoFocus
-                    className="flex-1"
                   />
-                  <Button size="icon" variant="ghost" onClick={handleSaveEdit} disabled={submitting}>
-                    <Check className="w-4 h-4 text-success" />
-                  </Button>
-                  <Button size="icon" variant="ghost" onClick={() => setEditingArea(null)}>
-                    <X className="w-4 h-4 text-destructive" />
-                  </Button>
+                  <div className="flex gap-2 items-center">
+                    <div className="relative flex-1">
+                      <DollarSign className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                      <Input
+                        type="number"
+                        value={editFee}
+                        onChange={(e) => setEditFee(e.target.value)}
+                        placeholder="سعر التوصيل"
+                        className="pr-9"
+                        min="0"
+                      />
+                    </div>
+                    <Button size="icon" variant="ghost" onClick={handleSaveEdit} disabled={submitting}>
+                      <Check className="w-4 h-4 text-success" />
+                    </Button>
+                    <Button size="icon" variant="ghost" onClick={() => setEditingArea(null)}>
+                      <X className="w-4 h-4 text-destructive" />
+                    </Button>
+                  </div>
                 </div>
               ) : (
                 <div className="flex items-center justify-between">
@@ -168,9 +213,15 @@ export function DeliveryAreasManager() {
                     <MapPin className={`w-5 h-5 ${area.is_active ? 'text-primary' : 'text-muted-foreground'}`} />
                     <div>
                       <p className="font-semibold text-sm">{area.name}</p>
-                      <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                        <Package className="w-3 h-3" />
-                        <span>{area.order_count} طلب</span>
+                      <div className="flex items-center gap-3 text-xs text-muted-foreground">
+                        <span className="flex items-center gap-1">
+                          <Package className="w-3 h-3" />
+                          {toEnglishNumbers(area.order_count)} طلب
+                        </span>
+                        <span className="flex items-center gap-1 text-primary font-medium">
+                          <DollarSign className="w-3 h-3" />
+                          {formatNumberWithCommas(area.delivery_fee)} د.ع
+                        </span>
                       </div>
                     </div>
                   </div>

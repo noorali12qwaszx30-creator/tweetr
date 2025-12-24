@@ -167,6 +167,7 @@ export default function AdminDashboard() {
     ...o,
     orderNumber: o.order_number,
     totalPrice: Number(o.total_price),
+    deliveryFee: Number(o.delivery_fee || 0),
     createdAt: new Date(o.created_at),
     customer: {
       name: o.customer_name,

@@ -24,6 +24,7 @@ export interface DbOrder {
   type: 'delivery' | 'takeaway';
   notes: string | null;
   total_price: number;
+  delivery_fee: number;
   cashier_id: string | null;
   cashier_name: string | null;
   delivery_person_id: string | null;

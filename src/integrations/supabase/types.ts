@@ -47,6 +47,7 @@ export type Database = {
       delivery_areas: {
         Row: {
           created_at: string
+          delivery_fee: number
           display_order: number | null
           id: string
           is_active: boolean
@@ -56,6 +57,7 @@ export type Database = {
         }
         Insert: {
           created_at?: string
+          delivery_fee?: number
           display_order?: number | null
           id?: string
           is_active?: boolean
@@ -65,6 +67,7 @@ export type Database = {
         }
         Update: {
           created_at?: string
+          delivery_fee?: number
           display_order?: number | null
           id?: string
           is_active?: boolean
@@ -171,6 +174,7 @@ export type Database = {
           customer_phone: string
           delivered_at: string | null
           delivery_area_id: string | null
+          delivery_fee: number
           delivery_person_id: string | null
           delivery_person_name: string | null
           edited_at: string | null
@@ -197,6 +201,7 @@ export type Database = {
           customer_phone: string
           delivered_at?: string | null
           delivery_area_id?: string | null
+          delivery_fee?: number
           delivery_person_id?: string | null
           delivery_person_name?: string | null
           edited_at?: string | null
@@ -223,6 +228,7 @@ export type Database = {
           customer_phone?: string
           delivered_at?: string | null
           delivery_area_id?: string | null
+          delivery_fee?: number
           delivery_person_id?: string | null
           delivery_person_name?: string | null
           edited_at?: string | null

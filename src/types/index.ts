@@ -38,6 +38,7 @@ export interface Order {
   type: OrderType;
   notes?: string;
   totalPrice: number;
+  deliveryFee: number;
   createdAt: Date;
   deliveryPersonId?: string;
   deliveryPersonName?: string;
