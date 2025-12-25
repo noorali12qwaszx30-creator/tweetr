@@ -62,8 +62,6 @@ export function UserManagement() {
   const [deleteUserId, setDeleteUserId] = useState<string | null>(null);
   const [selectedUser, setSelectedUser] = useState<UserWithRole | null>(null);
   const [submitting, setSubmitting] = useState(false);
-  const [isPasswordDialogOpen, setIsPasswordDialogOpen] = useState(false);
-  const [passwordUser, setPasswordUser] = useState<UserWithRole | null>(null);
   const [newPassword, setNewPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [showNewPassword, setShowNewPassword] = useState(false);
@@ -310,9 +308,21 @@ export function UserManagement() {
         if (roleError) throw roleError;
       }
 
-      toast.success('تم تحديث المستخدم بنجاح');
+      // Change password if provided
+      if (newPassword) {
+        const passwordChanged = await handleChangePassword(selectedUser.user_id);
+        if (!passwordChanged) {
+          setSubmitting(false);
+          return;
+        }
+        toast.success('تم تحديث المستخدم وكلمة المرور بنجاح');
+      } else {
+        toast.success('تم تحديث المستخدم بنجاح');
+      }
+
       setIsEditDialogOpen(false);
       setSelectedUser(null);
+      setNewPassword('');
       fetchUsers();
     } catch (error: any) {
       console.error('Error updating user:', error);
@@ -364,31 +374,25 @@ export function UserManagement() {
       phone: user.phone || '',
       role: user.role || 'cashier',
     });
+    setNewPassword('');
+    setShowNewPassword(false);
     setIsEditDialogOpen(true);
   };
 
-  const openPasswordDialog = (user: UserWithRole) => {
-    setPasswordUser(user);
-    setNewPassword('');
-    setIsPasswordDialogOpen(true);
-  };
-
-  const handleChangePassword = async () => {
-    if (!passwordUser || !newPassword) {
-      toast.error('يرجى إدخال كلمة المرور الجديدة');
-      return;
+  const handleChangePassword = async (userId: string) => {
+    if (!newPassword) {
+      return true; // No password change requested
     }
 
     if (newPassword.length < 6) {
       toast.error('كلمة المرور يجب أن تكون 6 أحرف على الأقل');
-      return;
+      return false;
     }
 
-    setSubmitting(true);
     try {
       const response = await supabase.functions.invoke('update-password', {
         body: {
-          user_id: passwordUser.user_id,
+          user_id: userId,
           new_password: newPassword,
         },
       });
@@ -399,18 +403,14 @@ export function UserManagement() {
 
       if (response.data?.error) {
         toast.error(response.data.error);
-        return;
+        return false;
       }
 
-      toast.success('تم تغيير كلمة المرور بنجاح');
-      setIsPasswordDialogOpen(false);
-      setPasswordUser(null);
-      setNewPassword('');
+      return true;
     } catch (error: any) {
       console.error('Error changing password:', error);
       toast.error(error.message || 'حدث خطأ في تغيير كلمة المرور');
-    } finally {
-      setSubmitting(false);
+      return false;
     }
   };
 
@@ -582,14 +582,6 @@ export function UserManagement() {
                     <Button
                       variant="outline"
                       size="sm"
-                      onClick={() => openPasswordDialog(user)}
-                      title="تغيير كلمة المرور"
-                    >
-                      <Key className="w-3 h-3" />
-                    </Button>
-                    <Button
-                      variant="outline"
-                      size="sm"
                       onClick={() => openEditDialog(user)}
                       title="تعديل"
                     >
@@ -686,6 +678,41 @@ export function UserManagement() {
                 </SelectContent>
               </Select>
             </div>
+
+            {/* Password Change Section */}
+            <div className="border-t pt-4 mt-4">
+              <div className="flex items-center gap-2 mb-3">
+                <Key className="w-4 h-4 text-muted-foreground" />
+                <Label className="text-sm font-medium">تغيير كلمة المرور (اختياري)</Label>
+              </div>
+              <p className="text-xs text-muted-foreground mb-3">
+                ملاحظة: لا يمكن عرض كلمة المرور الحالية لأنها مشفرة. يمكنك تعيين كلمة مرور جديدة فقط.
+              </p>
+              <div className="space-y-2">
+                <Label htmlFor="edit_new_password">كلمة المرور الجديدة</Label>
+                <div className="relative">
+                  <Input
+                    id="edit_new_password"
+                    type={showNewPassword ? "text" : "password"}
+                    placeholder="اتركه فارغاً للإبقاء على كلمة المرور الحالية"
+                    value={newPassword}
+                    onChange={(e) => setNewPassword(e.target.value)}
+                    className="pl-10"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowNewPassword(!showNewPassword)}
+                    className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                  >
+                    {showNewPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                  </button>
+                </div>
+                {newPassword && newPassword.length < 6 && (
+                  <p className="text-xs text-destructive">يجب أن تكون 6 أحرف على الأقل</p>
+                )}
+              </div>
+            </div>
+
             <Button onClick={handleEditUser} className="w-full" disabled={submitting}>
               {submitting ? <Loader2 className="w-4 h-4 animate-spin ml-2" /> : null}
               حفظ التغييرات
@@ -716,46 +743,6 @@ export function UserManagement() {
         </AlertDialogContent>
       </AlertDialog>
 
-      {/* Password Change Dialog */}
-      <Dialog open={isPasswordDialogOpen} onOpenChange={setIsPasswordDialogOpen}>
-        <DialogContent className="max-w-md">
-          <DialogHeader>
-            <DialogTitle>تغيير كلمة المرور</DialogTitle>
-          </DialogHeader>
-          <div className="space-y-4 py-4">
-            <p className="text-sm text-muted-foreground">
-              تغيير كلمة المرور للمستخدم: <strong>{passwordUser?.username}</strong>
-            </p>
-            <div className="space-y-2">
-              <Label htmlFor="new_password">كلمة المرور الجديدة</Label>
-              <div className="relative">
-                <Input
-                  id="new_password"
-                  type={showNewPassword ? "text" : "password"}
-                  placeholder="أدخل كلمة المرور الجديدة"
-                  value={newPassword}
-                  onChange={(e) => setNewPassword(e.target.value)}
-                  className="pl-10"
-                />
-                <button
-                  type="button"
-                  onClick={() => setShowNewPassword(!showNewPassword)}
-                  className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
-                >
-                  {showNewPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-                </button>
-              </div>
-              <p className="text-xs text-muted-foreground">
-                يجب أن تكون 6 أحرف على الأقل
-              </p>
-            </div>
-            <Button onClick={handleChangePassword} className="w-full" disabled={submitting}>
-              {submitting ? <Loader2 className="w-4 h-4 animate-spin ml-2" /> : null}
-              تغيير كلمة المرور
-            </Button>
-          </div>
-        </DialogContent>
-      </Dialog>
 
       {/* Created Credentials Dialog */}
       <Dialog open={!!createdCredentials} onOpenChange={(open) => !open && setCreatedCredentials(null)}>
