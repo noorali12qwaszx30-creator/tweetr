@@ -107,9 +107,27 @@ export function OrderCard({
               </span>
             </div>
           ))}
-          <div className="flex items-center justify-between pt-2 border-t border-border font-semibold text-sm sm:text-base">
-            <span>المجموع</span>
-            <span className="text-primary">{formatNumberWithCommas(Number(order.total_price))} د.ع</span>
+          {/* Price breakdown */}
+          <div className="pt-2 border-t border-border space-y-1">
+            {order.type === 'delivery' && order.delivery_fee > 0 && (
+              <>
+                <div className="flex items-center justify-between text-xs sm:text-sm text-muted-foreground">
+                  <span>سعر الطلب</span>
+                  <span>{formatNumberWithCommas(Number(order.total_price) - Number(order.delivery_fee))} د.ع</span>
+                </div>
+                <div className="flex items-center justify-between text-xs sm:text-sm text-info">
+                  <span className="flex items-center gap-1">
+                    <Truck className="w-3 h-3" />
+                    أجرة التوصيل
+                  </span>
+                  <span>{formatNumberWithCommas(Number(order.delivery_fee))} د.ع</span>
+                </div>
+              </>
+            )}
+            <div className="flex items-center justify-between font-semibold text-sm sm:text-base">
+              <span>المجموع الكلي</span>
+              <span className="text-primary">{formatNumberWithCommas(Number(order.total_price))} د.ع</span>
+            </div>
           </div>
         </div>
       )}
