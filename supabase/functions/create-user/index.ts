@@ -134,6 +134,19 @@ serve(async (req) => {
       );
     }
 
+    // Store password for admin reference
+    const { error: passwordError } = await supabaseAdmin
+      .from("user_passwords")
+      .insert({
+        user_id: newUser.user.id,
+        password: password,
+      });
+
+    if (passwordError) {
+      console.error("Password storage error:", passwordError);
+      // Non-critical, continue
+    }
+
     return new Response(
       JSON.stringify({ 
         success: true, 

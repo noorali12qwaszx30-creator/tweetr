@@ -48,8 +48,14 @@ interface UserRoleRecord {
   role: UserRole;
 }
 
+interface UserPassword {
+  user_id: string;
+  password: string;
+}
+
 interface UserWithRole extends Profile {
   role?: UserRole;
+  stored_password?: string;
 }
 
 const ROLES: UserRole[] = ['cashier', 'field', 'delivery', 'takeaway', 'admin'];
@@ -108,13 +114,20 @@ export function UserManagement() {
 
       if (rolesError) throw rolesError;
 
-      // Combine profiles with roles
+      // Fetch stored passwords
+      const { data: passwords } = await supabase
+        .from('user_passwords')
+        .select('user_id, password');
+
+      // Combine profiles with roles and passwords
       const usersWithRoles: UserWithRole[] = (profiles || []).map(profile => {
         const userRole = roles?.find(r => r.user_id === profile.user_id);
+        const userPassword = passwords?.find(p => p.user_id === profile.user_id);
         return {
           ...profile,
           is_active: profile.is_active ?? true,
           role: userRole?.role as UserRole | undefined,
+          stored_password: userPassword?.password,
         };
       });
 
@@ -679,17 +692,43 @@ export function UserManagement() {
               </Select>
             </div>
 
-            {/* Password Change Section */}
+            {/* Password Section */}
             <div className="border-t pt-4 mt-4">
               <div className="flex items-center gap-2 mb-3">
                 <Key className="w-4 h-4 text-muted-foreground" />
-                <Label className="text-sm font-medium">تغيير كلمة المرور (اختياري)</Label>
+                <Label className="text-sm font-medium">كلمة المرور</Label>
               </div>
-              <p className="text-xs text-muted-foreground mb-3">
-                ملاحظة: لا يمكن عرض كلمة المرور الحالية لأنها مشفرة. يمكنك تعيين كلمة مرور جديدة فقط.
-              </p>
+              
+              {/* Show current password if available */}
+              {selectedUser?.stored_password && (
+                <div className="bg-muted rounded-lg p-3 mb-3">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-xs text-muted-foreground mb-1">كلمة المرور الحالية</p>
+                      <p className="font-mono font-semibold">{selectedUser.stored_password}</p>
+                    </div>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => {
+                        navigator.clipboard.writeText(selectedUser.stored_password || '');
+                        toast.success('تم نسخ كلمة المرور');
+                      }}
+                    >
+                      <Copy className="w-4 h-4" />
+                    </Button>
+                  </div>
+                </div>
+              )}
+              
+              {!selectedUser?.stored_password && (
+                <p className="text-xs text-amber-600 bg-amber-50 dark:bg-amber-900/20 rounded-lg p-2 mb-3">
+                  ⚠️ لا توجد كلمة مرور محفوظة لهذا المستخدم. قم بتعيين كلمة مرور جديدة أدناه.
+                </p>
+              )}
+              
               <div className="space-y-2">
-                <Label htmlFor="edit_new_password">كلمة المرور الجديدة</Label>
+                <Label htmlFor="edit_new_password">تعيين كلمة مرور جديدة</Label>
                 <div className="relative">
                   <Input
                     id="edit_new_password"
