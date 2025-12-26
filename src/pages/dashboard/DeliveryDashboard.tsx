@@ -144,7 +144,7 @@ export default function DeliveryDashboard() {
   };
 
   const totalDelivered = deliveredOrders.length;
-  const totalEarnings = totalDelivered * 1000; // 1000 per delivery
+  const totalEarnings = deliveredOrders.reduce((sum, order) => sum + (order.delivery_fee || 0), 0);
 
   const tabs: { id: TabType; label: string; icon: React.ReactNode; count?: number }[] = [
     { id: 'orders', label: 'الطلبات', icon: <ClipboardList className="w-5 h-5" />, count: pendingAcceptanceOrders.length },
@@ -277,8 +277,10 @@ export default function DeliveryDashboard() {
                 <p className="text-2xl sm:text-3xl font-bold text-destructive">{toEnglishNumbers(cancelledByDelivery.length)}</p>
               </div>
               <div className="bg-card border border-border rounded-xl p-3 sm:p-4 shadow-soft">
-                <p className="text-muted-foreground text-xs sm:text-sm">الفائدة لكل طلب</p>
-                <p className="text-2xl sm:text-3xl font-bold text-foreground">1,000 د.ع</p>
+                <p className="text-muted-foreground text-xs sm:text-sm">متوسط الفائدة</p>
+                <p className="text-2xl sm:text-3xl font-bold text-foreground">
+                  {totalDelivered > 0 ? formatNumberWithCommas(Math.round(totalEarnings / totalDelivered)) : '0'} د.ع
+                </p>
               </div>
             </div>
           </div>
