@@ -10,7 +10,7 @@ import { CancelOrderDialog } from '@/components/CancelOrderDialog';
 import { QuickAccessReturnButton } from '@/components/admin/QuickAccessReturnButton';
 import { LogoutConfirmButton } from '@/components/LogoutConfirmButton';
 import { toast } from 'sonner';
-import { ROLE_LABELS, Order } from '@/types';
+import { ROLE_LABELS } from '@/types';
 import { toEnglishNumbers, formatNumberWithCommas, formatTimeEnglish } from '@/lib/formatNumber';
 import {
   UtensilsCrossed,
