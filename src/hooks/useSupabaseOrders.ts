@@ -123,8 +123,6 @@ export function useSupabaseOrders() {
         'postgres_changes',
         { event: '*', schema: 'public', table: 'orders' },
         (payload) => {
-          console.log('Order change:', payload);
-          
           if (payload.eventType === 'INSERT') {
             const newOrder = payload.new as DbOrder;
             const notificationKey = `insert-${newOrder.id}`;
@@ -179,8 +177,7 @@ export function useSupabaseOrders() {
       .on(
         'postgres_changes',
         { event: '*', schema: 'public', table: 'order_items' },
-        (payload) => {
-          console.log('Order items change:', payload);
+        () => {
           fetchOrders();
         }
       )
