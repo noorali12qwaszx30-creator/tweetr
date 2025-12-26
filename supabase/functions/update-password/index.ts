@@ -80,6 +80,24 @@ serve(async (req) => {
       );
     }
 
+    // Update stored password for admin reference
+    const { data: existingPassword } = await supabaseAdmin
+      .from("user_passwords")
+      .select("id")
+      .eq("user_id", user_id)
+      .maybeSingle();
+
+    if (existingPassword) {
+      await supabaseAdmin
+        .from("user_passwords")
+        .update({ password: new_password })
+        .eq("user_id", user_id);
+    } else {
+      await supabaseAdmin
+        .from("user_passwords")
+        .insert({ user_id, password: new_password });
+    }
+
     console.log("Password updated successfully for user:", user_id);
 
     return new Response(
