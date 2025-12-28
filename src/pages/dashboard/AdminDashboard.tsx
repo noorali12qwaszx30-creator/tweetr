@@ -16,21 +16,26 @@ import { ActivityLogList } from '@/components/admin/ActivityLogList';
 import { CustomerAnalytics } from '@/components/admin/CustomerAnalytics';
 import { FinanceBreakdown } from '@/components/admin/FinanceBreakdown';
 import { MenuManagement } from '@/components/admin/MenuManagement';
+import { ExecutivePulseDashboard } from '@/components/admin/ExecutivePulseDashboard';
+import { BehaviorAnalysis } from '@/components/admin/BehaviorAnalysis';
+import { OrderTimeline } from '@/components/admin/OrderTimeline';
+import { PredictiveAnalysis } from '@/components/admin/PredictiveAnalysis';
 import { toast } from 'sonner';
 import { formatNumberWithCommas, formatTimeEnglish, toEnglishNumbers } from '@/lib/formatNumber';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { ROLE_LABELS } from '@/types';
-import { Settings, Users, BarChart3, RefreshCcw, ShieldCheck, XCircle, CheckCircle, ClipboardList, TrendingUp, DollarSign, Timer, Zap, AlertTriangle, Home, Package, Loader2, UtensilsCrossed, Truck, Trash2, Archive } from 'lucide-react';
+import { Settings, Users, BarChart3, RefreshCcw, ShieldCheck, XCircle, CheckCircle, ClipboardList, TrendingUp, DollarSign, Timer, Zap, AlertTriangle, Home, Package, Loader2, UtensilsCrossed, Truck, Trash2, Archive, Eye, Activity, Clock, GitBranch } from 'lucide-react';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 import { supabase } from '@/integrations/supabase/client';
 
 // Main navigation tabs (6 total)
-type MainTab = 'home' | 'menu' | 'orders' | 'stats' | 'settings';
+type MainTab = 'home' | 'menu' | 'orders' | 'stats' | 'monitoring' | 'settings';
 
 // Sub-tabs for each main section
 type OrdersSubTab = 'completed' | 'cancelled';
 type StatsSubTab = 'items' | 'customers' | 'finance' | 'areas';
 type SettingsSubTab = 'general' | 'users' | 'reasons' | 'quickaccess' | 'areas';
+type MonitoringSubTab = 'pulse' | 'behavior' | 'timeline' | 'predictive';
 export default function AdminDashboard() {
   const {
     role
@@ -51,6 +56,7 @@ export default function AdminDashboard() {
   const [ordersSubTab, setOrdersSubTab] = useState<OrdersSubTab>('completed');
   const [statsSubTab, setStatsSubTab] = useState<StatsSubTab>('items');
   const [settingsSubTab, setSettingsSubTab] = useState<SettingsSubTab>('general');
+  const [monitoringSubTab, setMonitoringSubTab] = useState<MonitoringSubTab>('pulse');
   const [selectedOrder, setSelectedOrder] = useState<OrderWithItems | null>(null);
 
   // Statistics calculations
@@ -156,6 +162,10 @@ export default function AdminDashboard() {
     id: 'stats',
     label: 'الإحصائيات',
     icon: <BarChart3 className="w-5 h-5" />
+  }, {
+    id: 'monitoring',
+    label: 'الرقابة',
+    icon: <Eye className="w-5 h-5" />
   }, {
     id: 'settings',
     label: 'الإعدادات',
