@@ -47,9 +47,15 @@ export const formatNumberWithCommas = (num: number): string => {
  */
 export const formatTimeEnglish = (date: Date | string): string => {
   const d = typeof date === 'string' ? new Date(date) : date;
-  const hours = d.getHours().toString().padStart(2, '0');
+  let hours = d.getHours();
   const minutes = d.getMinutes().toString().padStart(2, '0');
-  return `${hours}:${minutes}`;
+  const period = hours >= 12 ? 'م' : 'ص';
+  
+  // تحويل لنظام 12 ساعة
+  hours = hours % 12;
+  hours = hours ? hours : 12; // الساعة 0 تصبح 12
+  
+  return `${hours}:${minutes} ${period}`;
 };
 
 /**
