@@ -67,7 +67,7 @@ export function ActivityLogList({ logs }: ActivityLogListProps) {
                 </div>
                 <p className="text-sm text-muted-foreground truncate">{log.details}</p>
                 <div className="flex items-center gap-2 text-xs text-muted-foreground mt-1">
-                  <span>{format(new Date(log.timestamp), 'HH:mm:ss', { locale: ar })}</span>
+                  <span>{format(new Date(log.timestamp), 'hh:mm:ss a', { locale: ar })}</span>
                   {log.userName && (
                     <>
                       <span>•</span>
