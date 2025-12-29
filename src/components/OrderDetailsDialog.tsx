@@ -38,7 +38,7 @@ export function OrderDetailsDialog({ order, open, onOpenChange }: OrderDetailsDi
       <DialogContent className="max-w-md max-h-[85vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="flex items-center justify-between">
-            <span>طلب #{toEnglishNumbers(order.order_number)}</span>
+            <span className="flex items-center gap-2">طلب <span className="text-primary px-2 py-0.5 border-2 border-primary/30 rounded-lg bg-primary/5 font-bold">{toEnglishNumbers(order.order_number)}</span></span>
             <Badge 
               variant={isDelivered ? 'default' : 'destructive'}
               className={isDelivered ? 'bg-success text-success-foreground' : ''}

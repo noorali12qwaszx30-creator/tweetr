@@ -383,7 +383,7 @@ export default function CashierDashboard() {
             <div className="flex items-center gap-2">
               <Pencil className="w-4 h-4 text-warning" />
               <span className="font-semibold text-sm text-warning">
-                جاري تعديل الطلب #{editingOrder.order_number}
+                جاري تعديل الطلب <span className="px-1.5 py-0.5 border border-warning/50 rounded bg-warning/10">{editingOrder.order_number}</span>
               </span>
             </div>
             <Button variant="ghost" size="sm" onClick={cancelEdit} className="text-destructive">
