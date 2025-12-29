@@ -415,6 +415,47 @@ export default function AdminDashboard() {
           </div>}
 
 
+        {/* MONITORING TAB - Executive Oversight */}
+        {activeTab === 'monitoring' && <div className="space-y-4">
+            {/* Sub-tabs */}
+            <Tabs value={monitoringSubTab} onValueChange={v => setMonitoringSubTab(v as MonitoringSubTab)}>
+              <TabsList className="grid w-full grid-cols-4">
+                <TabsTrigger value="pulse" className="text-xs px-1 gap-1">
+                  <Activity className="w-3 h-3" />
+                  النبض
+                </TabsTrigger>
+                <TabsTrigger value="behavior" className="text-xs px-1 gap-1">
+                  <AlertTriangle className="w-3 h-3" />
+                  الأنماط
+                </TabsTrigger>
+                <TabsTrigger value="timeline" className="text-xs px-1 gap-1">
+                  <Clock className="w-3 h-3" />
+                  الخط الزمني
+                </TabsTrigger>
+                <TabsTrigger value="predictive" className="text-xs px-1 gap-1">
+                  <TrendingUp className="w-3 h-3" />
+                  التنبؤي
+                </TabsTrigger>
+              </TabsList>
+
+              <TabsContent value="pulse" className="mt-4">
+                <ExecutivePulseDashboard orders={orders} />
+              </TabsContent>
+
+              <TabsContent value="behavior" className="mt-4">
+                <BehaviorAnalysis orders={orders} />
+              </TabsContent>
+
+              <TabsContent value="timeline" className="mt-4">
+                <OrderTimeline orders={orders} />
+              </TabsContent>
+
+              <TabsContent value="predictive" className="mt-4">
+                <PredictiveAnalysis orders={orders} />
+              </TabsContent>
+            </Tabs>
+          </div>}
+
         {/* SETTINGS TAB - Configuration & Management */}
         {activeTab === 'settings' && <div className="space-y-4">
             {/* Sub-tabs */}
