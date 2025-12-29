@@ -31,13 +31,14 @@ export function OrderTimer({ startTime, className = '' }: OrderTimerProps) {
 
   return (
     <div className={`
-      inline-flex items-center gap-1.5 px-2 py-1 rounded-md text-sm font-mono font-semibold
-      ${isLate ? 'bg-destructive/10 text-destructive' : ''}
-      ${isWarning ? 'bg-warning/10 text-warning' : ''}
-      ${!isLate && !isWarning ? 'bg-muted text-muted-foreground' : ''}
+      inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-sm font-mono font-bold
+      border-2 shadow-md transition-all duration-300
+      ${isLate ? 'bg-destructive text-destructive-foreground border-destructive animate-pulse shadow-destructive/50' : ''}
+      ${isWarning ? 'bg-warning text-warning-foreground border-warning animate-pulse shadow-warning/40' : ''}
+      ${!isLate && !isWarning ? 'bg-primary/10 text-primary border-primary/30 shadow-primary/20' : ''}
       ${className}
     `}>
-      <Clock className="w-3.5 h-3.5" />
+      <Clock className={`w-4 h-4 ${isLate || isWarning ? 'animate-spin' : ''}`} style={{ animationDuration: isLate ? '2s' : '3s' }} />
       {elapsed}
     </div>
   );
