@@ -40,7 +40,7 @@ export function DeliveryPersonSelector({
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <Truck className="w-5 h-5 text-primary" />
-            اختيار دلفري للطلب #{orderNumber}
+            اختيار دلفري للطلب <span className="text-primary px-1.5 py-0.5 border border-primary/30 rounded bg-primary/5 font-bold">{orderNumber}</span>
           </DialogTitle>
         </DialogHeader>
         

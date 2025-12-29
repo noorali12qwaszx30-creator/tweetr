@@ -60,8 +60,8 @@ export function ActivityLogList({ logs }: ActivityLogListProps) {
                 <div className="flex items-center gap-2 flex-wrap">
                   <span className="font-medium text-foreground">{log.action}</span>
                   {log.orderNumber && (
-                    <span className="text-xs bg-primary/10 text-primary px-2 py-0.5 rounded-full">
-                      #{log.orderNumber}
+                    <span className="text-xs bg-primary/10 text-primary px-2 py-0.5 rounded-lg border border-primary/30 font-bold">
+                      {log.orderNumber}
                     </span>
                   )}
                 </div>

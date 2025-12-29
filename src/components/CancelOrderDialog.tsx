@@ -43,7 +43,7 @@ export function CancelOrderDialog({ orderId, orderNumber, open, onOpenChange, on
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2 text-destructive">
             <XCircle className="w-5 h-5" />
-            إلغاء الطلب #{orderNumber}
+            إلغاء الطلب <span className="px-1.5 py-0.5 border border-destructive/50 rounded bg-destructive/10 font-bold">{orderNumber}</span>
           </DialogTitle>
           <DialogDescription>اختر سبب الإلغاء من القائمة أدناه</DialogDescription>
         </DialogHeader>

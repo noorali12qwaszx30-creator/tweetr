@@ -54,7 +54,7 @@ export function OrderCard({
       {/* Header */}
       <div className="flex items-center justify-between mb-2 sm:mb-3 flex-wrap gap-2">
         <div className="flex items-center gap-2 sm:gap-3 flex-wrap">
-          <span className="text-xl sm:text-2xl font-bold text-primary">#{toEnglishNumbers(order.order_number)}</span>
+          <span className="text-xl sm:text-2xl font-bold text-primary px-2 py-0.5 border-2 border-primary/30 rounded-lg bg-primary/5">{toEnglishNumbers(order.order_number)}</span>
           <span className={`px-2 py-0.5 rounded-full text-[10px] sm:text-xs font-medium border ${statusColors[order.status]}`}>
             {ORDER_STATUS_LABELS[order.status]}
           </span>

@@ -546,7 +546,7 @@ export default function AdminDashboard() {
       {/* Order Details Dialog */}
       {selectedOrder && <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4" onClick={() => setSelectedOrder(null)}>
           <div className="bg-card rounded-xl p-6 max-w-md w-full max-h-[80vh] overflow-auto" onClick={e => e.stopPropagation()}>
-            <h2 className="text-xl font-bold mb-4">تفاصيل الطلب #{selectedOrder.order_number}</h2>
+            <h2 className="text-xl font-bold mb-4">تفاصيل الطلب <span className="text-primary px-2 py-0.5 border-2 border-primary/30 rounded-lg bg-primary/5">{selectedOrder.order_number}</span></h2>
             <div className="space-y-3">
               <div>
                 <p className="text-sm text-muted-foreground">الزبون</p>
