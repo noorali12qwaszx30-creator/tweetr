@@ -48,14 +48,8 @@ interface UserRoleRecord {
   role: UserRole;
 }
 
-interface UserPassword {
-  user_id: string;
-  password: string;
-}
-
 interface UserWithRole extends Profile {
   role?: UserRole;
-  stored_password?: string;
 }
 
 const ROLES: UserRole[] = ['cashier', 'field', 'delivery', 'takeaway', 'admin'];
@@ -114,20 +108,13 @@ export function UserManagement() {
 
       if (rolesError) throw rolesError;
 
-      // Fetch stored passwords
-      const { data: passwords } = await supabase
-        .from('user_passwords')
-        .select('user_id, password');
-
-      // Combine profiles with roles and passwords
+      // Combine profiles with roles
       const usersWithRoles: UserWithRole[] = (profiles || []).map(profile => {
         const userRole = roles?.find(r => r.user_id === profile.user_id);
-        const userPassword = passwords?.find(p => p.user_id === profile.user_id);
         return {
           ...profile,
           is_active: profile.is_active ?? true,
           role: userRole?.role as UserRole | undefined,
-          stored_password: userPassword?.password,
         };
       });
 
@@ -699,33 +686,9 @@ export function UserManagement() {
                 <Label className="text-sm font-medium">كلمة المرور</Label>
               </div>
               
-              {/* Show current password if available */}
-              {selectedUser?.stored_password && (
-                <div className="bg-muted rounded-lg p-3 mb-3">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <p className="text-xs text-muted-foreground mb-1">كلمة المرور الحالية</p>
-                      <p className="font-mono font-semibold">{selectedUser.stored_password}</p>
-                    </div>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => {
-                        navigator.clipboard.writeText(selectedUser.stored_password || '');
-                        toast.success('تم نسخ كلمة المرور');
-                      }}
-                    >
-                      <Copy className="w-4 h-4" />
-                    </Button>
-                  </div>
-                </div>
-              )}
-              
-              {!selectedUser?.stored_password && (
-                <p className="text-xs text-amber-600 bg-amber-50 dark:bg-amber-900/20 rounded-lg p-2 mb-3">
-                  ⚠️ لا توجد كلمة مرور محفوظة لهذا المستخدم. قم بتعيين كلمة مرور جديدة أدناه.
-                </p>
-              )}
+              <p className="text-xs text-muted-foreground bg-muted rounded-lg p-2 mb-3">
+                🔒 كلمات المرور مشفرة بشكل آمن ولا يمكن عرضها. يمكنك تعيين كلمة مرور جديدة أدناه.
+              </p>
               
               <div className="space-y-2">
                 <Label htmlFor="edit_new_password">تعيين كلمة مرور جديدة</Label>

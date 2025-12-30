@@ -80,23 +80,8 @@ serve(async (req) => {
       );
     }
 
-    // Update stored password for admin reference
-    const { data: existingPassword } = await supabaseAdmin
-      .from("user_passwords")
-      .select("id")
-      .eq("user_id", user_id)
-      .maybeSingle();
-
-    if (existingPassword) {
-      await supabaseAdmin
-        .from("user_passwords")
-        .update({ password: new_password })
-        .eq("user_id", user_id);
-    } else {
-      await supabaseAdmin
-        .from("user_passwords")
-        .insert({ user_id, password: new_password });
-    }
+    // Note: Password is securely hashed by Supabase Auth
+    // We no longer store plain text passwords for security reasons
 
     console.log("Password updated successfully for user:", user_id);
 
