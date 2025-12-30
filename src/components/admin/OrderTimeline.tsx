@@ -45,18 +45,23 @@ export function OrderTimeline({ orders }: OrderTimelineProps) {
   }, [orders, searchQuery]);
 
   // Generate timeline events for an order
+  // نحسب الوقت بناءً على الطوابع الزمنية المتاحة ونقدّر الأوقات المفقودة
   const getTimelineEvents = (order: OrderWithItems): TimelineEvent[] => {
     const events: TimelineEvent[] = [];
+    const createdTime = new Date(order.created_at);
+    const updatedTime = new Date(order.updated_at);
+    const deliveredTime = order.delivered_at ? new Date(order.delivered_at) : null;
+    const cancelledTime = order.cancelled_at ? new Date(order.cancelled_at) : null;
     
-    // Created
+    // الحدث الأول: إنشاء الطلب (إرسال للميدان)
     events.push({
-      time: new Date(order.created_at),
-      label: 'إنشاء الطلب',
+      time: createdTime,
+      label: 'إرسال الطلب للميدان',
       icon: <Package className="w-4 h-4" />,
       color: 'bg-muted-foreground'
     });
 
-    // Edited (if applicable)
+    // تعديل الطلب (إن وجد)
     if (order.is_edited && order.edited_at) {
       const editTime = new Date(order.edited_at);
       const prevTime = events[events.length - 1].time;
@@ -67,87 +72,116 @@ export function OrderTimeline({ orders }: OrderTimelineProps) {
         label: 'تم تعديل الطلب',
         icon: <Edit3 className="w-4 h-4" />,
         color: 'bg-warning',
-        duration,
+        duration: Math.max(0, duration),
         isEdit: true
       });
     }
 
-    // Status-based events (we'll estimate based on available timestamps)
-    const updatedTime = new Date(order.updated_at);
+    // حساب الوقت الكلي من البداية للنهاية
+    let endTime: Date;
+    if (deliveredTime) {
+      endTime = deliveredTime;
+    } else if (cancelledTime) {
+      endTime = cancelledTime;
+    } else {
+      endTime = updatedTime;
+    }
     
-    if (['preparing', 'ready', 'delivering', 'delivered'].includes(order.status)) {
-      const prevTime = events[events.length - 1].time;
-      const duration = Math.floor((updatedTime.getTime() - prevTime.getTime()) / 60000);
-      const isDelayed = duration > 30;
-      
-      if (order.status === 'preparing') {
-        events.push({
-          time: updatedTime,
-          label: 'قيد التجهيز',
-          icon: <ChefHat className="w-4 h-4" />,
-          color: 'bg-warning',
-          duration,
-          isDelayed
-        });
-      }
-    }
-
-    if (order.status === 'ready' || order.status === 'delivering' || order.status === 'delivered') {
-      const prevTime = events[events.length - 1].time;
-      const duration = Math.floor((updatedTime.getTime() - prevTime.getTime()) / 60000);
-      
-      events.push({
-        time: updatedTime,
-        label: 'جاهز للتوصيل',
-        icon: <CheckCircle className="w-4 h-4" />,
-        color: 'bg-success',
-        duration
-      });
-    }
-
-    if (order.status === 'delivering' || order.status === 'delivered') {
-      const prevTime = events[events.length - 1].time;
-      const duration = Math.floor((updatedTime.getTime() - prevTime.getTime()) / 60000);
-      
-      events.push({
-        time: updatedTime,
-        label: `قيد التوصيل${order.delivery_person_name ? ` - ${order.delivery_person_name}` : ''}`,
-        icon: <Truck className="w-4 h-4" />,
-        color: 'bg-primary',
-        duration
-      });
-    }
-
-    // Delivered
-    if (order.status === 'delivered' && order.delivered_at) {
-      const deliveredTime = new Date(order.delivered_at);
-      const prevTime = events[events.length - 1].time;
-      const duration = Math.floor((deliveredTime.getTime() - prevTime.getTime()) / 60000);
-      const isDelayed = duration > 45;
-      
-      events.push({
-        time: deliveredTime,
-        label: 'تم التوصيل',
-        icon: <CheckCircle className="w-4 h-4" />,
-        color: 'bg-success',
-        duration,
-        isDelayed
-      });
-    }
-
-    // Cancelled
+    const totalDuration = endTime.getTime() - createdTime.getTime();
+    
+    // تقدير أوقات المراحل بناءً على الحالة الحالية
+    // نستخدم نسب تقريبية لكل مرحلة
+    const statusOrder = ['pending', 'preparing', 'ready', 'delivering', 'delivered'];
+    const currentStatusIndex = statusOrder.indexOf(order.status);
+    
     if (order.status === 'cancelled') {
-      const cancelledTime = order.cancelled_at ? new Date(order.cancelled_at) : updatedTime;
+      // في حالة الإلغاء
       const prevTime = events[events.length - 1].time;
-      const duration = Math.floor((cancelledTime.getTime() - prevTime.getTime()) / 60000);
+      const duration = Math.floor(((cancelledTime || updatedTime).getTime() - prevTime.getTime()) / 60000);
       
       events.push({
-        time: cancelledTime,
+        time: cancelledTime || updatedTime,
         label: `ملغي${order.cancellation_reason ? ` - ${order.cancellation_reason}` : ''}`,
         icon: <XCircle className="w-4 h-4" />,
         color: 'bg-destructive',
-        duration
+        duration: Math.max(0, duration)
       });
+    } else if (currentStatusIndex >= 1) {
+      // قيد التجهيز - نحسب من وقت الإنشاء
+      const prevTime = events[events.length - 1].time;
+      
+      if (currentStatusIndex === 1) {
+        // لا يزال قيد التجهيز
+        const duration = Math.floor((updatedTime.getTime() - prevTime.getTime()) / 60000);
+        events.push({
+          time: updatedTime,
+          label: 'قيد التجهيز في الميدان',
+          icon: <ChefHat className="w-4 h-4" />,
+          color: 'bg-warning',
+          duration: Math.max(0, duration),
+          isDelayed: duration > 30
+        });
+      } else {
+        // انتهى التجهيز - نقدّر الوقت بنسبة 40% من الوقت الكلي
+        const preparingDuration = Math.floor(totalDuration * 0.4);
+        const preparingEndTime = new Date(createdTime.getTime() + preparingDuration);
+        const duration = Math.floor((preparingEndTime.getTime() - prevTime.getTime()) / 60000);
+        
+        events.push({
+          time: preparingEndTime,
+          label: 'قيد التجهيز في الميدان',
+          icon: <ChefHat className="w-4 h-4" />,
+          color: 'bg-warning',
+          duration: Math.max(0, duration),
+          isDelayed: duration > 30
+        });
+        
+        if (currentStatusIndex >= 2) {
+          // جاهز - نقدّر 20% من الوقت الكلي للانتظار
+          const readyTime = currentStatusIndex === 2 
+            ? updatedTime 
+            : new Date(createdTime.getTime() + totalDuration * 0.6);
+          const readyDuration = Math.floor((readyTime.getTime() - preparingEndTime.getTime()) / 60000);
+          
+          events.push({
+            time: readyTime,
+            label: 'جاهز للتوصيل',
+            icon: <CheckCircle className="w-4 h-4" />,
+            color: 'bg-success',
+            duration: Math.max(0, readyDuration)
+          });
+          
+          if (currentStatusIndex >= 3) {
+            // قيد التوصيل
+            const deliveringTime = currentStatusIndex === 3 
+              ? updatedTime 
+              : new Date(createdTime.getTime() + totalDuration * 0.7);
+            const deliveringDuration = Math.floor((deliveringTime.getTime() - readyTime.getTime()) / 60000);
+            
+            events.push({
+              time: deliveringTime,
+              label: `قيد التوصيل${order.delivery_person_name ? ` - ${order.delivery_person_name}` : ''}`,
+              icon: <Truck className="w-4 h-4" />,
+              color: 'bg-primary',
+              duration: Math.max(0, deliveringDuration)
+            });
+            
+            if (currentStatusIndex >= 4 && deliveredTime) {
+              // تم التوصيل
+              const deliveredDuration = Math.floor((deliveredTime.getTime() - deliveringTime.getTime()) / 60000);
+              
+              events.push({
+                time: deliveredTime,
+                label: 'تم التوصيل',
+                icon: <CheckCircle className="w-4 h-4" />,
+                color: 'bg-success',
+                duration: Math.max(0, deliveredDuration),
+                isDelayed: deliveredDuration > 45
+              });
+            }
+          }
+        }
+      }
     }
 
     return events;
