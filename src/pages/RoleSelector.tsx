@@ -28,6 +28,7 @@ const ROLE_ICONS: Record<UserRole, React.ReactNode> = {
   delivery: <Truck className="w-8 h-8" />,
   takeaway: <ShoppingBag className="w-8 h-8" />,
   admin: <Shield className="w-8 h-8" />,
+  kitchen: <ChefHat className="w-8 h-8" />,
 };
 
 const ROLE_DESCRIPTIONS: Record<UserRole, string> = {
@@ -36,6 +37,7 @@ const ROLE_DESCRIPTIONS: Record<UserRole, string> = {
   delivery: 'توصيل الطلبات للزبائن',
   takeaway: 'طلبات السفري',
   admin: 'إدارة النظام الكاملة',
+  kitchen: 'شاشة عرض المطبخ',
 };
 
 // First row: 2 items, Second row: admin centered, Third row: 2 items
