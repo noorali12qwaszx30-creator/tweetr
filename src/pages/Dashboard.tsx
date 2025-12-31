@@ -5,6 +5,7 @@ import FieldDashboard from './dashboard/FieldDashboard';
 import DeliveryDashboard from './dashboard/DeliveryDashboard';
 import TakeawayDashboard from './dashboard/TakeawayDashboard';
 import AdminDashboard from './dashboard/AdminDashboard';
+import KitchenDashboard from './dashboard/KitchenDashboard';
 
 export default function Dashboard() {
   const { role } = useRole();
@@ -24,6 +25,8 @@ export default function Dashboard() {
       return <TakeawayDashboard />;
     case 'admin':
       return <AdminDashboard />;
+    case 'kitchen':
+      return <KitchenDashboard />;
     default:
       return <Navigate to="/" replace />;
   }
