@@ -40,10 +40,10 @@ const ROLE_DESCRIPTIONS: Record<UserRole, string> = {
   kitchen: 'شاشة عرض المطبخ',
 };
 
-// First row: 2 items, Second row: admin centered, Third row: 2 items
+// First row: 2 items, Second row: admin centered, Third row: 3 items
 const ROLES_TOP: UserRole[] = ['cashier', 'field'];
 const ROLES_CENTER: UserRole[] = ['admin'];
-const ROLES_BOTTOM: UserRole[] = ['delivery', 'takeaway'];
+const ROLES_BOTTOM: UserRole[] = ['delivery', 'takeaway', 'kitchen'];
 
 // RoleButton component
 interface RoleButtonProps {
@@ -323,8 +323,8 @@ export default function RoleSelector() {
             ))}
           </div>
           
-          {/* Bottom row - 2 items */}
-          <div className="grid grid-cols-2 gap-3 sm:gap-4 md:gap-6 max-w-2xl mx-auto w-full">
+          {/* Bottom row - 3 items */}
+          <div className="grid grid-cols-3 gap-3 sm:gap-4 md:gap-6 max-w-3xl mx-auto w-full">
             {ROLES_BOTTOM.map((role, index) => (
               <RoleButton key={role} role={role} index={index + 3} mounted={mounted} onSelect={handleSelectRole} />
             ))}
