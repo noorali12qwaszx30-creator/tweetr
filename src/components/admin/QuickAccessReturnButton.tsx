@@ -33,10 +33,14 @@ export function QuickAccessReturnButton() {
     localStorage.removeItem('adminReturnRole');
     localStorage.removeItem('quickAccessUser');
     
-    // Return to admin dashboard
+    // Set admin role first
     setRole('admin');
-    navigate('/dashboard');
+    
+    // Use replace to avoid adding to history, then force refresh
     toast.success('تم العودة للوحة المدير التنفيذي');
+    
+    // Navigate with replace to ensure clean navigation
+    navigate('/dashboard', { replace: true });
   };
 
   if (!isQuickAccess) return null;
