@@ -95,7 +95,7 @@ export function QuickAccessPanel() {
   const [selectedRole, setSelectedRole] = useState<UserRole | null>(null);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
 
-  const accessibleRoles: UserRole[] = ['cashier', 'field', 'delivery', 'takeaway'];
+  const accessibleRoles: UserRole[] = ['cashier', 'field', 'delivery', 'takeaway', 'kitchen'];
 
   useEffect(() => {
     fetchUsers();
