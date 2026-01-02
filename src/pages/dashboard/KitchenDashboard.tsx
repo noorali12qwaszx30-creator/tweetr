@@ -4,7 +4,7 @@ import { RefreshCw, StickyNote, Pencil, Clock, ChefHat } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import { LogoutConfirmButton } from '@/components/LogoutConfirmButton';
-
+import { QuickAccessReturnButton } from '@/components/admin/QuickAccessReturnButton';
 interface KitchenOrderCardProps {
   order: OrderWithItems;
   isLate: boolean;
@@ -208,6 +208,7 @@ export default function KitchenDashboard() {
   
   return (
     <div className="min-h-screen bg-background p-6" dir="rtl">
+      <QuickAccessReturnButton />
       {/* Header */}
       <div className="flex items-center justify-between mb-8">
         <div className="flex items-center gap-4">
