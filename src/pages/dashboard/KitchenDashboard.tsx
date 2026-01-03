@@ -8,9 +8,10 @@ import { QuickAccessReturnButton } from '@/components/admin/QuickAccessReturnBut
 interface KitchenOrderCardProps {
   order: OrderWithItems;
   isLate: boolean;
+  isPending: boolean;
 }
 
-const KitchenOrderCard = ({ order, isLate }: KitchenOrderCardProps) => {
+const KitchenOrderCard = ({ order, isLate, isPending }: KitchenOrderCardProps) => {
   const [isFlipped, setIsFlipped] = useState(false);
   
   // Check if order has notes
@@ -36,6 +37,9 @@ const KitchenOrderCard = ({ order, isLate }: KitchenOrderCardProps) => {
   const getCardClasses = () => {
     if (isLate) {
       return 'bg-red-100 border-red-500 animate-pulse dark:bg-red-900/50';
+    }
+    if (isPending) {
+      return 'bg-green-100 border-green-500 dark:bg-green-900/30';
     }
     if (hasAnyNotes) {
       return 'bg-purple-50 border-purple-400 dark:bg-purple-900/30';
@@ -82,6 +86,11 @@ const KitchenOrderCard = ({ order, isLate }: KitchenOrderCardProps) => {
               </span>
             </div>
             <div className="flex items-center gap-3">
+              {isPending && (
+                <span className="px-3 py-1 rounded-full text-lg font-bold bg-green-500 text-white">
+                  جديد
+                </span>
+              )}
               {hasAnyNotes && (
                 <StickyNote className="w-8 h-8 text-purple-600" />
               )}
@@ -180,11 +189,11 @@ export default function KitchenDashboard() {
     return () => clearInterval(interval);
   }, []);
   
-  // Filter orders: only "preparing" status for delivery and takeaway
+  // Filter orders: "pending" and "preparing" status for delivery and takeaway
   const preparingOrders = useMemo(() => {
     return orders
       .filter(order => 
-        order.status === 'preparing' && 
+        (order.status === 'pending' || order.status === 'preparing') && 
         (order.type === 'delivery' || order.type === 'takeaway')
       )
       .sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime()); // Oldest first
@@ -218,7 +227,7 @@ export default function KitchenDashboard() {
           <div>
             <h1 className="text-4xl font-black text-foreground">شاشة المطبخ</h1>
             <p className="text-xl text-muted-foreground">
-              الطلبات قيد التجهيز: {preparingOrders.length}
+              الطلبات النشطة: {preparingOrders.length}
             </p>
           </div>
         </div>
@@ -260,6 +269,7 @@ export default function KitchenDashboard() {
               <KitchenOrderCard 
                 order={order} 
                 isLate={isOrderLate(order)}
+                isPending={order.status === 'pending'}
               />
             </div>
           ))}
@@ -268,7 +278,11 @@ export default function KitchenDashboard() {
       
       {/* Legend */}
       <div className="fixed bottom-6 left-6 right-6 bg-card/90 backdrop-blur-sm border rounded-2xl p-4">
-        <div className="flex items-center justify-center gap-8 text-lg font-medium">
+        <div className="flex items-center justify-center gap-8 text-lg font-medium flex-wrap">
+          <div className="flex items-center gap-2">
+            <div className="w-6 h-6 rounded bg-green-500" />
+            <span>جديد</span>
+          </div>
           <div className="flex items-center gap-2">
             <div className="w-6 h-6 rounded bg-blue-400" />
             <span>دلفري</span>
