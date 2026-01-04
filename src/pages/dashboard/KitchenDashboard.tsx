@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo } from 'react';
 import { useSupabaseOrders, OrderWithItems } from '@/hooks/useSupabaseOrders';
-import { RefreshCw, StickyNote, Truck, ShoppingBag } from 'lucide-react';
+import { RefreshCw, StickyNote, Truck, ShoppingBag, Clock } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { QuickAccessReturnButton } from '@/components/admin/QuickAccessReturnButton';
 
@@ -47,27 +47,65 @@ const KitchenOrderCard = ({ order }: KitchenOrderCardProps) => {
     return () => clearInterval(flipInterval);
   }, [hasAnyNotes]);
 
-  const getTimerColor = () => {
-    if (elapsedTime.minutes < 10) return 'text-green-500';
-    if (elapsedTime.minutes < 15) return 'text-yellow-500';
-    return 'text-red-500';
-  };
-
   const formatTime = () => {
     const mins = String(elapsedTime.minutes).padStart(2, '0');
     const secs = String(elapsedTime.seconds).padStart(2, '0');
     return `${mins}:${secs}`;
   };
 
-  const getCardBorderColor = () => {
-    if (isPending) return 'border-green-500';
-    return 'border-blue-400';
+  // Timer colors based on elapsed time
+  const getTimerColors = () => {
+    if (elapsedTime.minutes < 10) {
+      return {
+        bg: 'bg-green-100 dark:bg-green-900/50',
+        border: 'border-green-500',
+        text: 'text-green-700 dark:text-green-300',
+        progress: 'bg-green-500',
+        pulse: ''
+      };
+    } else if (elapsedTime.minutes < 15) {
+      return {
+        bg: 'bg-yellow-100 dark:bg-yellow-900/50',
+        border: 'border-yellow-500',
+        text: 'text-yellow-700 dark:text-yellow-300',
+        progress: 'bg-yellow-500',
+        pulse: ''
+      };
+    } else {
+      return {
+        bg: 'bg-red-100 dark:bg-red-900/50',
+        border: 'border-red-500',
+        text: 'text-red-700 dark:text-red-300',
+        progress: 'bg-red-500',
+        pulse: 'animate-pulse'
+      };
+    }
   };
+
+  // Card colors based on order type
+  const cardColors = isDelivery
+    ? {
+        header: 'bg-blue-600 dark:bg-blue-700',
+        body: 'bg-blue-50 dark:bg-blue-950',
+        border: 'border-blue-500',
+        iconBg: 'bg-blue-700 dark:bg-blue-800',
+        pendingGlow: isPending ? 'ring-4 ring-green-400 ring-opacity-75' : ''
+      }
+    : {
+        header: 'bg-orange-600 dark:bg-orange-700',
+        body: 'bg-orange-50 dark:bg-orange-950',
+        border: 'border-orange-500',
+        iconBg: 'bg-orange-700 dark:bg-orange-800',
+        pendingGlow: isPending ? 'ring-4 ring-green-400 ring-opacity-75' : ''
+      };
+
+  const timerColors = getTimerColors();
+  const progressPercent = Math.min(100, (elapsedTime.minutes / 15) * 100);
 
   return (
     <div className="h-full w-full" style={{ perspective: '1000px' }}>
       <div 
-        className={`relative w-full h-full transition-transform duration-700 ${isFlipped ? '' : ''}`}
+        className="relative w-full h-full transition-transform duration-700"
         style={{ 
           transformStyle: 'preserve-3d',
           transform: isFlipped ? 'rotateY(180deg)' : 'rotateY(0deg)'
@@ -75,96 +113,113 @@ const KitchenOrderCard = ({ order }: KitchenOrderCardProps) => {
       >
         {/* Front Face */}
         <div 
-          className={`absolute inset-0 rounded-lg border-4 ${getCardBorderColor()} bg-card shadow-sm flex flex-col overflow-hidden`}
+          className={`absolute inset-0 rounded-xl border-4 ${cardColors.border} ${cardColors.body} shadow-lg flex flex-col overflow-hidden ${cardColors.pendingGlow}`}
           style={{ backfaceVisibility: 'hidden' }}
         >
-          {/* Header Row */}
-          <div className="flex items-center justify-between px-3 py-2 border-b border-border/50 shrink-0">
+          {/* Header - Full color */}
+          <div className={`${cardColors.header} text-white px-3 py-2 flex items-center justify-between shrink-0`}>
+            <span className="text-2xl font-black">#{order.order_number}</span>
             <div className="flex items-center gap-2">
-              <span className="text-3xl font-black text-foreground">
-                #{order.order_number}
-              </span>
-              {/* Type indicator */}
-              <div className={`w-7 h-7 rounded-full flex items-center justify-center shrink-0 ${
-                isDelivery ? 'bg-blue-500' : 'bg-orange-500'
-              }`}>
+              {/* Type icon */}
+              <div className={`${cardColors.iconBg} p-1.5 rounded-full`}>
                 {isDelivery ? (
-                  <Truck className="w-4 h-4 text-white" />
+                  <Truck className="w-4 h-4" />
                 ) : (
-                  <ShoppingBag className="w-4 h-4 text-white" />
+                  <ShoppingBag className="w-4 h-4" />
                 )}
               </div>
-            </div>
-            <div className="flex items-center gap-2">
-              {hasAnyNotes && (
-                <StickyNote className="w-5 h-5 text-purple-500 shrink-0" />
-              )}
-              <span className={`px-2 py-0.5 rounded-full text-xs font-bold shrink-0 ${
-                isPending 
-                  ? 'bg-green-500 text-white' 
-                  : 'bg-blue-500 text-white'
+              {/* Status badge */}
+              <span className={`px-2 py-0.5 rounded-full text-xs font-bold ${
+                isPending ? 'bg-green-500' : 'bg-white/20'
               }`}>
                 {isPending ? 'جديد' : 'قيد التجهيز'}
               </span>
+              {/* Notes indicator */}
+              {hasAnyNotes && (
+                <StickyNote className="w-4 h-4 text-yellow-300" />
+              )}
             </div>
           </div>
 
-          {/* Items List */}
+          {/* Items list - expanded area */}
           <div className="flex-1 px-3 py-2 overflow-hidden min-h-0">
             <div className="space-y-0.5">
-              {order.items?.slice(0, 5).map((item, index) => (
+              {order.items?.slice(0, 10).map((item, index) => (
                 <div key={index} className="flex items-center gap-2">
-                  <span className="text-lg font-bold text-primary min-w-[32px]">
+                  <span className="text-lg font-black text-primary min-w-[2rem]">
                     {item.quantity}×
                   </span>
-                  <span className="text-base font-semibold text-foreground truncate">
+                  <span className="text-sm font-bold truncate flex-1">
                     {item.menu_item_name}
                   </span>
+                  {item.notes && (
+                    <StickyNote className="w-3 h-3 text-yellow-500 flex-shrink-0" />
+                  )}
                 </div>
               ))}
-              {order.items && order.items.length > 5 && (
-                <div className="text-muted-foreground text-xs font-medium">
-                  +{order.items.length - 5} أصناف أخرى
+              {order.items && order.items.length > 10 && (
+                <div className="text-xs text-muted-foreground text-center">
+                  +{order.items.length - 10} أصناف أخرى
                 </div>
               )}
             </div>
           </div>
 
-          {/* Timer */}
-          <div className={`px-3 py-2 border-t border-border/50 text-center shrink-0 ${getTimerColor()}`}>
-            <span className="text-2xl font-bold font-mono">
-              ⏱️ {formatTime()}
-            </span>
+          {/* Timer in professional frame */}
+          <div className={`mx-2 mb-2 p-2 rounded-xl border-2 shadow-inner shrink-0
+            ${timerColors.bg} ${timerColors.border} ${timerColors.pulse}`}>
+            <div className={`flex items-center justify-center gap-2 ${timerColors.text}`}>
+              <Clock className="w-5 h-5" />
+              <span className="text-xl font-black font-mono">{formatTime()}</span>
+            </div>
+            {/* Progress bar */}
+            <div className="mt-1.5 h-1.5 bg-white/50 dark:bg-black/30 rounded-full overflow-hidden">
+              <div
+                className={`h-full ${timerColors.progress} transition-all duration-1000`}
+                style={{ width: `${progressPercent}%` }}
+              />
+            </div>
           </div>
         </div>
 
         {/* Back Face - Notes */}
         <div 
-          className="absolute inset-0 rounded-lg border-4 border-purple-500 bg-purple-50 dark:bg-purple-900/30 shadow-sm flex flex-col overflow-hidden"
+          className={`absolute inset-0 rounded-xl border-4 ${cardColors.border} ${cardColors.body} shadow-lg flex flex-col overflow-hidden`}
           style={{ backfaceVisibility: 'hidden', transform: 'rotateY(180deg)' }}
         >
-          <div className="flex items-center justify-between px-3 py-2 border-b border-purple-300 dark:border-purple-700 shrink-0">
-            <span className="text-3xl font-black text-foreground">
-              #{order.order_number}
-            </span>
-            <StickyNote className="w-6 h-6 text-purple-600" />
+          {/* Header */}
+          <div className={`${cardColors.header} text-white px-3 py-2 flex items-center justify-between shrink-0`}>
+            <span className="text-2xl font-black">#{order.order_number}</span>
+            <StickyNote className="w-5 h-5 text-yellow-300" />
           </div>
           
-          <div className="flex-1 px-3 py-2 overflow-auto min-h-0">
-            <h3 className="text-lg font-bold text-purple-700 dark:text-purple-300 mb-2">
-              📝 ملاحظات
-            </h3>
-            {order.notes && (
-              <div className="mb-2 p-2 bg-purple-100 dark:bg-purple-800/50 rounded-lg">
-                <p className="text-sm font-semibold text-foreground">{order.notes}</p>
+          {/* Notes content */}
+          <div className="flex-1 px-3 py-2 overflow-auto min-h-0 space-y-2">
+            {hasOrderNotes && (
+              <div className="bg-yellow-100 dark:bg-yellow-900/50 rounded-lg p-2">
+                <div className="text-xs font-bold text-yellow-700 dark:text-yellow-300 mb-1">
+                  ملاحظات الطلب:
+                </div>
+                <div className="text-sm font-medium">{order.notes}</div>
               </div>
             )}
             {order.items?.filter(item => item.notes).map((item, index) => (
-              <div key={index} className="mb-1 p-1.5 bg-white/50 dark:bg-black/20 rounded text-sm">
-                <span className="font-bold text-primary">{item.menu_item_name}: </span>
-                <span className="text-foreground">{item.notes}</span>
+              <div key={index} className="bg-white/50 dark:bg-black/20 rounded-lg p-2">
+                <div className="text-xs font-bold text-primary mb-1">
+                  {item.menu_item_name}:
+                </div>
+                <div className="text-sm">{item.notes}</div>
               </div>
             ))}
+          </div>
+
+          {/* Timer */}
+          <div className={`mx-2 mb-2 p-2 rounded-xl border-2 shadow-inner shrink-0
+            ${timerColors.bg} ${timerColors.border} ${timerColors.pulse}`}>
+            <div className={`flex items-center justify-center gap-2 ${timerColors.text}`}>
+              <Clock className="w-5 h-5" />
+              <span className="text-xl font-black font-mono">{formatTime()}</span>
+            </div>
           </div>
         </div>
       </div>
@@ -185,7 +240,7 @@ export default function KitchenDashboard() {
     return () => clearInterval(interval);
   }, []);
 
-  // Filter and sort orders - show first 16 only
+  // Filter and sort orders - show 18 orders (3 rows × 6 columns)
   const activeOrders = useMemo(() => {
     return orders
       .filter(order => 
@@ -193,7 +248,7 @@ export default function KitchenDashboard() {
         (order.type === 'delivery' || order.type === 'takeaway')
       )
       .sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime())
-      .slice(0, 16);
+      .slice(0, 18);
   }, [orders]);
 
   const handleRefresh = async () => {
@@ -253,8 +308,8 @@ export default function KitchenDashboard() {
         </div>
       </div>
 
-      {/* Orders Grid - 4x4 */}
-      <div className="flex-1 p-2 min-h-0">
+      {/* Orders Grid - 3 rows × 6 columns with portrait cards */}
+      <div className="flex-1 p-3 min-h-0">
         {activeOrders.length === 0 ? (
           <div className="h-full flex items-center justify-center">
             <div className="text-center">
@@ -265,10 +320,10 @@ export default function KitchenDashboard() {
           </div>
         ) : (
           <div 
-            className="grid gap-2 h-full"
+            className="grid gap-3 h-full"
             style={{
-              gridTemplateColumns: 'repeat(4, 1fr)',
-              gridTemplateRows: `repeat(4, 1fr)`,
+              gridTemplateColumns: 'repeat(6, 1fr)',
+              gridTemplateRows: 'repeat(3, 1fr)',
             }}
           >
             {activeOrders.map((order) => (
