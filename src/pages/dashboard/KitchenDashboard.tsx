@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo } from 'react';
 import { useSupabaseOrders, OrderWithItems } from '@/hooks/useSupabaseOrders';
-import { RefreshCw, StickyNote, Truck, ShoppingBag, Clock } from 'lucide-react';
+import { RefreshCw, StickyNote } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { QuickAccessReturnButton } from '@/components/admin/QuickAccessReturnButton';
 
@@ -9,9 +9,6 @@ interface KitchenOrderCardProps {
 }
 
 const KitchenOrderCard = ({ order }: KitchenOrderCardProps) => {
-  const [isFlipped, setIsFlipped] = useState(false);
-  const [elapsedTime, setElapsedTime] = useState({ minutes: 0, seconds: 0 });
-  
   const hasOrderNotes = order.notes && order.notes.trim().length > 0;
   const hasItemNotes = order.items?.some(item => item.notes && item.notes.trim().length > 0);
   const hasAnyNotes = hasOrderNotes || hasItemNotes;
@@ -19,210 +16,69 @@ const KitchenOrderCard = ({ order }: KitchenOrderCardProps) => {
   const isPending = order.status === 'pending';
   const isDelivery = order.type === 'delivery';
 
-  // Calculate elapsed time
-  useEffect(() => {
-    const calculateElapsed = () => {
-      const created = new Date(order.created_at).getTime();
-      const now = Date.now();
-      const diffMs = now - created;
-      const totalSeconds = Math.floor(diffMs / 1000);
-      const minutes = Math.floor(totalSeconds / 60);
-      const seconds = totalSeconds % 60;
-      setElapsedTime({ minutes, seconds });
-    };
+  // Badge colors based on order type
+  const badgeColor = isDelivery 
+    ? 'bg-green-500 text-white'  // Green for delivery
+    : 'bg-yellow-400 text-black'; // Yellow for takeaway
 
-    calculateElapsed();
-    const interval = setInterval(calculateElapsed, 1000);
-    return () => clearInterval(interval);
-  }, [order.created_at]);
-
-  // Auto-flip for orders with notes every 6 seconds
-  useEffect(() => {
-    if (!hasAnyNotes) return;
-    
-    const flipInterval = setInterval(() => {
-      setIsFlipped(prev => !prev);
-    }, 6000);
-
-    return () => clearInterval(flipInterval);
-  }, [hasAnyNotes]);
-
-  const formatTime = () => {
-    const mins = String(elapsedTime.minutes).padStart(2, '0');
-    const secs = String(elapsedTime.seconds).padStart(2, '0');
-    return `${mins}:${secs}`;
-  };
-
-  // Timer colors based on elapsed time
-  const getTimerColors = () => {
-    if (elapsedTime.minutes < 10) {
-      return {
-        bg: 'bg-green-100 dark:bg-green-900/50',
-        border: 'border-green-500',
-        text: 'text-green-700 dark:text-green-300',
-        progress: 'bg-green-500',
-        pulse: ''
-      };
-    } else if (elapsedTime.minutes < 15) {
-      return {
-        bg: 'bg-yellow-100 dark:bg-yellow-900/50',
-        border: 'border-yellow-500',
-        text: 'text-yellow-700 dark:text-yellow-300',
-        progress: 'bg-yellow-500',
-        pulse: ''
-      };
-    } else {
-      return {
-        bg: 'bg-red-100 dark:bg-red-900/50',
-        border: 'border-red-500',
-        text: 'text-red-700 dark:text-red-300',
-        progress: 'bg-red-500',
-        pulse: 'animate-pulse'
-      };
-    }
-  };
-
-  // Card colors based on order type
-  const cardColors = isDelivery
-    ? {
-        header: 'bg-blue-600 dark:bg-blue-700',
-        body: 'bg-blue-50 dark:bg-blue-950',
-        border: 'border-blue-500',
-        iconBg: 'bg-blue-700 dark:bg-blue-800',
-        pendingGlow: isPending ? 'ring-4 ring-green-400 ring-opacity-75' : ''
-      }
-    : {
-        header: 'bg-orange-600 dark:bg-orange-700',
-        body: 'bg-orange-50 dark:bg-orange-950',
-        border: 'border-orange-500',
-        iconBg: 'bg-orange-700 dark:bg-orange-800',
-        pendingGlow: isPending ? 'ring-4 ring-green-400 ring-opacity-75' : ''
-      };
-
-  const timerColors = getTimerColors();
-  const progressPercent = Math.min(100, (elapsedTime.minutes / 15) * 100);
+  const statusText = isDelivery 
+    ? (isPending ? 'جديد +' : 'توصيل')
+    : (isPending ? 'جديد +' : 'سفري');
 
   return (
-    <div className="h-full w-full" style={{ perspective: '1000px' }}>
-      <div 
-        className="relative w-full h-full transition-transform duration-700"
-        style={{ 
-          transformStyle: 'preserve-3d',
-          transform: isFlipped ? 'rotateY(180deg)' : 'rotateY(0deg)'
-        }}
-      >
-        {/* Front Face */}
-        <div 
-          className={`absolute inset-0 rounded-xl border-4 ${cardColors.border} ${cardColors.body} shadow-lg flex flex-col overflow-hidden ${cardColors.pendingGlow}`}
-          style={{ backfaceVisibility: 'hidden' }}
-        >
-          {/* Header - Full color */}
-          <div className={`${cardColors.header} text-white px-3 py-2 flex items-center justify-between shrink-0`}>
-            <span className="text-2xl font-black">#{order.order_number}</span>
-            <div className="flex items-center gap-2">
-              {/* Type icon */}
-              <div className={`${cardColors.iconBg} p-1.5 rounded-full`}>
-                {isDelivery ? (
-                  <Truck className="w-4 h-4" />
-                ) : (
-                  <ShoppingBag className="w-4 h-4" />
-                )}
-              </div>
-              {/* Status badge */}
-              <span className={`px-2 py-0.5 rounded-full text-xs font-bold ${
-                isPending ? 'bg-green-500' : 'bg-white/20'
-              }`}>
-                {isPending ? 'جديد' : 'قيد التجهيز'}
-              </span>
-              {/* Notes indicator */}
-              {hasAnyNotes && (
-                <StickyNote className="w-4 h-4 text-yellow-300" />
-              )}
-            </div>
-          </div>
+    <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 shadow-sm p-4 flex flex-col h-full">
+      {/* Top row - Number and Status badge */}
+      <div className="flex items-center gap-2 mb-3 flex-wrap">
+        {/* Order number */}
+        <span className={`${badgeColor} px-3 py-1.5 rounded-md text-xl font-black`}>
+          #{order.order_number}
+        </span>
+        
+        {/* Status badge */}
+        <span className={`${badgeColor} px-2 py-1 rounded-md text-sm font-bold`}>
+          {statusText}
+        </span>
 
-          {/* Items list - expanded area */}
-          <div className="flex-1 px-3 py-2 overflow-hidden min-h-0">
-            <div className="space-y-0.5">
-              {order.items?.slice(0, 10).map((item, index) => (
-                <div key={index} className="flex items-center gap-2">
-                  <span className="text-lg font-black text-primary min-w-[2rem]">
-                    {item.quantity}×
-                  </span>
-                  <span className="text-sm font-bold truncate flex-1">
-                    {item.menu_item_name}
-                  </span>
-                  {item.notes && (
-                    <StickyNote className="w-3 h-3 text-yellow-500 flex-shrink-0" />
-                  )}
-                </div>
-              ))}
-              {order.items && order.items.length > 10 && (
-                <div className="text-xs text-muted-foreground text-center">
-                  +{order.items.length - 10} أصناف أخرى
-                </div>
-              )}
-            </div>
-          </div>
-
-          {/* Timer in professional frame */}
-          <div className={`mx-2 mb-2 p-2 rounded-xl border-2 shadow-inner shrink-0
-            ${timerColors.bg} ${timerColors.border} ${timerColors.pulse}`}>
-            <div className={`flex items-center justify-center gap-2 ${timerColors.text}`}>
-              <Clock className="w-5 h-5" />
-              <span className="text-xl font-black font-mono">{formatTime()}</span>
-            </div>
-            {/* Progress bar */}
-            <div className="mt-1.5 h-1.5 bg-white/50 dark:bg-black/30 rounded-full overflow-hidden">
-              <div
-                className={`h-full ${timerColors.progress} transition-all duration-1000`}
-                style={{ width: `${progressPercent}%` }}
-              />
-            </div>
-          </div>
-        </div>
-
-        {/* Back Face - Notes */}
-        <div 
-          className={`absolute inset-0 rounded-xl border-4 ${cardColors.border} ${cardColors.body} shadow-lg flex flex-col overflow-hidden`}
-          style={{ backfaceVisibility: 'hidden', transform: 'rotateY(180deg)' }}
-        >
-          {/* Header */}
-          <div className={`${cardColors.header} text-white px-3 py-2 flex items-center justify-between shrink-0`}>
-            <span className="text-2xl font-black">#{order.order_number}</span>
-            <StickyNote className="w-5 h-5 text-yellow-300" />
-          </div>
-          
-          {/* Notes content */}
-          <div className="flex-1 px-3 py-2 overflow-auto min-h-0 space-y-2">
-            {hasOrderNotes && (
-              <div className="bg-yellow-100 dark:bg-yellow-900/50 rounded-lg p-2">
-                <div className="text-xs font-bold text-yellow-700 dark:text-yellow-300 mb-1">
-                  ملاحظات الطلب:
-                </div>
-                <div className="text-sm font-medium">{order.notes}</div>
-              </div>
-            )}
-            {order.items?.filter(item => item.notes).map((item, index) => (
-              <div key={index} className="bg-white/50 dark:bg-black/20 rounded-lg p-2">
-                <div className="text-xs font-bold text-primary mb-1">
-                  {item.menu_item_name}:
-                </div>
-                <div className="text-sm">{item.notes}</div>
-              </div>
-            ))}
-          </div>
-
-          {/* Timer */}
-          <div className={`mx-2 mb-2 p-2 rounded-xl border-2 shadow-inner shrink-0
-            ${timerColors.bg} ${timerColors.border} ${timerColors.pulse}`}>
-            <div className={`flex items-center justify-center gap-2 ${timerColors.text}`}>
-              <Clock className="w-5 h-5" />
-              <span className="text-xl font-black font-mono">{formatTime()}</span>
-            </div>
-          </div>
-        </div>
+        {/* Notes indicator */}
+        {hasAnyNotes && (
+          <StickyNote className="w-5 h-5 text-yellow-500 mr-auto" />
+        )}
       </div>
+      
+      {/* Items list */}
+      <div className="flex-1 space-y-1.5 overflow-hidden">
+        {order.items?.map((item, index) => (
+          <div key={index} className="flex items-start gap-2 text-base">
+            <span className="text-gray-600 dark:text-gray-400 font-bold min-w-[2.5rem] text-right">
+              ×{item.quantity}
+            </span>
+            <span className="font-medium text-gray-900 dark:text-gray-100 flex-1">
+              {item.menu_item_name}
+            </span>
+            {item.notes && (
+              <StickyNote className="w-4 h-4 text-yellow-500 flex-shrink-0 mt-0.5" />
+            )}
+          </div>
+        ))}
+      </div>
+
+      {/* Notes section if any */}
+      {hasAnyNotes && (
+        <div className="mt-3 pt-3 border-t border-gray-200 dark:border-gray-600 space-y-2">
+          {hasOrderNotes && (
+            <div className="bg-yellow-50 dark:bg-yellow-900/30 rounded p-2 text-sm">
+              <span className="font-bold text-yellow-700 dark:text-yellow-400">ملاحظة: </span>
+              <span className="text-gray-800 dark:text-gray-200">{order.notes}</span>
+            </div>
+          )}
+          {order.items?.filter(item => item.notes).map((item, index) => (
+            <div key={index} className="bg-gray-50 dark:bg-gray-700/50 rounded p-2 text-sm">
+              <span className="font-bold text-gray-600 dark:text-gray-300">{item.menu_item_name}: </span>
+              <span className="text-gray-800 dark:text-gray-200">{item.notes}</span>
+            </div>
+          ))}
+        </div>
+      )}
     </div>
   );
 };
@@ -240,15 +96,14 @@ export default function KitchenDashboard() {
     return () => clearInterval(interval);
   }, []);
 
-  // Filter and sort orders - show 18 orders (3 rows × 6 columns)
+  // Filter and sort orders - show all active orders
   const activeOrders = useMemo(() => {
     return orders
       .filter(order => 
         (order.status === 'pending' || order.status === 'preparing') && 
         (order.type === 'delivery' || order.type === 'takeaway')
       )
-      .sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime())
-      .slice(0, 18);
+      .sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime());
   }, [orders]);
 
   const handleRefresh = async () => {
@@ -269,30 +124,30 @@ export default function KitchenDashboard() {
 
   if (loading) {
     return (
-      <div className="h-screen bg-background flex items-center justify-center">
+      <div className="h-screen bg-gray-100 dark:bg-gray-900 flex items-center justify-center">
         <div className="text-center">
-          <div className="w-16 h-16 border-4 border-primary border-t-transparent rounded-full animate-spin mx-auto mb-4" />
-          <p className="text-2xl font-bold text-foreground">جاري تحميل الطلبات...</p>
+          <div className="w-16 h-16 border-4 border-green-500 border-t-transparent rounded-full animate-spin mx-auto mb-4" />
+          <p className="text-2xl font-bold text-gray-800 dark:text-gray-200">جاري تحميل الطلبات...</p>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="h-screen bg-background flex flex-col overflow-hidden" dir="rtl">
+    <div className="min-h-screen bg-gray-100 dark:bg-gray-900 flex flex-col" dir="rtl">
       <QuickAccessReturnButton />
       
       {/* Minimal Header */}
-      <div className="h-14 border-b border-border flex items-center justify-between px-4 bg-card shrink-0">
+      <div className="h-14 border-b border-gray-200 dark:border-gray-700 flex items-center justify-between px-4 bg-white dark:bg-gray-800 shrink-0">
         <div className="flex items-center gap-3">
-          <span className="text-2xl font-black text-foreground">🍳 المطبخ</span>
-          <span className="text-lg text-muted-foreground">
+          <span className="text-2xl font-black text-gray-800 dark:text-white">🍳 المطبخ</span>
+          <span className="text-lg text-gray-500 dark:text-gray-400">
             {activeOrders.length} طلب نشط
           </span>
         </div>
         
         <div className="flex items-center gap-4">
-          <span className="text-xl font-mono font-bold text-foreground">
+          <span className="text-xl font-mono font-bold text-gray-800 dark:text-white">
             {formatCurrentTime()}
           </span>
           <Button
@@ -308,24 +163,18 @@ export default function KitchenDashboard() {
         </div>
       </div>
 
-      {/* Orders Grid - 3 rows × 6 columns with portrait cards */}
-      <div className="flex-1 p-3 min-h-0">
+      {/* Orders Grid - 4 columns with scroll */}
+      <div className="flex-1 p-4 overflow-auto">
         {activeOrders.length === 0 ? (
-          <div className="h-full flex items-center justify-center">
+          <div className="h-full flex items-center justify-center min-h-[60vh]">
             <div className="text-center">
               <span className="text-6xl mb-4 block">✨</span>
-              <p className="text-3xl font-bold text-muted-foreground">لا توجد طلبات نشطة</p>
-              <p className="text-xl text-muted-foreground/70 mt-2">المطبخ فارغ</p>
+              <p className="text-3xl font-bold text-gray-500 dark:text-gray-400">لا توجد طلبات نشطة</p>
+              <p className="text-xl text-gray-400 dark:text-gray-500 mt-2">المطبخ فارغ</p>
             </div>
           </div>
         ) : (
-          <div 
-            className="grid gap-3 h-full"
-            style={{
-              gridTemplateColumns: 'repeat(6, 1fr)',
-              gridTemplateRows: 'repeat(3, 1fr)',
-            }}
-          >
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
             {activeOrders.map((order) => (
               <KitchenOrderCard key={order.id} order={order} />
             ))}
