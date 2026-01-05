@@ -113,67 +113,67 @@ const KitchenOrderCard = ({ order }: KitchenOrderCardProps) => {
       >
         {/* Front Face */}
         <div 
-          className={`absolute inset-0 rounded-xl border-4 ${cardColors.border} ${cardColors.body} shadow-lg flex flex-col overflow-hidden ${cardColors.pendingGlow}`}
+          className={`absolute inset-0 rounded-lg border-2 ${cardColors.border} ${cardColors.body} shadow-lg flex flex-col overflow-hidden ${cardColors.pendingGlow}`}
           style={{ backfaceVisibility: 'hidden' }}
         >
-          {/* Header - Full color */}
-          <div className={`${cardColors.header} text-white px-3 py-2 flex items-center justify-between shrink-0`}>
-            <span className="text-2xl font-black">#{order.order_number}</span>
-            <div className="flex items-center gap-2">
+          {/* Header - Compact */}
+          <div className={`${cardColors.header} text-white px-2 py-1 flex items-center justify-between shrink-0`}>
+            <span className="text-sm font-black">#{order.order_number}</span>
+            <div className="flex items-center gap-1">
               {/* Type icon */}
-              <div className={`${cardColors.iconBg} p-1.5 rounded-full`}>
+              <div className={`${cardColors.iconBg} p-0.5 rounded-full`}>
                 {isDelivery ? (
-                  <Truck className="w-4 h-4" />
+                  <Truck className="w-3 h-3" />
                 ) : (
-                  <ShoppingBag className="w-4 h-4" />
+                  <ShoppingBag className="w-3 h-3" />
                 )}
               </div>
               {/* Status badge */}
-              <span className={`px-2 py-0.5 rounded-full text-xs font-bold ${
+              <span className={`px-1 py-0.5 rounded text-[10px] font-bold ${
                 isPending ? 'bg-green-500' : 'bg-white/20'
               }`}>
-                {isPending ? 'جديد' : 'قيد التجهيز'}
+                {isPending ? 'جديد' : 'تجهيز'}
               </span>
               {/* Notes indicator */}
               {hasAnyNotes && (
-                <StickyNote className="w-4 h-4 text-yellow-300" />
+                <StickyNote className="w-3 h-3 text-yellow-300" />
               )}
             </div>
           </div>
 
-          {/* Items list - expanded area */}
-          <div className="flex-1 px-3 py-2 overflow-hidden min-h-0">
-            <div className="space-y-0.5">
-              {order.items?.slice(0, 10).map((item, index) => (
-                <div key={index} className="flex items-center gap-2">
-                  <span className="text-lg font-black text-primary min-w-[2rem]">
+          {/* Items list - compact with more items */}
+          <div className="flex-1 px-1.5 py-1 overflow-hidden min-h-0">
+            <div className="space-y-0">
+              {order.items?.slice(0, 12).map((item, index) => (
+                <div key={index} className="flex items-center gap-1 leading-tight">
+                  <span className="text-xs font-black text-primary min-w-[1.2rem]">
                     {item.quantity}×
                   </span>
-                  <span className="text-sm font-bold truncate flex-1">
+                  <span className="text-[11px] font-semibold truncate flex-1">
                     {item.menu_item_name}
                   </span>
                   {item.notes && (
-                    <StickyNote className="w-3 h-3 text-yellow-500 flex-shrink-0" />
+                    <StickyNote className="w-2 h-2 text-yellow-500 flex-shrink-0" />
                   )}
                 </div>
               ))}
-              {order.items && order.items.length > 10 && (
-                <div className="text-xs text-muted-foreground text-center">
-                  +{order.items.length - 10} أصناف أخرى
+              {order.items && order.items.length > 12 && (
+                <div className="text-[10px] text-muted-foreground text-center">
+                  +{order.items.length - 12} أخرى
                 </div>
               )}
             </div>
           </div>
 
-          {/* Timer in professional frame */}
-          <div className={`mx-2 mb-2 p-2 rounded-xl border-2 shadow-inner shrink-0
+          {/* Timer - compact */}
+          <div className={`mx-1 mb-1 p-1 rounded-lg border shadow-inner shrink-0
             ${timerColors.bg} ${timerColors.border} ${timerColors.pulse}`}>
-            <div className={`flex items-center justify-center gap-2 ${timerColors.text}`}>
-              <Clock className="w-5 h-5" />
-              <span className="text-xl font-black font-mono">{formatTime()}</span>
+            <div className={`flex items-center justify-center gap-1 ${timerColors.text}`}>
+              <Clock className="w-3 h-3" />
+              <span className="text-sm font-black font-mono">{formatTime()}</span>
             </div>
             {/* Progress bar */}
-            <div className="mt-1.5 h-1.5 bg-white/50 dark:bg-black/30 rounded-full overflow-hidden">
+            <div className="mt-0.5 h-1 bg-white/50 dark:bg-black/30 rounded-full overflow-hidden">
               <div
                 className={`h-full ${timerColors.progress} transition-all duration-1000`}
                 style={{ width: `${progressPercent}%` }}
@@ -184,41 +184,41 @@ const KitchenOrderCard = ({ order }: KitchenOrderCardProps) => {
 
         {/* Back Face - Notes */}
         <div 
-          className={`absolute inset-0 rounded-xl border-4 ${cardColors.border} ${cardColors.body} shadow-lg flex flex-col overflow-hidden`}
+          className={`absolute inset-0 rounded-lg border-2 ${cardColors.border} ${cardColors.body} shadow-lg flex flex-col overflow-hidden`}
           style={{ backfaceVisibility: 'hidden', transform: 'rotateY(180deg)' }}
         >
           {/* Header */}
-          <div className={`${cardColors.header} text-white px-3 py-2 flex items-center justify-between shrink-0`}>
-            <span className="text-2xl font-black">#{order.order_number}</span>
-            <StickyNote className="w-5 h-5 text-yellow-300" />
+          <div className={`${cardColors.header} text-white px-2 py-1 flex items-center justify-between shrink-0`}>
+            <span className="text-sm font-black">#{order.order_number}</span>
+            <StickyNote className="w-3 h-3 text-yellow-300" />
           </div>
           
           {/* Notes content */}
-          <div className="flex-1 px-3 py-2 overflow-auto min-h-0 space-y-2">
+          <div className="flex-1 px-1.5 py-1 overflow-auto min-h-0 space-y-1">
             {hasOrderNotes && (
-              <div className="bg-yellow-100 dark:bg-yellow-900/50 rounded-lg p-2">
-                <div className="text-xs font-bold text-yellow-700 dark:text-yellow-300 mb-1">
-                  ملاحظات الطلب:
+              <div className="bg-yellow-100 dark:bg-yellow-900/50 rounded p-1">
+                <div className="text-[10px] font-bold text-yellow-700 dark:text-yellow-300">
+                  ملاحظات:
                 </div>
-                <div className="text-sm font-medium">{order.notes}</div>
+                <div className="text-[11px] font-medium">{order.notes}</div>
               </div>
             )}
             {order.items?.filter(item => item.notes).map((item, index) => (
-              <div key={index} className="bg-white/50 dark:bg-black/20 rounded-lg p-2">
-                <div className="text-xs font-bold text-primary mb-1">
+              <div key={index} className="bg-white/50 dark:bg-black/20 rounded p-1">
+                <div className="text-[10px] font-bold text-primary">
                   {item.menu_item_name}:
                 </div>
-                <div className="text-sm">{item.notes}</div>
+                <div className="text-[11px]">{item.notes}</div>
               </div>
             ))}
           </div>
 
           {/* Timer */}
-          <div className={`mx-2 mb-2 p-2 rounded-xl border-2 shadow-inner shrink-0
+          <div className={`mx-1 mb-1 p-1 rounded-lg border shadow-inner shrink-0
             ${timerColors.bg} ${timerColors.border} ${timerColors.pulse}`}>
-            <div className={`flex items-center justify-center gap-2 ${timerColors.text}`}>
-              <Clock className="w-5 h-5" />
-              <span className="text-xl font-black font-mono">{formatTime()}</span>
+            <div className={`flex items-center justify-center gap-1 ${timerColors.text}`}>
+              <Clock className="w-3 h-3" />
+              <span className="text-sm font-black font-mono">{formatTime()}</span>
             </div>
           </div>
         </div>
