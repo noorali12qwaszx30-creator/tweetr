@@ -116,27 +116,25 @@ const KitchenOrderCard = ({ order }: KitchenOrderCardProps) => {
           className={`absolute inset-0 rounded-lg border-2 ${cardColors.border} ${cardColors.body} shadow-lg flex flex-col overflow-hidden ${cardColors.pendingGlow}`}
           style={{ backfaceVisibility: 'hidden' }}
         >
-          {/* Header - Compact */}
-          <div className={`${cardColors.header} text-white px-2 py-1 flex items-center justify-between shrink-0`}>
-            <span className="text-sm font-black">#{order.order_number}</span>
-            <div className="flex items-center gap-1">
+          {/* Header - Ultra Compact */}
+          <div className={`${cardColors.header} text-white px-1.5 py-0.5 flex items-center justify-between shrink-0`}>
+            <span className="text-xs font-bold">#{order.order_number}</span>
+            <div className="flex items-center gap-0.5">
               {/* Type icon */}
-              <div className={`${cardColors.iconBg} p-0.5 rounded-full`}>
-                {isDelivery ? (
-                  <Truck className="w-3 h-3" />
-                ) : (
-                  <ShoppingBag className="w-3 h-3" />
-                )}
-              </div>
+              {isDelivery ? (
+                <Truck className="w-2.5 h-2.5" />
+              ) : (
+                <ShoppingBag className="w-2.5 h-2.5" />
+              )}
               {/* Status badge */}
-              <span className={`px-1 py-0.5 rounded text-[10px] font-bold ${
+              <span className={`px-0.5 rounded text-[8px] font-bold ${
                 isPending ? 'bg-green-500' : 'bg-white/20'
               }`}>
                 {isPending ? 'جديد' : 'تجهيز'}
               </span>
               {/* Notes indicator */}
               {hasAnyNotes && (
-                <StickyNote className="w-3 h-3 text-yellow-300" />
+                <StickyNote className="w-2.5 h-2.5 text-yellow-300" />
               )}
             </div>
           </div>
