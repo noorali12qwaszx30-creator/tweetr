@@ -1,5 +1,4 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -12,97 +11,202 @@ serve(async (req) => {
   }
 
   try {
-    const { type, message, ordersData } = await req.json();
+    const { type, message, ordersData, additionalContext } = await req.json();
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
     
     if (!LOVABLE_API_KEY) {
       throw new Error("LOVABLE_API_KEY is not configured");
     }
 
-    // Build system prompt based on request type
-    let systemPrompt = `أنت مساعد ذكي متخصص في تحليل بيانات المطاعم وإدارة الطلبات. تتحدث بالعربية بطلاقة.
-    
-معلومات عن النظام:
-- نظام إدارة طلبات مطعم
-- أنواع الطلبات: توصيل (delivery) واستلام (takeaway)
-- حالات الطلب: pending (قيد الانتظار), preparing (قيد التحضير), ready (جاهز), delivering (قيد التوصيل), delivered (تم التوصيل), cancelled (ملغي)
+    // Build comprehensive system prompt for Executive AI Assistant
+    const systemPrompt = `أنت "المساعد الذكي للمدير التنفيذي" - العقل المركزي لنظام إدارة المطعم.
 
-مهامك:
-1. تحليل البيانات وتقديم رؤى مفيدة
-2. اكتشاف الأنماط والمشاكل
-3. تقديم اقتراحات لتحسين الأداء
-4. التنبؤ بالمشاكل قبل حدوثها
-5. الإجابة على أسئلة المستخدم حول البيانات
+## دورك الوظيفي:
+- مراقبة النظام بشكل مستمر وصامت
+- تحليل الأنماط والسلوكيات التشغيلية
+- اكتشاف الأخطاء والتأخيرات قبل تفاقمها
+- دعم المدير التنفيذي بقرارات واضحة وسريعة
 
-قواعد الرد:
-- كن موجزاً ومفيداً
-- استخدم الأرقام والإحصائيات عند الإمكان
-- قدم اقتراحات عملية قابلة للتنفيذ
-- استخدم الإيموجي للتوضيح
-- نبه على المشاكل الحرجة بوضوح`;
+## صلاحياتك:
+- قراءة كاملة على: قاعدة البيانات، الطلبات، سجلات المستخدمين، الأحداث، بيانات الأداء
+- لا تنفيذ مباشر - فقط تحليل واقتراحات
+
+## معلومات النظام:
+- أنواع الطلبات: توصيل (delivery)، استلام (takeaway)
+- حالات الطلب: pending (انتظار), preparing (تحضير), ready (جاهز), delivering (توصيل), delivered (تم), cancelled (ملغي)
+- الأقسام: كاشير، مطبخ، ميدان، دلفري، سفري
+
+## قواعد الرد الصارمة:
+1. كن موجزاً جداً - لا نصوص طويلة
+2. ركز على القرار وليس التفاصيل التقنية
+3. لا تعرض أرقام خام فقط - قدم:
+   - ماذا حدث؟
+   - لماذا حدث غالباً؟
+   - ماذا يُنصح به الآن؟
+4. استخدم الإيموجي للتوضيح السريع
+5. صنف التنبيهات: 🔴 حرج | 🟡 متوسط | 🟢 معلوماتي
+6. كل اقتراح يجب أن يكون عملي وقابل للتنفيذ فوراً
+7. تحدث بالعربية فقط بلغة بسيطة واحترافية`;
 
     let userPrompt = "";
 
     switch (type) {
       case "daily_report":
-        userPrompt = `بيانات الطلبات اليوم:
+        userPrompt = `## بيانات اليوم:
 ${JSON.stringify(ordersData, null, 2)}
 
-قدم تقريراً يومياً شاملاً يتضمن:
-1. ملخص الأداء (عدد الطلبات، نسبة الإكمال، الإيرادات)
-2. أفضل الأصناف مبيعاً
-3. أداء التوصيل (متوسط الوقت، التأخيرات)
-4. المشاكل الملحوظة
-5. اقتراحات للتحسين`;
+## المطلوب: تقرير يومي تنفيذي مختصر
+
+قدم تقريراً بهذا الهيكل:
+1. **ملخص الأداء** (جملة واحدة عن الحالة العامة)
+2. **أرقام اليوم** (طلبات، إكمال، إلغاء، إيرادات)
+3. **أبرز 3 نجاحات** 
+4. **أخطر 3 مشاكل**
+5. **توصية واحدة للغد**
+
+اجعله قصيراً ومباشراً.`;
         break;
 
-      case "predict_issues":
-        userPrompt = `بيانات الطلبات الحالية والسابقة:
+      case "health_score":
+        userPrompt = `## بيانات الطلبات:
 ${JSON.stringify(ordersData, null, 2)}
 
-حلل البيانات وتنبأ بالمشاكل المحتملة:
-1. هل هناك ضغط متوقع على المطبخ؟
-2. هل التوصيل سيتأخر؟
-3. أي أنماط مقلقة في الإلغاءات؟
-4. توقعات الساعات القادمة
-5. تنبيهات عاجلة إن وجدت`;
-        break;
+## المطلوب: حساب مؤشر صحة المطعم
 
-      case "analyze_cancellations":
-        userPrompt = `بيانات الطلبات الملغية:
-${JSON.stringify(ordersData, null, 2)}
+احسب النتيجة من 0 إلى 100 بناءً على:
+- سرعة المطبخ (وقت من pending إلى ready)
+- كفاءة التوصيل (وقت من ready إلى delivered)
+- نسبة عدم الإلغاء
+- استقرار سير الطلبات
 
-حلل أسباب الإلغاء:
-1. الأسباب الأكثر شيوعاً
-2. أنماط الإلغاء (وقت، نوع، منطقة)
-3. تأثير الإلغاءات على الإيرادات
-4. اقتراحات لتقليل الإلغاءات`;
+أجب بهذا الشكل بالضبط (JSON):
+{
+  "score": [رقم],
+  "factors": {
+    "kitchenSpeed": [رقم],
+    "deliveryEfficiency": [رقم],
+    "cancellationRate": [رقم],
+    "orderFlow": [رقم]
+  },
+  "explanation": "[جملة واحدة تفسر النتيجة]"
+}`;
         break;
 
       case "smart_alerts":
-        userPrompt = `البيانات الحالية:
+        userPrompt = `## بيانات الطلبات الحالية:
 ${JSON.stringify(ordersData, null, 2)}
 
-افحص البيانات وأعطني تنبيهات ذكية:
-- 🔴 تنبيهات عاجلة (تحتاج تدخل فوري)
-- 🟡 تحذيرات (قد تصبح مشكلة)
-- 🟢 إيجابيات (أداء جيد)
+## المطلوب: تنبيهات ذكية مصنفة
 
-كن محدداً وعملياً.`;
+افحص البيانات وأنشئ تنبيهات بهذا الشكل (JSON array):
+[
+  {
+    "level": "critical|warning|info",
+    "title": "[عنوان قصير]",
+    "description": "[وصف مختصر]",
+    "cause": "[السبب المحتمل]",
+    "suggestion": "[إجراء مقترح]"
+  }
+]
+
+قواعد:
+- 🔴 critical: تحتاج تدخل فوري (تأخير شديد، إلغاءات متتالية، ضغط حرج)
+- 🟡 warning: قد تصبح مشكلة (تأخير بسيط، نمط مقلق)
+- 🟢 info: إيجابيات أو معلومات مفيدة
+
+أعطني 3-5 تنبيهات كحد أقصى، الأهم أولاً.`;
+        break;
+
+      case "shift_summary":
+        userPrompt = `## بيانات الشفت:
+${JSON.stringify(ordersData, null, 2)}
+
+## المطلوب: ملخص نهاية الشفت
+
+قدم الملخص بهذا الشكل (JSON):
+{
+  "shiftName": "[صباحي/مسائي/ليلي]",
+  "strengths": ["نقطة قوة 1", "نقطة قوة 2", "نقطة قوة 3"],
+  "problems": ["مشكلة 1", "مشكلة 2", "مشكلة 3"],
+  "recommendation": "[توصية واحدة واضحة للشفت القادم]",
+  "stats": {
+    "totalOrders": [رقم],
+    "completedOrders": [رقم],
+    "cancelledOrders": [رقم],
+    "avgDeliveryTime": [رقم بالدقائق]
+  }
+}`;
+        break;
+
+      case "analyze_cancellations":
+        userPrompt = `## بيانات الطلبات الملغية:
+${JSON.stringify(ordersData.filter((o: any) => o.status === 'cancelled'), null, 2)}
+
+## المطلوب: تحليل الإلغاءات
+
+قدم تحليلاً مختصراً:
+1. **عدد الإلغاءات ونسبتها**
+2. **أكثر 3 أسباب شيوعاً**
+3. **نمط الإلغاء** (وقت، نوع، منطقة)
+4. **التأثير المالي المقدر**
+5. **3 إجراءات لتقليل الإلغاءات**
+
+كن مختصراً ومباشراً.`;
+        break;
+
+      case "predict_issues":
+        userPrompt = `## البيانات الحالية:
+${JSON.stringify(ordersData, null, 2)}
+
+## المطلوب: توقع المشاكل القادمة
+
+بناءً على الأنماط الحالية، توقع:
+1. **الساعة القادمة**: ماذا قد يحدث؟
+2. **ضغط المطبخ**: هل سيزيد؟
+3. **التوصيل**: هل سيتأخر؟
+4. **تنبيهات وقائية**: ما الذي يجب فعله الآن؟
+
+أجب بنقاط قصيرة ومحددة.`;
+        break;
+
+      case "order_timeline":
+        const problematicOrder = additionalContext?.order;
+        userPrompt = `## بيانات الطلب المشكل:
+${JSON.stringify(problematicOrder, null, 2)}
+
+## المطلوب: تحليل زمني للطلب
+
+أنشئ تسلسل زمني للأحداث واستنتج السبب الجذري:
+{
+  "orderNumber": ${problematicOrder?.order_number || 0},
+  "events": [
+    {"time": "[وقت]", "event": "[حدث]", "status": "success|warning|error|neutral", "duration": [دقائق]}
+  ],
+  "rootCause": "[السبب الجذري للمشكلة]",
+  "isProblematic": true
+}`;
         break;
 
       case "chat":
       default:
-        userPrompt = `بيانات الطلبات:
+        userPrompt = `## بيانات النظام:
 ${JSON.stringify(ordersData, null, 2)}
 
-سؤال المستخدم: ${message}
+## سؤال المدير التنفيذي:
+${message}
 
-أجب على السؤال بناءً على البيانات المتوفرة.`;
+## المطلوب:
+أجب بشكل مختصر، واضح، وقابل للتنفيذ.
+- إذا سأل "لماذا" - حلل السبب الجذري
+- إذا سأل "من" - حدد المسؤول بالبيانات
+- إذا سأل "ماذا أفعل" - أعطه خطوات محددة
+- إذا سأل عن أداء - أعطه أرقام ومقارنات
+
+لا تطل في الشرح. جملتين إلى ثلاث جمل كافية.`;
         break;
     }
 
-    console.log(`AI Insights request type: ${type}`);
+    console.log(`AI Executive Assistant request type: ${type}`);
 
     const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
       method: "POST",
@@ -147,7 +251,7 @@ ${JSON.stringify(ordersData, null, 2)}
     );
 
   } catch (error) {
-    console.error("AI insights error:", error);
+    console.error("AI Executive Assistant error:", error);
     return new Response(
       JSON.stringify({ error: error instanceof Error ? error.message : "حدث خطأ غير متوقع" }),
       { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
