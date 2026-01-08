@@ -112,10 +112,23 @@ export default function RoleSelector() {
   const [error, setError] = useState<string | null>(null);
   const [mounted, setMounted] = useState(false);
 
+  // Map role to route
+  const getRoleRoute = (role: string) => {
+    const routes: Record<string, string> = {
+      kitchen: '/kitchen',
+      delivery: '/delivery',
+      cashier: '/cashier',
+      admin: '/admin',
+      field: '/field',
+      takeaway: '/takeaway',
+    };
+    return routes[role] || '/dashboard';
+  };
+
   // Auto-redirect if already authenticated with a valid role
   useEffect(() => {
     if (!authLoading && isAuthenticated && user?.role && savedRole) {
-      navigate('/dashboard', { replace: true });
+      navigate(getRoleRoute(savedRole), { replace: true });
     }
   }, [authLoading, isAuthenticated, user, savedRole, navigate]);
 
@@ -156,7 +169,7 @@ export default function RoleSelector() {
 
     setRole(selectedRole!);
     toast.success('تم تسجيل الدخول بنجاح');
-    navigate('/dashboard', { replace: true });
+    navigate(getRoleRoute(selectedRole!), { replace: true });
   };
 
   // Login form after role selection
