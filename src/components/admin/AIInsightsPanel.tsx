@@ -1,45 +1,57 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { 
   Bot, 
-  Send, 
   FileText, 
   AlertTriangle, 
   TrendingUp, 
   XCircle,
   Loader2,
-  Sparkles,
   RefreshCw,
-  Trash2
+  Activity,
+  Clock,
+  BarChart3,
+  Brain
 } from 'lucide-react';
 import { useAIInsights } from '@/hooks/useAIInsights';
 import { OrderWithItems } from '@/hooks/useSupabaseOrders';
+
+// Import sub-components
+import HealthScoreCard from './ai/HealthScoreCard';
+import SmartAlertCard, { SmartAlert } from './ai/SmartAlertCard';
+import ShiftSummaryCard from './ai/ShiftSummaryCard';
+import ExecutiveChat from './ai/ExecutiveChat';
+import QuickStatsGrid from './ai/QuickStatsGrid';
 
 interface AIInsightsPanelProps {
   orders: OrderWithItems[];
 }
 
 const AIInsightsPanel: React.FC<AIInsightsPanelProps> = ({ orders }) => {
-  const [inputMessage, setInputMessage] = useState('');
-  const [activeTab, setActiveTab] = useState('chat');
-  const scrollRef = useRef<HTMLDivElement>(null);
+  const [activeTab, setActiveTab] = useState('overview');
+  const [lastRefresh, setLastRefresh] = useState<Date | null>(null);
   
   const {
     messages,
     isLoading,
+    healthScore,
+    alerts,
+    shiftSummary,
     getDailyReport,
     predictIssues,
     analyzeCancellations,
     getSmartAlerts,
+    getHealthScore,
+    getShiftSummary,
     chat,
-    clearMessages
+    clearMessages,
+    refreshAll
   } = useAIInsights();
 
-  // Prepare orders data for AI (using database field names)
+  // Prepare orders data for AI
   const prepareOrdersData = () => {
     return orders.map(order => ({
       id: order.id,
@@ -53,6 +65,7 @@ const AIInsightsPanel: React.FC<AIInsightsPanelProps> = ({ orders }) => {
       cancelled_at: order.cancelled_at,
       cancellation_reason: order.cancellation_reason,
       customer_name: order.customer_name,
+      customer_address: order.customer_address,
       delivery_person_name: order.delivery_person_name,
       items: order.items?.map((item: any) => ({
         name: item.menu_item_name,
@@ -62,19 +75,31 @@ const AIInsightsPanel: React.FC<AIInsightsPanelProps> = ({ orders }) => {
     }));
   };
 
-  const handleSendMessage = async () => {
-    if (!inputMessage.trim() || isLoading) return;
-    
-    const message = inputMessage;
-    setInputMessage('');
-    await chat(message, prepareOrdersData());
+  // Calculate quick stats
+  const stats = {
+    totalOrders: orders.length,
+    completedOrders: orders.filter(o => o.status === 'delivered').length,
+    cancelledOrders: orders.filter(o => o.status === 'cancelled').length,
+    activeOrders: orders.filter(o => ['pending', 'preparing', 'ready', 'delivering'].includes(o.status)).length,
+    preparingOrders: orders.filter(o => o.status === 'preparing').length,
+    deliveringOrders: orders.filter(o => o.status === 'delivering').length,
+    avgDeliveryTime: 0,
+    completionRate: orders.length > 0 
+      ? Math.round((orders.filter(o => o.status === 'delivered').length / orders.length) * 100)
+      : 0
   };
 
-  const handleKeyPress = (e: React.KeyboardEvent) => {
-    if (e.key === 'Enter' && !e.shiftKey) {
-      e.preventDefault();
-      handleSendMessage();
+  // Auto-refresh on mount
+  useEffect(() => {
+    if (orders.length > 0 && !lastRefresh) {
+      handleRefresh();
     }
+  }, [orders.length]);
+
+  const handleRefresh = async () => {
+    const ordersData = prepareOrdersData();
+    await refreshAll(ordersData);
+    setLastRefresh(new Date());
   };
 
   const handleQuickAction = async (action: string) => {
@@ -83,245 +108,250 @@ const AIInsightsPanel: React.FC<AIInsightsPanelProps> = ({ orders }) => {
     switch (action) {
       case 'daily_report':
         await getDailyReport(ordersData);
+        setActiveTab('reports');
         break;
       case 'predict_issues':
         await predictIssues(ordersData);
+        setActiveTab('reports');
         break;
       case 'analyze_cancellations':
         await analyzeCancellations(ordersData);
+        setActiveTab('reports');
         break;
-      case 'smart_alerts':
-        await getSmartAlerts(ordersData);
+      case 'shift_summary':
+        await getShiftSummary(ordersData);
         break;
     }
   };
 
-  // Auto scroll to bottom
-  useEffect(() => {
-    if (scrollRef.current) {
-      scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
+  const handleChatMessage = async (message: string) => {
+    await chat(message, prepareOrdersData());
+  };
+
+  // Default health score if not loaded
+  const displayHealthScore = healthScore || {
+    score: stats.completionRate,
+    factors: {
+      kitchenSpeed: 70,
+      deliveryEfficiency: 75,
+      cancellationRate: Math.round((stats.cancelledOrders / Math.max(stats.totalOrders, 1)) * 100),
+      orderFlow: stats.activeOrders > 10 ? 50 : 80
+    },
+    explanation: 'جاري تحليل البيانات...'
+  };
+
+  // Default alerts if not loaded
+  const displayAlerts: SmartAlert[] = alerts.length > 0 ? alerts : [
+    {
+      id: 'default-1',
+      level: stats.activeOrders > 10 ? 'warning' : 'info',
+      title: stats.activeOrders > 10 ? 'ضغط متوسط' : 'العمليات مستقرة',
+      description: stats.activeOrders > 10 
+        ? `يوجد ${stats.activeOrders} طلبات نشطة حالياً`
+        : 'سير العمل طبيعي',
+      timestamp: new Date()
     }
-  }, [messages]);
+  ];
 
   const formatMessage = (content: string) => {
-    // Convert markdown-like formatting to HTML
-    return content
-      .split('\n')
-      .map((line, i) => (
-        <p key={i} className={line.startsWith('##') ? 'font-bold text-lg mt-3' : 'mt-1'}>
-          {line.replace(/^##\s*/, '')}
+    return content.split('\n').map((line, i) => {
+      const isHeader = line.startsWith('##') || line.startsWith('**');
+      const isBullet = line.startsWith('-') || line.startsWith('•') || /^\d+\./.test(line);
+      
+      return (
+        <p 
+          key={i} 
+          className={`
+            ${isHeader ? 'font-bold text-sm mt-3 mb-1' : ''}
+            ${isBullet ? 'pr-2 text-muted-foreground' : ''}
+            ${!isHeader && !isBullet && line.trim() ? 'mt-1' : ''}
+          `}
+        >
+          {line.replace(/^##\s*/, '').replace(/\*\*/g, '')}
         </p>
-      ));
+      );
+    });
   };
 
   return (
-    <div className="space-y-4">
-      {/* Quick Actions */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+    <div className="space-y-4" dir="rtl">
+      {/* Header with refresh */}
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-2">
+          <Brain className="w-6 h-6 text-primary" />
+          <h2 className="text-lg font-bold">المساعد الذكي للمدير التنفيذي</h2>
+        </div>
         <Button
           variant="outline"
-          className="flex flex-col items-center gap-2 h-auto py-4 hover:bg-primary/10"
-          onClick={() => handleQuickAction('daily_report')}
+          size="sm"
+          onClick={handleRefresh}
           disabled={isLoading}
+          className="gap-2"
         >
-          <FileText className="w-6 h-6 text-blue-500" />
-          <span className="text-sm">تقرير يومي</span>
-        </Button>
-        
-        <Button
-          variant="outline"
-          className="flex flex-col items-center gap-2 h-auto py-4 hover:bg-primary/10"
-          onClick={() => handleQuickAction('smart_alerts')}
-          disabled={isLoading}
-        >
-          <AlertTriangle className="w-6 h-6 text-yellow-500" />
-          <span className="text-sm">تنبيهات ذكية</span>
-        </Button>
-        
-        <Button
-          variant="outline"
-          className="flex flex-col items-center gap-2 h-auto py-4 hover:bg-primary/10"
-          onClick={() => handleQuickAction('predict_issues')}
-          disabled={isLoading}
-        >
-          <TrendingUp className="w-6 h-6 text-purple-500" />
-          <span className="text-sm">توقع المشاكل</span>
-        </Button>
-        
-        <Button
-          variant="outline"
-          className="flex flex-col items-center gap-2 h-auto py-4 hover:bg-primary/10"
-          onClick={() => handleQuickAction('analyze_cancellations')}
-          disabled={isLoading}
-        >
-          <XCircle className="w-6 h-6 text-red-500" />
-          <span className="text-sm">تحليل الإلغاءات</span>
+          <RefreshCw className={`w-4 h-4 ${isLoading ? 'animate-spin' : ''}`} />
+          تحديث
         </Button>
       </div>
 
-      {/* Chat Interface */}
-      <Card className="border-2">
-        <CardHeader className="pb-3">
-          <div className="flex items-center justify-between">
-            <CardTitle className="flex items-center gap-2 text-lg">
-              <Bot className="w-5 h-5 text-primary" />
-              المساعد الذكي
-            </CardTitle>
-            {messages.length > 0 && (
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={clearMessages}
-                className="text-muted-foreground hover:text-destructive"
-              >
-                <Trash2 className="w-4 h-4 ml-1" />
-                مسح المحادثة
-              </Button>
-            )}
-          </div>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          {/* Messages Area */}
-          <ScrollArea 
-            className="h-[400px] rounded-lg border bg-muted/30 p-4"
-            ref={scrollRef}
-          >
-            {messages.length === 0 ? (
-              <div className="flex flex-col items-center justify-center h-full text-muted-foreground">
-                <Sparkles className="w-12 h-12 mb-4 text-primary/50" />
-                <p className="text-center">
-                  مرحباً! أنا مساعدك الذكي 🤖
-                  <br />
-                  اسألني عن أي شيء يخص الطلبات والأداء
+      {/* Quick Stats */}
+      <QuickStatsGrid stats={stats} />
+
+      {/* Main Content Grid */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+        {/* Left Column - Health Score & Alerts */}
+        <div className="space-y-4">
+          <HealthScoreCard 
+            score={displayHealthScore.score} 
+            factors={displayHealthScore.factors} 
+          />
+          
+          <Card className="border-2">
+            <CardHeader className="pb-2">
+              <CardTitle className="flex items-center gap-2 text-base">
+                <AlertTriangle className="w-5 h-5 text-yellow-500" />
+                التنبيهات الذكية
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-2">
+              {displayAlerts.slice(0, 3).map(alert => (
+                <SmartAlertCard key={alert.id} alert={alert} />
+              ))}
+              {displayAlerts.length === 0 && !isLoading && (
+                <p className="text-sm text-muted-foreground text-center py-4">
+                  لا توجد تنبيهات حالياً ✨
                 </p>
-                <div className="mt-4 text-sm space-y-1 text-center">
-                  <p>💡 جرب: "ما هو أكثر صنف مبيعاً اليوم؟"</p>
-                  <p>💡 أو: "لماذا تأخرت الطلبات؟"</p>
-                </div>
-              </div>
-            ) : (
-              <div className="space-y-4">
-                {messages.map((msg, index) => (
-                  <div
-                    key={index}
-                    className={`flex ${msg.role === 'user' ? 'justify-start' : 'justify-end'}`}
-                  >
-                    <div
-                      className={`max-w-[85%] rounded-2xl px-4 py-3 ${
-                        msg.role === 'user'
-                          ? 'bg-primary text-primary-foreground rounded-bl-sm'
-                          : 'bg-card border shadow-sm rounded-br-sm'
-                      }`}
-                    >
-                      {msg.role === 'assistant' && (
-                        <div className="flex items-center gap-1 mb-2 text-xs text-muted-foreground">
-                          <Bot className="w-3 h-3" />
-                          <span>المساعد الذكي</span>
-                        </div>
-                      )}
-                      <div className="text-sm leading-relaxed whitespace-pre-wrap">
-                        {formatMessage(msg.content)}
-                      </div>
-                      <div className={`text-[10px] mt-2 ${
-                        msg.role === 'user' ? 'text-primary-foreground/70' : 'text-muted-foreground'
-                      }`}>
-                        {msg.timestamp.toLocaleTimeString('ar-SA', { 
-                          hour: '2-digit', 
-                          minute: '2-digit' 
-                        })}
-                      </div>
-                    </div>
+              )}
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* Center Column - Chat & Commands */}
+        <div className="lg:col-span-1">
+          <ExecutiveChat
+            messages={messages.filter(m => m.type === 'chat')}
+            isLoading={isLoading}
+            onSendMessage={handleChatMessage}
+            onClearMessages={clearMessages}
+          />
+        </div>
+
+        {/* Right Column - Quick Actions & Reports */}
+        <div className="space-y-4">
+          {/* Quick Actions */}
+          <Card className="border-2">
+            <CardHeader className="pb-2">
+              <CardTitle className="text-base">إجراءات سريعة</CardTitle>
+            </CardHeader>
+            <CardContent className="grid grid-cols-2 gap-2">
+              <Button
+                variant="outline"
+                className="flex flex-col items-center gap-1 h-auto py-3 text-xs"
+                onClick={() => handleQuickAction('daily_report')}
+                disabled={isLoading}
+              >
+                <FileText className="w-5 h-5 text-blue-500" />
+                تقرير يومي
+              </Button>
+              
+              <Button
+                variant="outline"
+                className="flex flex-col items-center gap-1 h-auto py-3 text-xs"
+                onClick={() => handleQuickAction('predict_issues')}
+                disabled={isLoading}
+              >
+                <TrendingUp className="w-5 h-5 text-purple-500" />
+                توقع المشاكل
+              </Button>
+              
+              <Button
+                variant="outline"
+                className="flex flex-col items-center gap-1 h-auto py-3 text-xs"
+                onClick={() => handleQuickAction('analyze_cancellations')}
+                disabled={isLoading}
+              >
+                <XCircle className="w-5 h-5 text-red-500" />
+                تحليل الإلغاءات
+              </Button>
+              
+              <Button
+                variant="outline"
+                className="flex flex-col items-center gap-1 h-auto py-3 text-xs"
+                onClick={() => handleQuickAction('shift_summary')}
+                disabled={isLoading}
+              >
+                <Clock className="w-5 h-5 text-green-500" />
+                ملخص الشفت
+              </Button>
+            </CardContent>
+          </Card>
+
+          {/* Reports Display */}
+          <Card className="border-2">
+            <CardHeader className="pb-2">
+              <CardTitle className="flex items-center gap-2 text-base">
+                <BarChart3 className="w-5 h-5 text-primary" />
+                التقارير
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <ScrollArea className="h-[280px]">
+                {messages.filter(m => m.type !== 'chat').length === 0 ? (
+                  <div className="flex flex-col items-center justify-center h-full text-muted-foreground py-8">
+                    <FileText className="w-10 h-10 mb-3 opacity-50" />
+                    <p className="text-sm text-center">
+                      اضغط على أحد الإجراءات السريعة
+                      <br />
+                      لإنشاء تقرير
+                    </p>
                   </div>
-                ))}
-                
-                {isLoading && (
-                  <div className="flex justify-end">
-                    <div className="bg-card border rounded-2xl rounded-br-sm px-4 py-3 shadow-sm">
-                      <div className="flex items-center gap-2 text-muted-foreground">
-                        <Loader2 className="w-4 h-4 animate-spin" />
-                        <span className="text-sm">جاري التحليل...</span>
+                ) : (
+                  <div className="space-y-4">
+                    {messages.filter(m => m.type !== 'chat').map((msg, i) => (
+                      <div key={i} className="bg-muted/30 rounded-lg p-3 border">
+                        <div className="flex items-center gap-2 mb-2 text-xs text-muted-foreground">
+                          <Bot className="w-3 h-3" />
+                          <span>
+                            {msg.type === 'daily_report' && 'تقرير يومي'}
+                            {msg.type === 'predict_issues' && 'توقعات'}
+                            {msg.type === 'analyze_cancellations' && 'تحليل الإلغاءات'}
+                            {msg.type === 'smart_alerts' && 'تنبيهات'}
+                          </span>
+                          <span className="mr-auto">
+                            {msg.timestamp.toLocaleTimeString('ar-SA', { 
+                              hour: '2-digit', 
+                              minute: '2-digit' 
+                            })}
+                          </span>
+                        </div>
+                        <div className="text-xs leading-relaxed">
+                          {formatMessage(msg.content)}
+                        </div>
                       </div>
-                    </div>
+                    ))}
                   </div>
                 )}
-              </div>
-            )}
-          </ScrollArea>
-
-          {/* Input Area */}
-          <div className="flex gap-2">
-            <Input
-              value={inputMessage}
-              onChange={(e) => setInputMessage(e.target.value)}
-              onKeyPress={handleKeyPress}
-              placeholder="اسأل عن الطلبات، الأداء، أو أي شيء..."
-              disabled={isLoading}
-              className="flex-1"
-              dir="rtl"
-            />
-            <Button
-              onClick={handleSendMessage}
-              disabled={!inputMessage.trim() || isLoading}
-              size="icon"
-            >
-              {isLoading ? (
-                <Loader2 className="w-4 h-4 animate-spin" />
-              ) : (
-                <Send className="w-4 h-4" />
-              )}
-            </Button>
-          </div>
-
-          {/* Quick Questions */}
-          <div className="flex flex-wrap gap-2">
-            {[
-              'ما أداء اليوم؟',
-              'أكثر صنف مبيعاً؟',
-              'سبب التأخيرات؟',
-              'توقعات الغد؟'
-            ].map((question, i) => (
-              <Button
-                key={i}
-                variant="secondary"
-                size="sm"
-                onClick={() => {
-                  setInputMessage(question);
-                }}
-                disabled={isLoading}
-                className="text-xs"
-              >
-                {question}
-              </Button>
-            ))}
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* Stats Summary */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-3 text-center">
-        <Card className="p-3">
-          <div className="text-2xl font-bold text-primary">{orders.length}</div>
-          <div className="text-xs text-muted-foreground">إجمالي الطلبات</div>
-        </Card>
-        <Card className="p-3">
-          <div className="text-2xl font-bold text-green-500">
-            {orders.filter(o => o.status === 'delivered').length}
-          </div>
-          <div className="text-xs text-muted-foreground">تم التوصيل</div>
-        </Card>
-        <Card className="p-3">
-          <div className="text-2xl font-bold text-yellow-500">
-            {orders.filter(o => ['pending', 'preparing', 'ready', 'delivering'].includes(o.status)).length}
-          </div>
-          <div className="text-xs text-muted-foreground">نشط الآن</div>
-        </Card>
-        <Card className="p-3">
-          <div className="text-2xl font-bold text-red-500">
-            {orders.filter(o => o.status === 'cancelled').length}
-          </div>
-          <div className="text-xs text-muted-foreground">ملغي</div>
-        </Card>
+                
+                {isLoading && (
+                  <div className="flex items-center justify-center py-8">
+                    <Loader2 className="w-6 h-6 animate-spin text-primary" />
+                  </div>
+                )}
+              </ScrollArea>
+            </CardContent>
+          </Card>
+        </div>
       </div>
+
+      {/* Shift Summary (if available) */}
+      {shiftSummary && (
+        <ShiftSummaryCard
+          shiftName={shiftSummary.shiftName}
+          strengths={shiftSummary.strengths}
+          problems={shiftSummary.problems}
+          recommendation={shiftSummary.recommendation}
+          stats={shiftSummary.stats}
+        />
+      )}
     </div>
   );
 };
