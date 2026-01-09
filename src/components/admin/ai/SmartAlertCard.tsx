@@ -18,6 +18,10 @@ interface SmartAlertCardProps {
 }
 
 const SmartAlertCard: React.FC<SmartAlertCardProps> = ({ alert, onClick }) => {
+  if (!alert) {
+    return null;
+  }
+
   const getLevelStyles = (level: SmartAlert['level']) => {
     switch (level) {
       case 'critical':
@@ -35,6 +39,7 @@ const SmartAlertCard: React.FC<SmartAlertCardProps> = ({ alert, onClick }) => {
           label: 'تحذير'
         };
       case 'info':
+      default:
         return {
           bg: 'bg-blue-500/10 border-blue-500/30 hover:border-blue-500/50',
           icon: <Info className="w-5 h-5 text-blue-500" />,
