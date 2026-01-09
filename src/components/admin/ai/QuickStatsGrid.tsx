@@ -29,6 +29,10 @@ interface QuickStatsGridProps {
 }
 
 const QuickStatsGrid: React.FC<QuickStatsGridProps> = ({ stats, previousStats }) => {
+  if (!stats) {
+    return null;
+  }
+
   const getTrend = (current: number, previous: number) => {
     if (!previous) return null;
     const diff = ((current - previous) / previous) * 100;
@@ -40,42 +44,42 @@ const QuickStatsGrid: React.FC<QuickStatsGridProps> = ({ stats, previousStats })
   const statItems = [
     {
       label: 'إجمالي الطلبات',
-      value: stats.totalOrders,
+      value: stats.totalOrders ?? 0,
       icon: ShoppingBag,
       color: 'text-primary',
       bg: 'bg-primary/10'
     },
     {
       label: 'مكتمل',
-      value: stats.completedOrders,
+      value: stats.completedOrders ?? 0,
       icon: CheckCircle2,
       color: 'text-green-500',
       bg: 'bg-green-500/10'
     },
     {
       label: 'ملغي',
-      value: stats.cancelledOrders,
+      value: stats.cancelledOrders ?? 0,
       icon: XCircle,
       color: 'text-red-500',
       bg: 'bg-red-500/10'
     },
     {
       label: 'نشط الآن',
-      value: stats.activeOrders,
+      value: stats.activeOrders ?? 0,
       icon: Clock,
       color: 'text-yellow-500',
       bg: 'bg-yellow-500/10'
     },
     {
       label: 'قيد التحضير',
-      value: stats.preparingOrders,
+      value: stats.preparingOrders ?? 0,
       icon: ChefHat,
       color: 'text-orange-500',
       bg: 'bg-orange-500/10'
     },
     {
       label: 'قيد التوصيل',
-      value: stats.deliveringOrders,
+      value: stats.deliveringOrders ?? 0,
       icon: Truck,
       color: 'text-blue-500',
       bg: 'bg-blue-500/10'
