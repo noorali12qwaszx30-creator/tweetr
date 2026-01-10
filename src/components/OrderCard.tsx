@@ -107,27 +107,40 @@ export function OrderCard({
               </span>
             </div>
           ))}
-          {/* Price breakdown */}
+          {/* Price breakdown - calculate items total from actual items */}
           <div className="pt-2 border-t border-border space-y-1">
-            {order.type === 'delivery' && order.delivery_fee > 0 && (
-              <>
-                <div className="flex items-center justify-between text-xs sm:text-sm text-muted-foreground">
-                  <span>سعر الطلب</span>
-                  <span>{formatNumberWithCommas(Number(order.total_price) - Number(order.delivery_fee))} د.ع</span>
-                </div>
-                <div className="flex items-center justify-between text-xs sm:text-sm text-info">
-                  <span className="flex items-center gap-1">
-                    <Truck className="w-3 h-3" />
-                    أجرة التوصيل
-                  </span>
-                  <span>{formatNumberWithCommas(Number(order.delivery_fee))} د.ع</span>
-                </div>
-              </>
-            )}
-            <div className="flex items-center justify-between font-semibold text-sm sm:text-base">
-              <span>المجموع الكلي</span>
-              <span className="text-primary">{formatNumberWithCommas(Number(order.total_price))} د.ع</span>
-            </div>
+            {(() => {
+              // Calculate items total from actual order items
+              const itemsTotal = order.items.reduce((sum: number, item: DbOrderItem) => 
+                sum + (Number(item.menu_item_price) * item.quantity), 0
+              );
+              const deliveryFee = Number(order.delivery_fee) || 0;
+              const grandTotal = itemsTotal + deliveryFee;
+              
+              return (
+                <>
+                  {order.type === 'delivery' && deliveryFee > 0 && (
+                    <>
+                      <div className="flex items-center justify-between text-xs sm:text-sm text-muted-foreground">
+                        <span>سعر الطلب</span>
+                        <span>{formatNumberWithCommas(itemsTotal)} د.ع</span>
+                      </div>
+                      <div className="flex items-center justify-between text-xs sm:text-sm text-info">
+                        <span className="flex items-center gap-1">
+                          <Truck className="w-3 h-3" />
+                          أجرة التوصيل
+                        </span>
+                        <span>{formatNumberWithCommas(deliveryFee)} د.ع</span>
+                      </div>
+                    </>
+                  )}
+                  <div className="flex items-center justify-between font-semibold text-sm sm:text-base">
+                    <span>المجموع الكلي</span>
+                    <span className="text-primary">{formatNumberWithCommas(grandTotal)} د.ع</span>
+                  </div>
+                </>
+              );
+            })()}
           </div>
         </div>
       )}

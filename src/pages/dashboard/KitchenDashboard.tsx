@@ -1,8 +1,9 @@
 import { useState, useEffect, useMemo } from 'react';
 import { useSupabaseOrders, OrderWithItems } from '@/hooks/useSupabaseOrders';
-import { RefreshCw, StickyNote, Truck, ShoppingBag, Clock } from 'lucide-react';
+import { RefreshCw, StickyNote, Truck, ShoppingBag, Clock, LogOut } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { QuickAccessReturnButton } from '@/components/admin/QuickAccessReturnButton';
+import { LogoutConfirmButton } from '@/components/LogoutConfirmButton';
 
 interface KitchenOrderCardProps {
   order: OrderWithItems;
@@ -303,6 +304,7 @@ export default function KitchenDashboard() {
             <RefreshCw className={`w-4 h-4 ${isRefreshing ? 'animate-spin' : ''}`} />
             تحديث
           </Button>
+          <LogoutConfirmButton variant="compact" />
         </div>
       </div>
 
