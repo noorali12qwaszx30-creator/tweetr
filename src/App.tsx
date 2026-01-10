@@ -25,8 +25,8 @@ const queryClient = new QueryClient();
 
 const App = () => (
   <QueryClientProvider client={queryClient}>
-    <BrowserRouter>
-      <AuthProvider>
+    <AuthProvider>
+      <BrowserRouter>
         <RoleProvider>
           <CancellationReasonsProvider>
             <ShiftProvider>
@@ -90,8 +90,8 @@ const App = () => (
             </ShiftProvider>
           </CancellationReasonsProvider>
         </RoleProvider>
-      </AuthProvider>
-    </BrowserRouter>
+      </BrowserRouter>
+    </AuthProvider>
   </QueryClientProvider>
 );
 
