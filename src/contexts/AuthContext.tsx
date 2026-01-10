@@ -105,11 +105,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const login = async (username: string, password: string, selectedRole?: UserRole): Promise<{ error: string | null }> => {
     try {
-      // Clear any quick access data from previous sessions
-      localStorage.removeItem('adminQuickAccess');
-      localStorage.removeItem('adminReturnRole');
-      localStorage.removeItem('quickAccessUser');
-      
       // Convert username to email format for Supabase auth
       const email = `${username.toLowerCase().trim()}@restaurant.local`;
       
@@ -160,11 +155,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   const logout = async () => {
-    // Clear quick access data
-    localStorage.removeItem('adminQuickAccess');
-    localStorage.removeItem('adminReturnRole');
-    localStorage.removeItem('quickAccessUser');
-    
     await supabase.auth.signOut();
     setUser(null);
     setSession(null);

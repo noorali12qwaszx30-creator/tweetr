@@ -75,7 +75,6 @@ const roleIcons: Record<UserRole, React.ReactNode> = {
   delivery: <Truck className="w-6 h-6" />,
   takeaway: <UtensilsCrossed className="w-6 h-6" />,
   admin: <ShieldCheck className="w-6 h-6" />,
-  kitchen: <UtensilsCrossed className="w-6 h-6" />,
 };
 
 const roleDescriptions: Record<UserRole, string> = {
@@ -84,7 +83,6 @@ const roleDescriptions: Record<UserRole, string> = {
   delivery: 'استلام وتوصيل الطلبات',
   takeaway: 'طلبات السفري والاستلام',
   admin: 'لوحة المدير التنفيذي',
-  kitchen: 'شاشة عرض المطبخ',
 };
 
 export function QuickAccessPanel() {
@@ -95,7 +93,7 @@ export function QuickAccessPanel() {
   const [selectedRole, setSelectedRole] = useState<UserRole | null>(null);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
 
-  const accessibleRoles: UserRole[] = ['cashier', 'field', 'delivery', 'takeaway', 'kitchen'];
+  const accessibleRoles: UserRole[] = ['cashier', 'field', 'delivery', 'takeaway'];
 
   useEffect(() => {
     fetchUsers();

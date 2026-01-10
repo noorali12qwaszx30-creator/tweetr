@@ -20,12 +20,11 @@ import { ExecutivePulseDashboard } from '@/components/admin/ExecutivePulseDashbo
 import { BehaviorAnalysis } from '@/components/admin/BehaviorAnalysis';
 import { OrderTimeline } from '@/components/admin/OrderTimeline';
 import { PredictiveAnalysis } from '@/components/admin/PredictiveAnalysis';
-import AIInsightsPanel from '@/components/admin/AIInsightsPanel';
 import { toast } from 'sonner';
 import { formatNumberWithCommas, formatTimeEnglish, toEnglishNumbers } from '@/lib/formatNumber';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { ROLE_LABELS } from '@/types';
-import { Settings, Users, BarChart3, RefreshCcw, ShieldCheck, XCircle, CheckCircle, ClipboardList, TrendingUp, DollarSign, Timer, Zap, AlertTriangle, Home, Package, Loader2, UtensilsCrossed, Truck, Trash2, Archive, Eye, Activity, Clock, GitBranch, Bot } from 'lucide-react';
+import { Settings, Users, BarChart3, RefreshCcw, ShieldCheck, XCircle, CheckCircle, ClipboardList, TrendingUp, DollarSign, Timer, Zap, AlertTriangle, Home, Package, Loader2, UtensilsCrossed, Truck, Trash2, Archive, Eye, Activity, Clock, GitBranch } from 'lucide-react';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 import { supabase } from '@/integrations/supabase/client';
 
@@ -36,7 +35,7 @@ type MainTab = 'home' | 'menu' | 'orders' | 'stats' | 'monitoring' | 'settings';
 type OrdersSubTab = 'completed' | 'cancelled';
 type StatsSubTab = 'items' | 'customers' | 'finance' | 'areas';
 type SettingsSubTab = 'general' | 'users' | 'reasons' | 'quickaccess' | 'areas';
-type MonitoringSubTab = 'pulse' | 'behavior' | 'timeline' | 'predictive' | 'ai';
+type MonitoringSubTab = 'pulse' | 'behavior' | 'timeline' | 'predictive';
 export default function AdminDashboard() {
   const {
     role
@@ -420,11 +419,7 @@ export default function AdminDashboard() {
         {activeTab === 'monitoring' && <div className="space-y-4">
             {/* Sub-tabs */}
             <Tabs value={monitoringSubTab} onValueChange={v => setMonitoringSubTab(v as MonitoringSubTab)}>
-              <TabsList className="grid w-full grid-cols-5">
-                <TabsTrigger value="ai" className="text-xs px-1 gap-1">
-                  <Bot className="w-3 h-3" />
-                  ذكاء AI
-                </TabsTrigger>
+              <TabsList className="grid w-full grid-cols-4">
                 <TabsTrigger value="pulse" className="text-xs px-1 gap-1">
                   <Activity className="w-3 h-3" />
                   النبض
@@ -442,10 +437,6 @@ export default function AdminDashboard() {
                   التنبؤي
                 </TabsTrigger>
               </TabsList>
-
-              <TabsContent value="ai" className="mt-4">
-                <AIInsightsPanel orders={orders} />
-              </TabsContent>
 
               <TabsContent value="pulse" className="mt-4">
                 <ExecutivePulseDashboard orders={orders} />

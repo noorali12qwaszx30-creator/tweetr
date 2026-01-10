@@ -256,18 +256,3 @@
     opacity: 1;
   }
 }
-
-/* Kitchen Display Card Flip Animation */
-.kitchen-flip-card-inner {
-  transition: transform 0.6s cubic-bezier(0.4, 0, 0.2, 1);
-  transform-style: preserve-3d;
-}
-
-.kitchen-flip-card-inner.kitchen-flipped {
-  transform: rotateY(180deg);
-}
-
-.kitchen-flip-card-inner > div {
-  backface-visibility: hidden;
-  -webkit-backface-visibility: hidden;
-}

@@ -9,17 +9,8 @@ verify_jwt = false
 [functions.update-password]
 verify_jwt = false
 
-[functions.update-username]
-verify_jwt = false
-
 [functions.create-order]
 verify_jwt = false
 
 [functions.update-order]
-verify_jwt = false
-
-[functions.ai-insights]
-verify_jwt = false
-
-[functions.reset-order-counter]
 verify_jwt = false

@@ -1,6 +1,5 @@
 import { useState } from 'react';
 import { useRole } from '@/contexts/RoleContext';
-import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
 import {
   AlertDialog,
@@ -20,19 +19,14 @@ interface LogoutConfirmButtonProps {
 
 export function LogoutConfirmButton({ variant = 'default' }: LogoutConfirmButtonProps) {
   const { clearRole } = useRole();
-  const { logout } = useAuth();
   const [isOpen, setIsOpen] = useState(false);
 
-  const handleLogout = async () => {
+  const handleLogout = () => {
     // Clear quick access data if exists
     localStorage.removeItem('adminQuickAccess');
     localStorage.removeItem('adminReturnRole');
     localStorage.removeItem('quickAccessUser');
     
-    // Sign out from Supabase session
-    await logout();
-    
-    // Clear role
     clearRole();
   };
 

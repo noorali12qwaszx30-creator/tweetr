@@ -52,7 +52,7 @@ interface UserWithRole extends Profile {
   role?: UserRole;
 }
 
-const ROLES: UserRole[] = ['cashier', 'field', 'delivery', 'takeaway', 'admin', 'kitchen'];
+const ROLES: UserRole[] = ['cashier', 'field', 'delivery', 'takeaway', 'admin'];
 
 export function UserManagement() {
   const [users, setUsers] = useState<UserWithRole[]>([]);
@@ -274,50 +274,17 @@ export function UserManagement() {
 
     setSubmitting(true);
     try {
-      // Check if username changed
-      const usernameChanged = editForm.username !== selectedUser.username;
-      
-      if (usernameChanged) {
-        // Use edge function to update username (updates both profiles and auth.users)
-        const response = await supabase.functions.invoke('update-username', {
-          body: {
-            user_id: selectedUser.user_id,
-            new_username: editForm.username,
-          },
-        });
+      // Update profile
+      const { error: profileError } = await supabase
+        .from('profiles')
+        .update({
+          username: editForm.username,
+          full_name: editForm.full_name || null,
+          phone: editForm.phone || null,
+        })
+        .eq('user_id', selectedUser.user_id);
 
-        if (response.error) {
-          throw new Error(response.error.message || 'Failed to update username');
-        }
-
-        if (response.data?.error) {
-          toast.error(response.data.error);
-          setSubmitting(false);
-          return;
-        }
-        
-        // Update other profile fields
-        const { error: profileError } = await supabase
-          .from('profiles')
-          .update({
-            full_name: editForm.full_name || null,
-            phone: editForm.phone || null,
-          })
-          .eq('user_id', selectedUser.user_id);
-
-        if (profileError) throw profileError;
-      } else {
-        // Update profile without changing username
-        const { error: profileError } = await supabase
-          .from('profiles')
-          .update({
-            full_name: editForm.full_name || null,
-            phone: editForm.phone || null,
-          })
-          .eq('user_id', selectedUser.user_id);
-
-        if (profileError) throw profileError;
-      }
+      if (profileError) throw profileError;
 
       // Update or insert role
       const { data: existingRole } = await supabase

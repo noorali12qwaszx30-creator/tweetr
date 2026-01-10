@@ -1,4 +1,4 @@
-export type UserRole = 'cashier' | 'field' | 'delivery' | 'takeaway' | 'admin' | 'kitchen';
+export type UserRole = 'cashier' | 'field' | 'delivery' | 'takeaway' | 'admin';
 
 export interface User {
   id: string;
@@ -53,7 +53,6 @@ export const ROLE_LABELS: Record<UserRole, string> = {
   delivery: 'موظف توصيل',
   takeaway: 'السفري',
   admin: 'المدير التنفيذي',
-  kitchen: 'المطبخ',
 };
 
 export const ORDER_STATUS_LABELS: Record<OrderStatus, string> = {
