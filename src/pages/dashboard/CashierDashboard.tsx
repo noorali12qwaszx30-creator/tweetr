@@ -1,4 +1,4 @@
-import { useState, useMemo, useRef } from 'react';
+import { useState, useMemo } from 'react';
 import { useRole } from '@/contexts/RoleContext';
 import { useAuth } from '@/contexts/AuthContext';
 import { useSupabaseOrders, DbMenuItem, OrderWithItems } from '@/hooks/useSupabaseOrders';
@@ -153,10 +153,8 @@ export default function CashierDashboard() {
   const [cancellingOrder, setCancellingOrder] = useState<OrderWithItems | null>(null);
   const [selectedOrderDetails, setSelectedOrderDetails] = useState<OrderWithItems | null>(null);
   const [editingOrder, setEditingOrder] = useState<OrderWithItems | null>(null);
-  const [submitting, setSubmitting] = useState(false);
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const [animatingItemId, setAnimatingItemId] = useState<string | null>(null);
-  const submitTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   const sensors = useSensors(
     useSensor(PointerSensor, {
@@ -232,52 +230,13 @@ export default function CashierDashboard() {
       return;
     }
 
-    // Cancel any pending submission
-    if (submitTimeoutRef.current) {
-      clearTimeout(submitTimeoutRef.current);
-    }
-
-    setSubmitting(true);
-    
-    // Add a small delay to prevent accidental double submissions
-    await new Promise(resolve => {
-      submitTimeoutRef.current = setTimeout(resolve, 300);
-    });
-
-    // If editing an existing order, update it instead of creating new
-    if (editingOrder) {
-      const result = await updateOrder(editingOrder.id, {
-        customer_name: customerName,
-        customer_phone: customerPhone,
-        customer_address: customerAddress,
-        delivery_area_id: selectedAreaId,
-        notes: orderNotes || undefined,
-        items: cart.map(item => ({
-          menu_item_id: item.menuItem.id,
-          menu_item_name: item.menuItem.name,
-          menu_item_price: item.menuItem.price,
-          quantity: item.quantity,
-          notes: item.notes,
-        })),
-      });
-
-      setSubmitting(false);
-      if (result) {
-        clearCart();
-        setEditingOrder(null);
-      }
-      return;
-    }
-
-    // Create new order
-    const result = await addOrder({
+    // Store data for background submission
+    const orderData = {
       customer_name: customerName,
       customer_phone: customerPhone,
       customer_address: customerAddress,
       delivery_area_id: selectedAreaId,
-      type: 'delivery',
       notes: orderNotes || undefined,
-      cashier_name: role ? ROLE_LABELS[role] : 'كاشير',
       items: cart.map(item => ({
         menu_item_id: item.menuItem.id,
         menu_item_name: item.menuItem.name,
@@ -285,11 +244,29 @@ export default function CashierDashboard() {
         quantity: item.quantity,
         notes: item.notes,
       })),
-    });
+    };
 
-    setSubmitting(false);
-    if (result) {
-      clearCart();
+    const isEditing = editingOrder;
+    const editingOrderId = editingOrder?.id;
+
+    // Clear form immediately (optimistic update)
+    clearCart();
+    if (isEditing) {
+      setEditingOrder(null);
+      toast.success('جاري حفظ التعديلات...');
+    } else {
+      toast.success('جاري إرسال الطلب...');
+    }
+
+    // Submit in background
+    if (isEditing && editingOrderId) {
+      updateOrder(editingOrderId, orderData);
+    } else {
+      addOrder({
+        ...orderData,
+        type: 'delivery',
+        cashier_name: role ? ROLE_LABELS[role] : 'كاشير',
+      });
     }
   };
 
@@ -507,8 +484,8 @@ export default function CashierDashboard() {
                     <Trash2 className="w-3 h-3 ml-1" />
                     {editingOrder ? 'إلغاء التعديل' : 'مسح'}
                   </Button>
-                  <Button size="sm" className={`flex-1 ${editingOrder ? 'bg-warning hover:bg-warning/90' : ''}`} onClick={submitOrder} disabled={submitting}>
-                    {submitting ? <Loader2 className="w-3 h-3 ml-1 animate-spin" /> : <Send className="w-3 h-3 ml-1" />}
+                  <Button size="sm" className={`flex-1 ${editingOrder ? 'bg-warning hover:bg-warning/90' : ''}`} onClick={submitOrder}>
+                    <Send className="w-3 h-3 ml-1" />
                     {editingOrder ? 'حفظ التعديلات' : 'إرسال'}
                   </Button>
                 </div>
