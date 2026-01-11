@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useCallback } from 'react';
 import { useRole } from '@/contexts/RoleContext';
 import { useAuth } from '@/contexts/AuthContext';
 import { useSupabaseOrders, DbMenuItem, OrderWithItems } from '@/hooks/useSupabaseOrders';
@@ -57,10 +57,11 @@ interface CartItem {
 interface SortableMenuItemProps {
   item: MenuItem;
   quantity: number;
+  isAnimating: boolean;
   onSelect: (item: MenuItem) => void;
 }
 
-function SortableMenuItem({ item, quantity, onSelect }: SortableMenuItemProps) {
+function SortableMenuItem({ item, quantity, isAnimating, onSelect }: SortableMenuItemProps) {
   const {
     attributes,
     listeners,
@@ -80,7 +81,7 @@ function SortableMenuItem({ item, quantity, onSelect }: SortableMenuItemProps) {
     <div
       ref={setNodeRef}
       style={style}
-      className={`flex items-center gap-3 bg-card border rounded-xl p-3 hover:border-warning hover:shadow-soft transition-all duration-200 cursor-pointer ${quantity > 0 ? 'border-warning bg-warning/5' : 'border-border'}`}
+      className={`flex items-center gap-3 bg-card border rounded-xl p-3 hover:border-warning hover:shadow-soft transition-all duration-200 cursor-pointer ${quantity > 0 ? 'border-warning bg-warning/5' : 'border-border'} ${isAnimating ? 'animate-[pop_0.3s_ease-out]' : ''}`}
       onClick={() => onSelect(item)}
     >
       <div
@@ -103,7 +104,7 @@ function SortableMenuItem({ item, quantity, onSelect }: SortableMenuItemProps) {
           </div>
         )}
         {quantity > 0 && (
-          <div className="absolute -top-2 -right-2 w-6 h-6 bg-warning text-warning-foreground rounded-full flex items-center justify-center text-xs font-bold shadow-md">
+          <div className={`absolute -top-2 -right-2 w-6 h-6 bg-warning text-warning-foreground rounded-full flex items-center justify-center text-xs font-bold shadow-md ${isAnimating ? 'animate-[bounce_0.3s_ease-out]' : ''}`}>
             {toEnglishNumbers(quantity)}
           </div>
         )}
@@ -114,7 +115,7 @@ function SortableMenuItem({ item, quantity, onSelect }: SortableMenuItemProps) {
         <p className="text-warning font-bold text-sm">{formatNumberWithCommas(item.price)} د.ع</p>
       </div>
       
-      <div className="flex-shrink-0 h-10 w-10 rounded-full bg-warning/10 flex items-center justify-center text-warning">
+      <div className={`flex-shrink-0 h-10 w-10 rounded-full bg-warning/10 flex items-center justify-center text-warning ${isAnimating ? 'animate-[ping_0.3s_ease-out]' : ''}`}>
         <Plus className="w-5 h-5" />
       </div>
     </div>
@@ -135,6 +136,7 @@ export default function TakeawayDashboard() {
   const [orderToCancel, setOrderToCancel] = useState<OrderWithItems | null>(null);
   const [showCompletedOrders, setShowCompletedOrders] = useState(false);
   const [showCancelledOrders, setShowCancelledOrders] = useState(false);
+  const [animatingItemId, setAnimatingItemId] = useState<string | null>(null);
 
   const sensors = useSensors(
     useSensor(PointerSensor, {
@@ -180,7 +182,11 @@ export default function TakeawayDashboard() {
 
   const sortedItems = [...filteredItems].sort((a, b) => (a.display_order || 0) - (b.display_order || 0));
 
-  const addToCart = (item: MenuItem) => {
+  const addToCart = useCallback((item: MenuItem) => {
+    // Trigger animation
+    setAnimatingItemId(item.id);
+    setTimeout(() => setAnimatingItemId(null), 300);
+    
     setCart(prev => {
       const existing = prev.find(i => i.menuItem.id === item.id);
       if (existing) {
@@ -192,7 +198,7 @@ export default function TakeawayDashboard() {
       }
       return [...prev, { menuItem: item, quantity: 1 }];
     });
-  };
+  }, []);
 
   const updateQuantity = (itemId: string, delta: number) => {
     setCart(prev => {
@@ -436,6 +442,7 @@ export default function TakeawayDashboard() {
                         key={item.id} 
                         item={item} 
                         quantity={cartItem?.quantity || 0}
+                        isAnimating={animatingItemId === item.id}
                         onSelect={addToCart} 
                       />
                     );
