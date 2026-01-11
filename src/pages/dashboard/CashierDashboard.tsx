@@ -134,7 +134,7 @@ function SortableMenuItem({ item, onSelect }: SortableMenuItemProps) {
 export default function CashierDashboard() {
   const { role } = useRole();
   const { user } = useAuth();
-  const { orders, addOrder, updateOrder, updateOrderStatus, cancelOrder, loading } = useSupabaseOrders();
+  const { orders, addOrder, updateOrder, updateOrderStatus, cancelOrder, loading } = useSupabaseOrders({ orderTypeFilter: 'delivery' });
   const { menuItems, categories, loading: menuLoading, updateDisplayOrder } = useMenuItems();
   const { activeAreas, loading: areasLoading } = useDeliveryAreas();
   const [activeTab, setActiveTab] = useState<TabType>('menu');
