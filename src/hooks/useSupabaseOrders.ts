@@ -230,7 +230,27 @@ export function useSupabaseOrders(options: UseSupabaseOrdersOptions = {}) {
         return null;
       }
 
-      // Don't show toast here - realtime will handle it
+      // Immediately add the order to local state (optimistic update)
+      if (data?.order) {
+        const newOrderWithItems: OrderWithItems = {
+          ...data.order,
+          items: orderData.items.map((item, index) => ({
+            id: `temp-${index}`,
+            order_id: data.order.id,
+            menu_item_id: item.menu_item_id || null,
+            menu_item_name: item.menu_item_name,
+            menu_item_price: item.menu_item_price,
+            quantity: item.quantity,
+            notes: item.notes || null,
+          })),
+        };
+        
+        setOrders(prevOrders => [newOrderWithItems, ...prevOrders]);
+        
+        // Fetch fresh data in background to get correct items
+        setTimeout(() => fetchOrders(), 500);
+      }
+
       return data.order;
     } catch (err) {
       console.error('Unexpected error creating order:', err);
