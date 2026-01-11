@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useRef } from 'react';
 import { useRole } from '@/contexts/RoleContext';
 import { useAuth } from '@/contexts/AuthContext';
 import { useSupabaseOrders, DbMenuItem, OrderWithItems } from '@/hooks/useSupabaseOrders';
@@ -31,7 +31,6 @@ import {
   CheckCircle,
   XCircle,
   Loader2,
-  Star,
   GripVertical,
   ChevronDown,
   Pencil
@@ -71,10 +70,12 @@ interface CartItem {
 
 interface SortableMenuItemProps {
   item: MenuItem;
+  quantity: number;
+  isAnimating: boolean;
   onSelect: (item: MenuItem) => void;
 }
 
-function SortableMenuItem({ item, onSelect }: SortableMenuItemProps) {
+function SortableMenuItem({ item, quantity, isAnimating, onSelect }: SortableMenuItemProps) {
   const {
     attributes,
     listeners,
@@ -94,12 +95,22 @@ function SortableMenuItem({ item, onSelect }: SortableMenuItemProps) {
     <div
       ref={setNodeRef}
       style={style}
-      className="flex items-center gap-3 bg-card border border-border rounded-xl p-3 hover:border-primary hover:shadow-soft transition-all duration-200"
+      onClick={() => onSelect(item)}
+      className={`flex items-center gap-3 bg-card border rounded-xl p-3 hover:border-primary hover:shadow-soft transition-all duration-200 cursor-pointer relative ${
+        quantity > 0 ? 'border-warning bg-warning/5' : 'border-border'
+      } ${isAnimating ? 'animate-[pop_0.3s_ease-out]' : ''}`}
     >
+      {quantity > 0 && (
+        <div className={`absolute -top-2 -right-2 w-6 h-6 bg-warning text-warning-foreground rounded-full flex items-center justify-center text-xs font-bold shadow-md ${isAnimating ? 'animate-[bounce_0.3s_ease-out]' : ''}`}>
+          {toEnglishNumbers(quantity)}
+        </div>
+      )}
+      
       <div
         {...attributes}
         {...listeners}
         className="p-1 cursor-grab active:cursor-grabbing touch-none"
+        onClick={(e) => e.stopPropagation()}
       >
         <GripVertical className="w-4 h-4 text-muted-foreground" />
       </div>
@@ -119,14 +130,9 @@ function SortableMenuItem({ item, onSelect }: SortableMenuItemProps) {
         <p className="text-primary font-bold text-sm">{formatNumberWithCommas(item.price)} د.ع</p>
       </div>
       
-      <Button
-        size="icon"
-        variant="ghost"
-        className="h-10 w-10 rounded-full bg-primary/10 hover:bg-primary/20 text-primary flex-shrink-0"
-        onClick={() => onSelect(item)}
-      >
+      <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center text-primary flex-shrink-0">
         <Plus className="w-5 h-5" />
-      </Button>
+      </div>
     </div>
   );
 }
@@ -149,6 +155,8 @@ export default function CashierDashboard() {
   const [editingOrder, setEditingOrder] = useState<OrderWithItems | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
+  const [animatingItemId, setAnimatingItemId] = useState<string | null>(null);
+  const submitTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   const sensors = useSensors(
     useSensor(PointerSensor, {
@@ -161,26 +169,6 @@ export default function CashierDashboard() {
     })
   );
 
-  // Calculate most used items based on order history
-  const mostUsedItems = useMemo(() => {
-    const itemCounts: Record<string, number> = {};
-    
-    orders.forEach(order => {
-      order.items.forEach(item => {
-        if (item.menu_item_id) {
-          itemCounts[item.menu_item_id] = (itemCounts[item.menu_item_id] || 0) + item.quantity;
-        }
-      });
-    });
-    
-    const sortedIds = Object.entries(itemCounts)
-      .sort((a, b) => b[1] - a[1])
-      .slice(0, 6)
-      .map(([id]) => id);
-    
-    return menuItems.filter(item => sortedIds.includes(item.id) && item.is_available);
-  }, [orders, menuItems]);
-
   const filteredItems = useMemo(() => {
     const available = menuItems.filter(item => item.is_available);
     if (!selectedCategory) return available;
@@ -190,6 +178,9 @@ export default function CashierDashboard() {
   const sortedItems = [...filteredItems].sort((a, b) => (a.display_order || 0) - (b.display_order || 0));
 
   const addToCart = (item: MenuItem) => {
+    setAnimatingItemId(item.id);
+    setTimeout(() => setAnimatingItemId(null), 300);
+    
     setCart(prev => {
       const existing = prev.find(i => i.menuItem.id === item.id);
       if (existing) {
@@ -241,7 +232,17 @@ export default function CashierDashboard() {
       return;
     }
 
+    // Cancel any pending submission
+    if (submitTimeoutRef.current) {
+      clearTimeout(submitTimeoutRef.current);
+    }
+
     setSubmitting(true);
+    
+    // Add a small delay to prevent accidental double submissions
+    await new Promise(resolve => {
+      submitTimeoutRef.current = setTimeout(resolve, 300);
+    });
 
     // If editing an existing order, update it instead of creating new
     if (editingOrder) {
@@ -514,36 +515,6 @@ export default function CashierDashboard() {
               </div>
             )}
 
-            {/* Most Used Section */}
-            {mostUsedItems.length > 0 && (
-              <div>
-                <h2 className="font-bold text-sm mb-2 flex items-center gap-2">
-                  <Star className="w-4 h-4 text-warning" />
-                  الأكثر استخداماً
-                </h2>
-                <div className="flex gap-2 overflow-x-auto pb-2">
-                  {mostUsedItems.map(item => (
-                    <button
-                      key={item.id}
-                      onClick={() => addToCart(item)}
-                      className="flex-shrink-0 bg-warning/10 border border-warning/30 rounded-xl p-2 hover:bg-warning/20 transition-all duration-200 text-center min-w-[80px]"
-                    >
-                      {item.image ? (
-                        <div className="w-12 h-12 rounded-lg overflow-hidden mx-auto mb-1">
-                          <img src={item.image} alt={item.name} className="w-full h-full object-cover" />
-                        </div>
-                      ) : (
-                        <div className="w-12 h-12 bg-muted rounded-lg mx-auto mb-1 flex items-center justify-center">
-                          <MenuIcon className="w-5 h-5 text-muted-foreground" />
-                        </div>
-                      )}
-                      <p className="text-xs font-medium truncate">{item.name}</p>
-                    </button>
-                  ))}
-                </div>
-              </div>
-            )}
-
             {/* Categories Strip */}
             <div className="flex gap-2 overflow-x-auto pb-1">
               <Button
@@ -571,9 +542,18 @@ export default function CashierDashboard() {
             <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
               <SortableContext items={sortedItems.map(i => i.id)} strategy={verticalListSortingStrategy}>
                 <div className="space-y-2">
-                  {sortedItems.map(item => (
-                    <SortableMenuItem key={item.id} item={item} onSelect={addToCart} />
-                  ))}
+                  {sortedItems.map(item => {
+                    const cartItem = cart.find(c => c.menuItem.id === item.id);
+                    return (
+                      <SortableMenuItem 
+                        key={item.id} 
+                        item={item} 
+                        quantity={cartItem?.quantity || 0}
+                        isAnimating={animatingItemId === item.id}
+                        onSelect={addToCart} 
+                      />
+                    );
+                  })}
                 </div>
               </SortableContext>
             </DndContext>
