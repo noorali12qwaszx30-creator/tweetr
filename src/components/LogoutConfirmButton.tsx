@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useRole } from '@/contexts/RoleContext';
 import { Button } from '@/components/ui/button';
 import {
@@ -19,6 +20,7 @@ interface LogoutConfirmButtonProps {
 
 export function LogoutConfirmButton({ variant = 'default' }: LogoutConfirmButtonProps) {
   const { clearRole } = useRole();
+  const navigate = useNavigate();
   const [isOpen, setIsOpen] = useState(false);
 
   const handleLogout = () => {
@@ -28,6 +30,7 @@ export function LogoutConfirmButton({ variant = 'default' }: LogoutConfirmButton
     localStorage.removeItem('quickAccessUser');
     
     clearRole();
+    navigate('/', { replace: true });
   };
 
   if (variant === 'compact') {
