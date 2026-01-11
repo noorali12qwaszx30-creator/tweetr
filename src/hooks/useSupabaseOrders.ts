@@ -308,6 +308,15 @@ export function useSupabaseOrders(options: UseSupabaseOrdersOptions = {}) {
 
   // Accept delivery
   const acceptDelivery = async (orderId: string) => {
+    // Optimistic update - immediately update local state
+    setOrders(prevOrders => 
+      prevOrders.map(order => 
+        order.id === orderId 
+          ? { ...order, status: 'delivering' as const, pending_delivery_acceptance: false } 
+          : order
+      )
+    );
+
     const { error } = await supabase
       .from('orders')
       .update({
@@ -319,6 +328,8 @@ export function useSupabaseOrders(options: UseSupabaseOrdersOptions = {}) {
     if (error) {
       console.error('Error accepting delivery:', error);
       toast.error('حدث خطأ في قبول الطلب');
+      // Revert on error
+      fetchOrders();
       return false;
     }
 
