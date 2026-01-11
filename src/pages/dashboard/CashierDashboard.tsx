@@ -220,19 +220,37 @@ export default function CashierDashboard() {
   const totalPrice = cart.reduce((sum, item) => sum + item.menuItem.price * item.quantity, 0);
 
   const submitOrder = async () => {
+    // Detailed validation with specific error messages
+    const errors: string[] = [];
+    
     if (cart.length === 0) {
-      toast.error('السلة فارغة');
+      toast.error('السلة فارغة - أضف أصناف للطلب');
       return;
     }
 
-    if (!customerName || !customerPhone || !selectedAreaId) {
-      toast.error('يرجى إدخال بيانات الزبون كاملة واختيار المنطقة');
+    if (!customerName.trim()) {
+      errors.push('اسم الزبون');
+    }
+    
+    if (!customerPhone.trim()) {
+      errors.push('رقم الهاتف');
+    } else if (customerPhone.length !== 11) {
+      toast.error('رقم الهاتف يجب أن يكون 11 رقم');
+      return;
+    }
+    
+    if (!selectedAreaId) {
+      errors.push('منطقة التوصيل');
+    }
+
+    if (errors.length > 0) {
+      toast.error(`يرجى إدخال: ${errors.join('، ')}`);
       return;
     }
 
     // Store data for background submission
     const orderData = {
-      customer_name: customerName,
+      customer_name: customerName.trim(),
       customer_phone: customerPhone,
       customer_address: customerAddress,
       delivery_area_id: selectedAreaId,
@@ -249,24 +267,36 @@ export default function CashierDashboard() {
     const isEditing = editingOrder;
     const editingOrderId = editingOrder?.id;
 
-    // Clear form immediately (optimistic update)
-    clearCart();
-    if (isEditing) {
-      setEditingOrder(null);
-      toast.success('جاري حفظ التعديلات...');
-    } else {
-      toast.success('جاري إرسال الطلب...');
-    }
+    // Show loading toast
+    const loadingToast = isEditing ? 'جاري حفظ التعديلات...' : 'جاري إرسال الطلب...';
+    toast.loading(loadingToast, { id: 'order-submit' });
 
-    // Submit in background
-    if (isEditing && editingOrderId) {
-      updateOrder(editingOrderId, orderData);
-    } else {
-      addOrder({
-        ...orderData,
-        type: 'delivery',
-        cashier_name: role ? ROLE_LABELS[role] : 'كاشير',
-      });
+    try {
+      // Submit and wait for result
+      let result;
+      if (isEditing && editingOrderId) {
+        result = await updateOrder(editingOrderId, orderData);
+      } else {
+        result = await addOrder({
+          ...orderData,
+          type: 'delivery',
+          cashier_name: role ? ROLE_LABELS[role] : 'كاشير',
+        });
+      }
+
+      if (result) {
+        // Only clear on success
+        clearCart();
+        if (isEditing) {
+          setEditingOrder(null);
+        }
+        toast.success(isEditing ? 'تم حفظ التعديلات بنجاح' : 'تم إرسال الطلب بنجاح', { id: 'order-submit' });
+      } else {
+        toast.error('حدث خطأ أثناء إرسال الطلب - حاول مرة أخرى', { id: 'order-submit' });
+      }
+    } catch (error) {
+      console.error('Order submission error:', error);
+      toast.error('حدث خطأ في الاتصال - تحقق من الإنترنت وحاول مرة أخرى', { id: 'order-submit' });
     }
   };
 
