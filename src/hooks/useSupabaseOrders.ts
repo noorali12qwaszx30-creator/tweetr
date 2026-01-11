@@ -122,70 +122,89 @@ export function useSupabaseOrders(options: UseSupabaseOrdersOptions = {}) {
     // Track shown notifications to prevent duplicates
     const shownNotifications = new Set<string>();
     
-    // Subscribe to orders changes
+    // Generate unique channel names to avoid conflicts
+    const channelId = Math.random().toString(36).substring(7);
+    
+    // Subscribe to orders changes with specific events
     const ordersChannel = supabase
-      .channel('orders-realtime')
+      .channel(`orders-realtime-${channelId}`)
       .on(
         'postgres_changes',
-        { event: '*', schema: 'public', table: 'orders' },
+        { event: 'INSERT', schema: 'public', table: 'orders' },
         (payload) => {
-          if (payload.eventType === 'INSERT') {
-            const newOrder = payload.new as DbOrder;
-            const notificationKey = `insert-${newOrder.id}`;
+          console.log('New order received:', payload);
+          const newOrder = payload.new as DbOrder;
+          const notificationKey = `insert-${newOrder.id}`;
+          
+          // Only show notification if order type matches the filter
+          const shouldNotify = orderTypeFilter === 'all' || newOrder.type === orderTypeFilter;
+          
+          if (shouldNotify && !shownNotifications.has(notificationKey)) {
+            shownNotifications.add(notificationKey);
+            playNotificationSound('newOrder');
+            toast.success('طلب جديد!', { duration: 3000, id: notificationKey });
             
-            // Only show notification if order type matches the filter
-            const shouldNotify = orderTypeFilter === 'all' || newOrder.type === orderTypeFilter;
+            // Clear from set after 5 seconds
+            setTimeout(() => shownNotifications.delete(notificationKey), 5000);
+          }
+          
+          fetchOrders();
+        }
+      )
+      .on(
+        'postgres_changes',
+        { event: 'UPDATE', schema: 'public', table: 'orders' },
+        (payload) => {
+          console.log('Order updated:', payload);
+          const newOrder = payload.new as DbOrder;
+          const oldOrder = payload.old as Partial<DbOrder>;
+          
+          // Only show notification if order type matches the filter
+          const shouldNotify = orderTypeFilter === 'all' || newOrder.type === orderTypeFilter;
+          
+          // Only show notification if status actually changed
+          if (shouldNotify && oldOrder.status !== newOrder.status) {
+            const notificationKey = `update-${newOrder.id}-${newOrder.status}`;
             
-            if (shouldNotify && !shownNotifications.has(notificationKey)) {
+            if (!shownNotifications.has(notificationKey)) {
               shownNotifications.add(notificationKey);
-              playNotificationSound('newOrder');
-              toast.success('طلب جديد!', { duration: 3000, id: notificationKey });
+              
+              if (newOrder.status === 'ready') {
+                playNotificationSound('orderReady');
+                toast.info(`الطلب #${newOrder.order_number} جاهز!`, { id: notificationKey });
+              } else if (newOrder.status === 'cancelled') {
+                playNotificationSound('orderCancelled');
+                toast.error(`تم إلغاء الطلب #${newOrder.order_number}`, { id: notificationKey });
+              } else if (newOrder.status === 'delivering') {
+                playNotificationSound('orderAssigned');
+                toast.info(`الطلب #${newOrder.order_number} في الطريق!`, { id: notificationKey });
+              } else if (newOrder.status === 'delivered') {
+                playNotificationSound('orderReady');
+                toast.success(`تم تسليم الطلب #${newOrder.order_number}`, { id: notificationKey });
+              }
               
               // Clear from set after 5 seconds
               setTimeout(() => shownNotifications.delete(notificationKey), 5000);
-            }
-          } else if (payload.eventType === 'UPDATE') {
-            const newOrder = payload.new as DbOrder;
-            const oldOrder = payload.old as Partial<DbOrder>;
-            
-            // Only show notification if order type matches the filter
-            const shouldNotify = orderTypeFilter === 'all' || newOrder.type === orderTypeFilter;
-            
-            // Only show notification if status actually changed
-            if (shouldNotify && oldOrder.status !== newOrder.status) {
-              const notificationKey = `update-${newOrder.id}-${newOrder.status}`;
-              
-              if (!shownNotifications.has(notificationKey)) {
-                shownNotifications.add(notificationKey);
-                
-                if (newOrder.status === 'ready') {
-                  playNotificationSound('orderReady');
-                  toast.info(`الطلب #${newOrder.order_number} جاهز!`, { id: notificationKey });
-                } else if (newOrder.status === 'cancelled') {
-                  playNotificationSound('orderCancelled');
-                  toast.error(`تم إلغاء الطلب #${newOrder.order_number}`, { id: notificationKey });
-                } else if (newOrder.status === 'delivering') {
-                  playNotificationSound('orderAssigned');
-                  toast.info(`الطلب #${newOrder.order_number} في الطريق!`, { id: notificationKey });
-                } else if (newOrder.status === 'delivered') {
-                  playNotificationSound('orderReady');
-                  toast.success(`تم تسليم الطلب #${newOrder.order_number}`, { id: notificationKey });
-                }
-                
-                // Clear from set after 5 seconds
-                setTimeout(() => shownNotifications.delete(notificationKey), 5000);
-              }
             }
           }
           
           fetchOrders();
         }
       )
-      .subscribe();
+      .on(
+        'postgres_changes',
+        { event: 'DELETE', schema: 'public', table: 'orders' },
+        () => {
+          fetchOrders();
+        }
+      )
+      .subscribe((status) => {
+        console.log('Orders channel status:', status);
+      });
 
     // Subscribe to order_items changes
     const itemsChannel = supabase
-      .channel('order-items-realtime')
+      .channel(`order-items-realtime-${channelId}`)
       .on(
         'postgres_changes',
         { event: '*', schema: 'public', table: 'order_items' },
