@@ -119,7 +119,7 @@ function SortableMenuItem({ item, onSelect }: SortableMenuItemProps) {
 export default function TakeawayDashboard() {
   const { role } = useRole();
   const { user } = useAuth();
-  const { orders, addOrder, updateOrderStatus, cancelOrder, loading } = useSupabaseOrders();
+  const { orders, addOrder, updateOrderStatus, cancelOrder, loading } = useSupabaseOrders({ orderTypeFilter: 'takeaway' });
   const { menuItems, categories, loading: menuLoading, updateDisplayOrder } = useMenuItems();
   const [activeTab, setActiveTab] = useState<TabType>('menu');
   const [cart, setCart] = useState<CartItem[]>([]);

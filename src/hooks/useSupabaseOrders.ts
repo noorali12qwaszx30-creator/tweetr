@@ -53,7 +53,13 @@ export interface OrderWithItems extends DbOrder {
   items: DbOrderItem[];
 }
 
-export function useSupabaseOrders() {
+interface UseSupabaseOrdersOptions {
+  /** Filter orders by type - 'delivery' for field/cashier, 'takeaway' for takeaway dashboard */
+  orderTypeFilter?: 'delivery' | 'takeaway' | 'all';
+}
+
+export function useSupabaseOrders(options: UseSupabaseOrdersOptions = {}) {
+  const { orderTypeFilter = 'all' } = options;
   const [orders, setOrders] = useState<OrderWithItems[]>([]);
   const [menuItems, setMenuItems] = useState<DbMenuItem[]>([]);
   const [loading, setLoading] = useState(true);
@@ -127,7 +133,10 @@ export function useSupabaseOrders() {
             const newOrder = payload.new as DbOrder;
             const notificationKey = `insert-${newOrder.id}`;
             
-            if (!shownNotifications.has(notificationKey)) {
+            // Only show notification if order type matches the filter
+            const shouldNotify = orderTypeFilter === 'all' || newOrder.type === orderTypeFilter;
+            
+            if (shouldNotify && !shownNotifications.has(notificationKey)) {
               shownNotifications.add(notificationKey);
               playNotificationSound('newOrder');
               toast.success('طلب جديد!', { duration: 3000, id: notificationKey });
@@ -139,8 +148,11 @@ export function useSupabaseOrders() {
             const newOrder = payload.new as DbOrder;
             const oldOrder = payload.old as Partial<DbOrder>;
             
+            // Only show notification if order type matches the filter
+            const shouldNotify = orderTypeFilter === 'all' || newOrder.type === orderTypeFilter;
+            
             // Only show notification if status actually changed
-            if (oldOrder.status !== newOrder.status) {
+            if (shouldNotify && oldOrder.status !== newOrder.status) {
               const notificationKey = `update-${newOrder.id}-${newOrder.status}`;
               
               if (!shownNotifications.has(notificationKey)) {
@@ -187,7 +199,7 @@ export function useSupabaseOrders() {
       supabase.removeChannel(ordersChannel);
       supabase.removeChannel(itemsChannel);
     };
-  }, [fetchMenuItems, fetchOrders, playNotificationSound]);
+  }, [fetchMenuItems, fetchOrders, playNotificationSound, orderTypeFilter]);
 
   // Add new order via server-side edge function for price validation
   const addOrder = async (orderData: {

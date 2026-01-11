@@ -47,7 +47,7 @@ export default function AdminDashboard() {
     orders,
     loading,
     refetch
-  } = useSupabaseOrders();
+  } = useSupabaseOrders({ orderTypeFilter: 'all' });
   const {
     activityLogs,
     addActivityLog

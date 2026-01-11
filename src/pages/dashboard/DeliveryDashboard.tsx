@@ -50,7 +50,7 @@ type TabType = 'orders' | 'delivering' | 'stats' | 'ready' | 'settings';
 export default function DeliveryDashboard() {
   const { role } = useRole();
   const { user } = useAuth();
-  const { orders, updateOrderStatus, acceptDelivery, rejectDelivery, returnOrder, loading } = useSupabaseOrders();
+  const { orders, updateOrderStatus, acceptDelivery, rejectDelivery, returnOrder, loading } = useSupabaseOrders({ orderTypeFilter: 'delivery' });
   const { reasons } = useCancellationReasons();
   const { permission, isSupported, requestPermission, showNotification } = useNotificationPermission();
   const [activeTab, setActiveTab] = useState<TabType>('orders');
