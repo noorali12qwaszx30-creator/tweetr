@@ -3,7 +3,7 @@ import { Clock } from 'lucide-react';
 import { toEnglishNumbers } from '@/lib/formatNumber';
 
 interface OrderTimerProps {
-  startTime: Date;
+  startTime: Date | string;
   className?: string;
 }
 
@@ -13,7 +13,26 @@ export function OrderTimer({ startTime, className = '' }: OrderTimerProps) {
   useEffect(() => {
     const updateTimer = () => {
       const now = new Date();
-      const diff = Math.floor((now.getTime() - new Date(startTime).getTime()) / 1000);
+      // Parse the start time - if it's a string, ensure it's treated as UTC
+      let start: Date;
+      if (typeof startTime === 'string') {
+        // If the string doesn't end with Z or have timezone info, assume it's UTC
+        const timeStr = startTime.endsWith('Z') || startTime.includes('+') 
+          ? startTime 
+          : startTime + 'Z';
+        start = new Date(timeStr);
+      } else {
+        start = new Date(startTime);
+      }
+      
+      const diff = Math.floor((now.getTime() - start.getTime()) / 1000);
+      
+      // Handle negative diff (future time) by showing 00:00
+      if (diff < 0) {
+        setElapsed('00:00');
+        return;
+      }
+      
       const minutes = Math.floor(diff / 60);
       const seconds = diff % 60;
       const timeStr = `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
