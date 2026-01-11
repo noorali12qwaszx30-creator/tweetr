@@ -235,9 +235,8 @@ export default function TakeawayDashboard() {
       })),
     };
 
-    // Clear cart and switch to tracking immediately
+    // Clear cart immediately
     clearCart();
-    setActiveTab('tracking');
     toast.success('جاري رفع الطلب...');
 
     // Send order in background
