@@ -105,6 +105,23 @@ Deno.serve(async (req) => {
     if (delivery_area_id) orderUpdate.delivery_area_id = delivery_area_id;
     if (notes !== undefined) orderUpdate.notes = notes;
 
+    // Get delivery fee if delivery_area_id changed or exists
+    let deliveryFee = existingOrder.delivery_fee || 0;
+    const areaIdToUse = delivery_area_id || existingOrder.delivery_area_id;
+    
+    if (areaIdToUse && existingOrder.type === 'delivery') {
+      const { data: deliveryArea } = await supabaseAdmin
+        .from('delivery_areas')
+        .select('delivery_fee')
+        .eq('id', areaIdToUse)
+        .single();
+      
+      if (deliveryArea) {
+        deliveryFee = Number(deliveryArea.delivery_fee) || 0;
+        orderUpdate.delivery_fee = deliveryFee;
+      }
+    }
+
     // If items are provided, recalculate total price
     if (items && items.length > 0) {
       // Get menu items to validate prices
@@ -139,8 +156,8 @@ Deno.serve(async (req) => {
         }
       }
 
-      console.log('Server calculated total:', serverCalculatedTotal);
-      orderUpdate.total_price = serverCalculatedTotal;
+      console.log('Server calculated total:', serverCalculatedTotal, 'Delivery fee:', deliveryFee);
+      orderUpdate.total_price = serverCalculatedTotal + deliveryFee; // Include delivery fee
 
       // Delete existing order items
       const { error: deleteError } = await supabaseAdmin
