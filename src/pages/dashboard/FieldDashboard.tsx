@@ -118,7 +118,7 @@ export default function FieldDashboard() {
       </header>
 
       {/* Main Content */}
-      <main className="container py-3 sm:py-4 pb-32">
+      <main className="container py-3 sm:py-4 pb-40">
         {activeTab === 'orders' && (
           <div className="space-y-3 sm:space-y-4">
             <h2 className="text-lg sm:text-xl font-bold">الطلبات الواردة ({incomingOrders.length})</h2>
