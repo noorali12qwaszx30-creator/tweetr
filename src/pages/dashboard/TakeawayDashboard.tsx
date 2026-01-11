@@ -24,7 +24,6 @@ import {
   Menu as MenuIcon,
   Loader2,
   Settings,
-  Star,
   GripVertical,
   MessageSquare
 } from 'lucide-react';
@@ -153,26 +152,6 @@ export default function TakeawayDashboard() {
   const activeOrders = takeawayOrders.filter(o => !['delivered', 'cancelled'].includes(o.status));
   const completedOrders = takeawayOrders.filter(o => o.status === 'delivered');
   const cancelledOrders = takeawayOrders.filter(o => o.status === 'cancelled');
-
-  // Calculate most used items based on takeaway order history
-  const mostUsedItems = useMemo(() => {
-    const itemCounts: Record<string, number> = {};
-    
-    takeawayOrders.forEach(order => {
-      order.items.forEach(item => {
-        if (item.menu_item_id) {
-          itemCounts[item.menu_item_id] = (itemCounts[item.menu_item_id] || 0) + item.quantity;
-        }
-      });
-    });
-    
-    const sortedIds = Object.entries(itemCounts)
-      .sort((a, b) => b[1] - a[1])
-      .slice(0, 6)
-      .map(([id]) => id);
-    
-    return menuItems.filter(item => sortedIds.includes(item.id) && item.is_available);
-  }, [takeawayOrders, menuItems]);
 
   const filteredItems = useMemo(() => {
     const available = menuItems.filter(item => item.is_available);
@@ -378,35 +357,6 @@ export default function TakeawayDashboard() {
               </div>
             )}
 
-            {/* Most Used Section */}
-            {mostUsedItems.length > 0 && (
-              <div>
-                <h2 className="font-bold text-sm mb-2 flex items-center gap-2">
-                  <Star className="w-4 h-4 text-warning" />
-                  الأكثر استخداماً
-                </h2>
-                <div className="flex gap-2 overflow-x-auto pb-2">
-                  {mostUsedItems.map(item => (
-                    <button
-                      key={item.id}
-                      onClick={() => addToCart(item)}
-                      className="flex-shrink-0 bg-warning/10 border border-warning/30 rounded-xl p-2 hover:bg-warning/20 transition-all duration-200 text-center min-w-[80px]"
-                    >
-                      {item.image ? (
-                        <div className="w-12 h-12 rounded-lg overflow-hidden mx-auto mb-1">
-                          <img src={item.image} alt={item.name} className="w-full h-full object-cover" />
-                        </div>
-                      ) : (
-                        <div className="w-12 h-12 bg-muted rounded-lg mx-auto mb-1 flex items-center justify-center">
-                          <MenuIcon className="w-5 h-5 text-muted-foreground" />
-                        </div>
-                      )}
-                      <p className="text-xs font-medium truncate">{item.name}</p>
-                    </button>
-                  ))}
-                </div>
-              </div>
-            )}
 
             {/* Categories Strip */}
             <div className="flex gap-2 overflow-x-auto pb-1">
