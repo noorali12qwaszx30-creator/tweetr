@@ -39,8 +39,8 @@ export function CancelOrderDialog({ orderId, orderNumber, open, onOpenChange, on
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-md">
-        <DialogHeader>
+      <DialogContent className="max-w-md max-h-[85vh] flex flex-col">
+        <DialogHeader className="flex-shrink-0">
           <DialogTitle className="flex items-center gap-2 text-destructive">
             <XCircle className="w-5 h-5" />
             إلغاء الطلب <span className="px-1.5 py-0.5 border border-destructive/50 rounded bg-destructive/10 font-bold">{orderNumber}</span>
@@ -48,28 +48,30 @@ export function CancelOrderDialog({ orderId, orderNumber, open, onOpenChange, on
           <DialogDescription>اختر سبب الإلغاء من القائمة أدناه</DialogDescription>
         </DialogHeader>
 
-        <div className="space-y-4">
-          <p className="text-muted-foreground">اختر سبب الإلغاء:</p>
+        <div className="flex-1 overflow-hidden flex flex-col min-h-0">
+          <p className="text-muted-foreground mb-3 flex-shrink-0">اختر سبب الإلغاء:</p>
           
-          <RadioGroup
-            value={selectedReason}
-            onValueChange={setSelectedReason}
-            className="space-y-2"
-          >
-            {reasons.map(reason => (
-              <div
-                key={reason.id}
-                className="flex items-center space-x-2 space-x-reverse p-3 rounded-lg border border-border hover:bg-muted/50 cursor-pointer"
-              >
-                <RadioGroupItem value={reason.text} id={reason.id} />
-                <Label htmlFor={reason.id} className="flex-1 cursor-pointer">
-                  {reason.text}
-                </Label>
-              </div>
-            ))}
-          </RadioGroup>
+          <div className="flex-1 overflow-y-auto min-h-0 max-h-[40vh]">
+            <RadioGroup
+              value={selectedReason}
+              onValueChange={setSelectedReason}
+              className="space-y-2 pr-1"
+            >
+              {reasons.map(reason => (
+                <div
+                  key={reason.id}
+                  className="flex items-center space-x-2 space-x-reverse p-3 rounded-lg border border-border hover:bg-muted/50 cursor-pointer"
+                >
+                  <RadioGroupItem value={reason.text} id={reason.id} />
+                  <Label htmlFor={reason.id} className="flex-1 cursor-pointer">
+                    {reason.text}
+                  </Label>
+                </div>
+              ))}
+            </RadioGroup>
+          </div>
 
-          <div className="flex gap-2 pt-4">
+          <div className="flex gap-2 pt-4 flex-shrink-0 border-t border-border mt-4">
             <Button variant="outline" className="flex-1" onClick={() => onOpenChange(false)}>
               تراجع
             </Button>
