@@ -56,10 +56,11 @@ interface CartItem {
 
 interface SortableMenuItemProps {
   item: MenuItem;
+  quantity: number;
   onSelect: (item: MenuItem) => void;
 }
 
-function SortableMenuItem({ item, onSelect }: SortableMenuItemProps) {
+function SortableMenuItem({ item, quantity, onSelect }: SortableMenuItemProps) {
   const {
     attributes,
     listeners,
@@ -79,39 +80,43 @@ function SortableMenuItem({ item, onSelect }: SortableMenuItemProps) {
     <div
       ref={setNodeRef}
       style={style}
-      className="flex items-center gap-3 bg-card border border-border rounded-xl p-3 hover:border-warning hover:shadow-soft transition-all duration-200"
+      className={`flex items-center gap-3 bg-card border rounded-xl p-3 hover:border-warning hover:shadow-soft transition-all duration-200 cursor-pointer ${quantity > 0 ? 'border-warning bg-warning/5' : 'border-border'}`}
+      onClick={() => onSelect(item)}
     >
       <div
         {...attributes}
         {...listeners}
         className="p-1 cursor-grab active:cursor-grabbing touch-none"
+        onClick={(e) => e.stopPropagation()}
       >
         <GripVertical className="w-4 h-4 text-muted-foreground" />
       </div>
       
-      {item.image ? (
-        <div className="w-12 h-12 rounded-lg overflow-hidden flex-shrink-0">
-          <img src={item.image} alt={item.name} className="w-full h-full object-cover" />
-        </div>
-      ) : (
-        <div className="w-12 h-12 bg-muted rounded-lg flex items-center justify-center flex-shrink-0">
-          <MenuIcon className="w-5 h-5 text-muted-foreground" />
-        </div>
-      )}
+      <div className="relative">
+        {item.image ? (
+          <div className="w-12 h-12 rounded-lg overflow-hidden flex-shrink-0">
+            <img src={item.image} alt={item.name} className="w-full h-full object-cover" />
+          </div>
+        ) : (
+          <div className="w-12 h-12 bg-muted rounded-lg flex items-center justify-center flex-shrink-0">
+            <MenuIcon className="w-5 h-5 text-muted-foreground" />
+          </div>
+        )}
+        {quantity > 0 && (
+          <div className="absolute -top-2 -right-2 w-6 h-6 bg-warning text-warning-foreground rounded-full flex items-center justify-center text-xs font-bold shadow-md">
+            {toEnglishNumbers(quantity)}
+          </div>
+        )}
+      </div>
       
       <div className="flex-1 min-w-0">
         <h3 className="font-semibold text-sm text-foreground truncate">{item.name}</h3>
         <p className="text-warning font-bold text-sm">{formatNumberWithCommas(item.price)} د.ع</p>
       </div>
       
-      <Button
-        size="icon"
-        variant="ghost"
-        className="h-10 w-10 rounded-full bg-warning/10 hover:bg-warning/20 text-warning flex-shrink-0"
-        onClick={() => onSelect(item)}
-      >
+      <div className="flex-shrink-0 h-10 w-10 rounded-full bg-warning/10 flex items-center justify-center text-warning">
         <Plus className="w-5 h-5" />
-      </Button>
+      </div>
     </div>
   );
 }
@@ -424,9 +429,17 @@ export default function TakeawayDashboard() {
             <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
               <SortableContext items={sortedItems.map(i => i.id)} strategy={verticalListSortingStrategy}>
                 <div className="space-y-2">
-                  {sortedItems.map(item => (
-                    <SortableMenuItem key={item.id} item={item} onSelect={addToCart} />
-                  ))}
+                  {sortedItems.map(item => {
+                    const cartItem = cart.find(c => c.menuItem.id === item.id);
+                    return (
+                      <SortableMenuItem 
+                        key={item.id} 
+                        item={item} 
+                        quantity={cartItem?.quantity || 0}
+                        onSelect={addToCart} 
+                      />
+                    );
+                  })}
                 </div>
               </SortableContext>
             </DndContext>
