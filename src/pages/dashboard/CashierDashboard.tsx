@@ -266,38 +266,41 @@ export default function CashierDashboard() {
 
     const isEditing = editingOrder;
     const editingOrderId = editingOrder?.id;
+    const roleName = role ? ROLE_LABELS[role] : 'كاشير';
 
-    // Show loading toast
-    const loadingToast = isEditing ? 'جاري حفظ التعديلات...' : 'جاري إرسال الطلب...';
-    toast.loading(loadingToast, { id: 'order-submit' });
-
-    try {
-      // Submit and wait for result
-      let result;
-      if (isEditing && editingOrderId) {
-        result = await updateOrder(editingOrderId, orderData);
-      } else {
-        result = await addOrder({
-          ...orderData,
-          type: 'delivery',
-          cashier_name: role ? ROLE_LABELS[role] : 'كاشير',
-        });
-      }
-
-      if (result) {
-        // Only clear on success
-        clearCart();
-        if (isEditing) {
-          setEditingOrder(null);
-        }
-        toast.success(isEditing ? 'تم حفظ التعديلات بنجاح' : 'تم إرسال الطلب بنجاح', { id: 'order-submit' });
-      } else {
-        toast.error('حدث خطأ أثناء إرسال الطلب - حاول مرة أخرى', { id: 'order-submit' });
-      }
-    } catch (error) {
-      console.error('Order submission error:', error);
-      toast.error('حدث خطأ في الاتصال - تحقق من الإنترنت وحاول مرة أخرى', { id: 'order-submit' });
+    // Clear form immediately for new order entry
+    clearCart();
+    if (isEditing) {
+      setEditingOrder(null);
     }
+
+    // Show brief toast and start background submission
+    toast.info(isEditing ? 'جاري حفظ التعديلات...' : 'جاري إرسال الطلب...', { duration: 1500 });
+
+    // Background submission - don't await
+    (async () => {
+      try {
+        let result;
+        if (isEditing && editingOrderId) {
+          result = await updateOrder(editingOrderId, orderData);
+        } else {
+          result = await addOrder({
+            ...orderData,
+            type: 'delivery',
+            cashier_name: roleName,
+          });
+        }
+
+        if (result) {
+          toast.success(isEditing ? 'تم حفظ التعديلات بنجاح' : 'تم إرسال الطلب بنجاح');
+        } else {
+          toast.error('حدث خطأ أثناء إرسال الطلب');
+        }
+      } catch (error) {
+        console.error('Order submission error:', error);
+        toast.error('حدث خطأ في الاتصال');
+      }
+    })();
   };
 
   const handleEditOrder = (order: OrderWithItems) => {
