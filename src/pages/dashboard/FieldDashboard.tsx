@@ -37,13 +37,16 @@ export default function FieldDashboard() {
   const [detailsDialogOpen, setDetailsDialogOpen] = useState(false);
   const [selectedOrderDetails, setSelectedOrderDetails] = useState<OrderWithItems | null>(null);
 
-  const pendingOrders = orders.filter(o => o.status === 'pending');
-  const preparingOrders = orders.filter(o => o.status === 'preparing');
-  const readyOrders = orders.filter(o => o.status === 'ready' && !o.pending_delivery_acceptance);
-  const pendingAcceptanceOrders = orders.filter(o => o.status === 'ready' && o.pending_delivery_acceptance);
-  const deliveringOrders = orders.filter(o => o.status === 'delivering');
-  const cancelledOrders = orders.filter(o => o.status === 'cancelled');
-  const deliveredOrders = orders.filter(o => o.status === 'delivered');
+  // Filter only delivery orders - takeaway orders are handled separately in TakeawayDashboard
+  const deliveryOrders = orders.filter(o => o.type === 'delivery');
+  
+  const pendingOrders = deliveryOrders.filter(o => o.status === 'pending');
+  const preparingOrders = deliveryOrders.filter(o => o.status === 'preparing');
+  const readyOrders = deliveryOrders.filter(o => o.status === 'ready' && !o.pending_delivery_acceptance);
+  const pendingAcceptanceOrders = deliveryOrders.filter(o => o.status === 'ready' && o.pending_delivery_acceptance);
+  const deliveringOrders = deliveryOrders.filter(o => o.status === 'delivering');
+  const cancelledOrders = deliveryOrders.filter(o => o.status === 'cancelled');
+  const deliveredOrders = deliveryOrders.filter(o => o.status === 'delivered');
 
   const incomingOrders = [...pendingOrders, ...preparingOrders];
 
