@@ -212,18 +212,18 @@ export default function TakeawayDashboard() {
 
   const totalPrice = cart.reduce((sum, item) => sum + item.menuItem.price * item.quantity, 0);
 
-  const submitOrder = async () => {
+  const submitOrder = () => {
     if (cart.length === 0) {
       toast.error('السلة فارغة');
       return;
     }
 
-    setSubmitting(true);
-    const result = await addOrder({
+    // Clear cart immediately for instant feedback
+    const orderData = {
       customer_name: 'زبون سفري',
       customer_phone: '',
       customer_address: 'عنوان المطعم',
-      type: 'takeaway',
+      type: 'takeaway' as const,
       notes: orderNotes || undefined,
       cashier_name: role ? ROLE_LABELS[role] : 'سفري',
       items: cart.map(item => ({
@@ -233,12 +233,15 @@ export default function TakeawayDashboard() {
         quantity: item.quantity,
         notes: item.notes,
       })),
-    });
+    };
 
-    setSubmitting(false);
-    if (result) {
-      clearCart();
-    }
+    // Clear cart and switch to tracking immediately
+    clearCart();
+    setActiveTab('tracking');
+    toast.success('جاري رفع الطلب...');
+
+    // Send order in background
+    addOrder(orderData);
   };
 
   const handleDelivered = async (orderId: string) => {
