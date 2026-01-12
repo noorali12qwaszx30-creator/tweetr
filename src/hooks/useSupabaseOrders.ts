@@ -305,6 +305,20 @@ export function useSupabaseOrders(options: UseSupabaseOrdersOptions = {}) {
 
   // Assign delivery person
   const assignDelivery = async (orderId: string, deliveryPersonId: string, deliveryPersonName: string) => {
+    // Optimistic update - immediately update local state
+    setOrders(prevOrders => 
+      prevOrders.map(order => 
+        order.id === orderId 
+          ? { 
+              ...order, 
+              delivery_person_id: deliveryPersonId, 
+              delivery_person_name: deliveryPersonName, 
+              pending_delivery_acceptance: true 
+            } 
+          : order
+      )
+    );
+
     const { error } = await supabase
       .from('orders')
       .update({
@@ -317,6 +331,8 @@ export function useSupabaseOrders(options: UseSupabaseOrdersOptions = {}) {
     if (error) {
       console.error('Error assigning delivery:', error);
       toast.error('حدث خطأ في تعيين موظف التوصيل');
+      // Revert on error
+      fetchOrders();
       return false;
     }
 
@@ -359,6 +375,21 @@ export function useSupabaseOrders(options: UseSupabaseOrdersOptions = {}) {
 
   // Reject delivery
   const rejectDelivery = async (orderId: string) => {
+    // Optimistic update - immediately update local state
+    setOrders(prevOrders => 
+      prevOrders.map(order => 
+        order.id === orderId 
+          ? { 
+              ...order, 
+              delivery_person_id: null, 
+              delivery_person_name: null, 
+              pending_delivery_acceptance: false,
+              status: 'ready' as const
+            } 
+          : order
+      )
+    );
+
     const { error } = await supabase
       .from('orders')
       .update({
@@ -372,6 +403,8 @@ export function useSupabaseOrders(options: UseSupabaseOrdersOptions = {}) {
     if (error) {
       console.error('Error rejecting delivery:', error);
       toast.error('حدث خطأ في رفض الطلب');
+      // Revert on error
+      fetchOrders();
       return false;
     }
 
