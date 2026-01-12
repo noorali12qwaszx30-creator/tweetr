@@ -33,7 +33,8 @@ import {
   Loader2,
   GripVertical,
   ChevronDown,
-  Pencil
+  Pencil,
+  AlertTriangle
 } from 'lucide-react';
 import {
   Select,
@@ -60,7 +61,7 @@ import {
 } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 
-type TabType = 'menu' | 'orders' | 'settings';
+type TabType = 'menu' | 'orders' | 'reports' | 'settings';
 
 interface CartItem {
   menuItem: DbMenuItem;
@@ -140,7 +141,7 @@ function SortableMenuItem({ item, quantity, isAnimating, onSelect }: SortableMen
 export default function CashierDashboard() {
   const { role } = useRole();
   const { user } = useAuth();
-  const { orders, addOrder, updateOrder, updateOrderStatus, cancelOrder, loading } = useSupabaseOrders({ orderTypeFilter: 'delivery' });
+  const { orders, addOrder, updateOrder, updateOrderStatus, cancelOrder, resolveIssue, loading } = useSupabaseOrders({ orderTypeFilter: 'delivery' });
   const { menuItems, categories, loading: menuLoading, updateDisplayOrder } = useMenuItems();
   const { activeAreas, loading: areasLoading } = useDeliveryAreas();
   const [activeTab, setActiveTab] = useState<TabType>('menu');
@@ -359,7 +360,11 @@ export default function CashierDashboard() {
   };
 
   const activeOrders = orders.filter(o => !['delivered', 'cancelled'].includes(o.status));
+  const ordersWithIssues = orders.filter(o => o.has_issue === true && o.status !== 'cancelled');
 
+  const handleResolveIssue = async (orderId: string) => {
+    await resolveIssue(orderId);
+  };
   if (loading || menuLoading) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
@@ -610,6 +615,105 @@ export default function CashierDashboard() {
           </div>
         )}
 
+        {activeTab === 'reports' && (
+          <div className="space-y-4">
+            <div className="flex items-center justify-between">
+              <h2 className="text-lg font-bold flex items-center gap-2">
+                <AlertTriangle className="w-5 h-5 text-destructive" />
+                البلاغات ({toEnglishNumbers(ordersWithIssues.length)})
+              </h2>
+            </div>
+            
+            {ordersWithIssues.length === 0 ? (
+              <div className="text-center py-12 text-muted-foreground">
+                <AlertTriangle className="w-12 h-12 mx-auto mb-4 opacity-50" />
+                <p>لا توجد بلاغات حالياً</p>
+              </div>
+            ) : (
+              <div className="grid gap-3">
+                {ordersWithIssues.map(order => (
+                  <div key={order.id} className="bg-card border-2 border-destructive/50 rounded-xl p-4 shadow-soft">
+                    {/* Issue Banner */}
+                    <div className="mb-3 p-3 bg-destructive/20 border border-destructive/40 rounded-lg">
+                      <div className="flex items-center justify-between flex-wrap gap-2">
+                        <div className="flex items-center gap-2 text-destructive font-bold">
+                          <AlertTriangle className="w-5 h-5" />
+                          <span>{order.issue_reason}</span>
+                        </div>
+                        <div className="text-xs text-destructive/80">
+                          {order.issue_reported_by && <span>من: {order.issue_reported_by}</span>}
+                          {order.issue_reported_at && (
+                            <span className="mr-2">
+                              • {formatDateEnglish(order.issue_reported_at)} {formatTimeEnglish(order.issue_reported_at)}
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Order Info */}
+                    <div className="flex items-center justify-between mb-3 flex-wrap gap-2">
+                      <div className="flex items-center gap-3">
+                        <span className="text-2xl font-bold text-primary px-2 py-0.5 border-2 border-primary/30 rounded-lg bg-primary/5">
+                          {toEnglishNumbers(order.order_number)}
+                        </span>
+                        <div>
+                          <p className="font-semibold">{order.customer_name}</p>
+                          <p className="text-sm text-muted-foreground">{toEnglishNumbers(order.customer_phone)}</p>
+                        </div>
+                      </div>
+                      {order.delivery_person_name && (
+                        <div className="text-sm text-info">
+                          موظف التوصيل: {order.delivery_person_name}
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Items Summary */}
+                    <div className="mb-3 p-2 bg-muted/50 rounded-lg">
+                      <p className="text-sm text-muted-foreground mb-1">الأصناف:</p>
+                      <div className="flex flex-wrap gap-2">
+                        {order.items.map((item, idx) => (
+                          <span key={idx} className="text-xs bg-background px-2 py-1 rounded">
+                            {toEnglishNumbers(item.quantity)}× {item.menu_item_name}
+                          </span>
+                        ))}
+                      </div>
+                    </div>
+
+                    {/* Actions */}
+                    <div className="flex gap-2 flex-wrap">
+                      <Button 
+                        variant="success" 
+                        size="sm" 
+                        onClick={() => handleResolveIssue(order.id)}
+                      >
+                        <CheckCircle className="w-3 h-3 ml-1" />
+                        تم الحل
+                      </Button>
+                      <Button 
+                        variant="outline" 
+                        size="sm" 
+                        onClick={() => setSelectedOrderDetails(order)}
+                      >
+                        عرض التفاصيل
+                      </Button>
+                      <Button 
+                        variant="outline" 
+                        size="sm" 
+                        onClick={() => handleEditOrder(order)}
+                      >
+                        <Pencil className="w-3 h-3 ml-1" />
+                        تعديل الطلب
+                      </Button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
+
         {activeTab === 'settings' && (
           <div className="space-y-4">
             <h2 className="text-xl font-bold">الإعدادات</h2>
@@ -747,6 +851,20 @@ export default function CashierDashboard() {
             {activeOrders.length > 0 && (
               <span className="absolute top-1 right-1/2 translate-x-4 w-5 h-5 bg-destructive text-destructive-foreground rounded-full text-xs flex items-center justify-center">
                 {activeOrders.length}
+              </span>
+            )}
+          </button>
+          <button
+            onClick={() => setActiveTab('reports')}
+            className={`flex-1 py-3 flex flex-col items-center gap-1 transition-colors relative ${
+              activeTab === 'reports' ? 'text-destructive' : 'text-muted-foreground'
+            }`}
+          >
+            <AlertTriangle className="w-5 h-5" />
+            <span className="text-xs font-medium">البلاغات</span>
+            {ordersWithIssues.length > 0 && (
+              <span className="absolute top-1 right-1/2 translate-x-4 w-5 h-5 bg-destructive text-destructive-foreground rounded-full text-xs flex items-center justify-center animate-pulse">
+                {ordersWithIssues.length}
               </span>
             )}
           </button>

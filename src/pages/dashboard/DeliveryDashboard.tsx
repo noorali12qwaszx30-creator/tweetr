@@ -3,6 +3,7 @@ import { useRole } from '@/contexts/RoleContext';
 import { useAuth } from '@/contexts/AuthContext';
 import { useSupabaseOrders } from '@/hooks/useSupabaseOrders';
 import { useCancellationReasons } from '@/contexts/CancellationReasonsContext';
+import { useIssueReasons } from '@/contexts/IssueReasonsContext';
 import { useNotificationPermission } from '@/hooks/useNotificationPermission';
 import { OrderCard } from '@/components/OrderCard';
 import { QuickAccessReturnButton } from '@/components/admin/QuickAccessReturnButton';
@@ -42,7 +43,8 @@ import {
   Loader2,
   Settings,
   Bell,
-  BellOff
+  BellOff,
+  AlertTriangle
 } from 'lucide-react';
 
 type TabType = 'orders' | 'delivering' | 'stats' | 'ready' | 'settings';
@@ -50,13 +52,19 @@ type TabType = 'orders' | 'delivering' | 'stats' | 'ready' | 'settings';
 export default function DeliveryDashboard() {
   const { role } = useRole();
   const { user } = useAuth();
-  const { orders, updateOrderStatus, acceptDelivery, rejectDelivery, returnOrder, loading } = useSupabaseOrders({ orderTypeFilter: 'delivery' });
+  const { orders, updateOrderStatus, acceptDelivery, rejectDelivery, returnOrder, reportIssue, loading } = useSupabaseOrders({ orderTypeFilter: 'delivery' });
   const { reasons } = useCancellationReasons();
+  const { reasons: issueReasons } = useIssueReasons();
   const { permission, isSupported, requestPermission, showNotification } = useNotificationPermission();
   const [activeTab, setActiveTab] = useState<TabType>('orders');
   const [returnDialogOpen, setReturnDialogOpen] = useState(false);
   const [orderToReturn, setOrderToReturn] = useState<string | null>(null);
   const [selectedReturnReason, setSelectedReturnReason] = useState<string>('');
+  
+  // Issue reporting state
+  const [issueDialogOpen, setIssueDialogOpen] = useState(false);
+  const [orderToReport, setOrderToReport] = useState<string | null>(null);
+  const [selectedIssueReason, setSelectedIssueReason] = useState<string>('');
   
   // Track previous pending orders count to detect new assignments
   const prevPendingCountRef = useRef<number>(0);
@@ -127,6 +135,27 @@ export default function DeliveryDashboard() {
       setReturnDialogOpen(false);
       setOrderToReturn(null);
       setSelectedReturnReason('');
+    }
+  };
+
+  // Issue reporting handlers
+  const handleReportIssue = (orderId: string) => {
+    setOrderToReport(orderId);
+    setSelectedIssueReason('');
+    setIssueDialogOpen(true);
+  };
+
+  const confirmReportIssue = async () => {
+    if (orderToReport) {
+      if (!selectedIssueReason) {
+        toast.error('الرجاء اختيار سبب المشكلة');
+        return;
+      }
+      const reporterName = user?.fullName || user?.username || 'موظف توصيل';
+      await reportIssue(orderToReport, selectedIssueReason, reporterName);
+      setIssueDialogOpen(false);
+      setOrderToReport(null);
+      setSelectedIssueReason('');
     }
   };
 
@@ -265,6 +294,15 @@ export default function DeliveryDashboard() {
                         <Button variant="warning" size="sm" onClick={() => handleReturnOrder(order.id)}>
                           <Undo2 className="w-3 h-3 ml-1" />
                           راجع
+                        </Button>
+                        <Button 
+                          variant="outline" 
+                          size="sm" 
+                          onClick={() => handleReportIssue(order.id)}
+                          className="border-destructive/50 text-destructive hover:bg-destructive/10"
+                        >
+                          <AlertTriangle className="w-3 h-3 ml-1" />
+                          تبليغ
                         </Button>
                       </div>
                     }
@@ -438,6 +476,53 @@ export default function DeliveryDashboard() {
               disabled={!selectedReturnReason}
             >
               تأكيد الإرجاع
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Issue Report Dialog */}
+      <AlertDialog open={issueDialogOpen} onOpenChange={(open) => {
+        setIssueDialogOpen(open);
+        if (!open) {
+          setSelectedIssueReason('');
+        }
+      }}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle className="flex items-center gap-2 text-destructive">
+              <AlertTriangle className="w-5 h-5" />
+              التبليغ عن مشكلة
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              الرجاء اختيار نوع المشكلة في الطلب
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          
+          <div className="py-4">
+            <Label htmlFor="issue-reason" className="mb-2 block">نوع المشكلة</Label>
+            <Select value={selectedIssueReason} onValueChange={setSelectedIssueReason}>
+              <SelectTrigger id="issue-reason" className="w-full">
+                <SelectValue placeholder="اختر نوع المشكلة" />
+              </SelectTrigger>
+              <SelectContent className="bg-popover z-50">
+                {issueReasons.map((reason) => (
+                  <SelectItem key={reason.id} value={reason.label}>
+                    {reason.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
+          <AlertDialogFooter className="gap-2">
+            <AlertDialogCancel>إلغاء</AlertDialogCancel>
+            <AlertDialogAction 
+              onClick={confirmReportIssue} 
+              className="bg-destructive hover:bg-destructive/90 text-destructive-foreground"
+              disabled={!selectedIssueReason}
+            >
+              تأكيد التبليغ
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

@@ -6,6 +6,7 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { AuthProvider } from "@/contexts/AuthContext";
 import { RoleProvider } from "@/contexts/RoleContext";
 import { CancellationReasonsProvider } from "@/contexts/CancellationReasonsContext";
+import { IssueReasonsProvider } from "@/contexts/IssueReasonsContext";
 import { ShiftProvider } from "@/contexts/ShiftContext";
 import RoleSelector from "./pages/RoleSelector";
 import Dashboard from "./pages/Dashboard";
@@ -19,17 +20,19 @@ const App = () => (
       <AuthProvider>
         <RoleProvider>
           <CancellationReasonsProvider>
-            <ShiftProvider>
-              <TooltipProvider>
-                <Toaster />
-                <Sonner />
-                <Routes>
-                  <Route path="/" element={<RoleSelector />} />
-                  <Route path="/dashboard" element={<Dashboard />} />
-                  <Route path="*" element={<NotFound />} />
-                </Routes>
-              </TooltipProvider>
-            </ShiftProvider>
+            <IssueReasonsProvider>
+              <ShiftProvider>
+                <TooltipProvider>
+                  <Toaster />
+                  <Sonner />
+                  <Routes>
+                    <Route path="/" element={<RoleSelector />} />
+                    <Route path="/dashboard" element={<Dashboard />} />
+                    <Route path="*" element={<NotFound />} />
+                  </Routes>
+                </TooltipProvider>
+              </ShiftProvider>
+            </IssueReasonsProvider>
           </CancellationReasonsProvider>
         </RoleProvider>
       </AuthProvider>

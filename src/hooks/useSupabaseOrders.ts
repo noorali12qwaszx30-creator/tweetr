@@ -37,6 +37,11 @@ export interface DbOrder {
   cancelled_at: string | null;
   is_edited?: boolean;
   edited_at?: string | null;
+  // Issue reporting fields
+  has_issue?: boolean;
+  issue_reason?: string | null;
+  issue_reported_at?: string | null;
+  issue_reported_by?: string | null;
 }
 
 export interface DbOrderItem {
@@ -205,6 +210,22 @@ export function useSupabaseOrders(options: UseSupabaseOrdersOptions = {}) {
               shownNotifications.add(notificationKey);
               playNotificationSound('alert');
               toast.warning(`تم رفض الطلب #${newOrder.order_number} من موظف التوصيل`, { id: notificationKey });
+              
+              // Clear from set after 5 seconds
+              setTimeout(() => shownNotifications.delete(notificationKey), 5000);
+            }
+          }
+          
+          // Check if issue was reported
+          const issueReported = oldOrder.has_issue !== true && newOrder.has_issue === true;
+          
+          if (shouldNotify && issueReported) {
+            const notificationKey = `issue-${newOrder.id}`;
+            
+            if (!shownNotifications.has(notificationKey)) {
+              shownNotifications.add(notificationKey);
+              playNotificationSound('alert');
+              toast.error(`⚠️ بلاغ جديد على الطلب #${newOrder.order_number}`, { id: notificationKey });
               
               // Clear from set after 5 seconds
               setTimeout(() => shownNotifications.delete(notificationKey), 5000);
@@ -544,6 +565,86 @@ export function useSupabaseOrders(options: UseSupabaseOrdersOptions = {}) {
     }
   };
 
+  // Report issue on order (for delivery person)
+  const reportIssue = async (orderId: string, reason: string, reporterName: string) => {
+    // Optimistic update
+    setOrders(prevOrders => 
+      prevOrders.map(order => 
+        order.id === orderId 
+          ? { 
+              ...order, 
+              has_issue: true,
+              issue_reason: reason,
+              issue_reported_at: new Date().toISOString(),
+              issue_reported_by: reporterName
+            } 
+          : order
+      )
+    );
+
+    const { error } = await supabase
+      .from('orders')
+      .update({
+        has_issue: true,
+        issue_reason: reason,
+        issue_reported_at: new Date().toISOString(),
+        issue_reported_by: reporterName,
+      })
+      .eq('id', orderId);
+
+    if (error) {
+      console.error('Error reporting issue:', error);
+      toast.error('حدث خطأ في التبليغ عن المشكلة');
+      // Revert on error
+      fetchOrders();
+      return false;
+    }
+
+    playNotificationSound('alert');
+    toast.warning('تم التبليغ عن المشكلة', { id: `issue-${orderId}` });
+    return true;
+  };
+
+  // Resolve issue on order (for cashier)
+  const resolveIssue = async (orderId: string) => {
+    // Optimistic update
+    setOrders(prevOrders => 
+      prevOrders.map(order => 
+        order.id === orderId 
+          ? { 
+              ...order, 
+              has_issue: false,
+              issue_reason: null,
+              issue_reported_at: null,
+              issue_reported_by: null
+            } 
+          : order
+      )
+    );
+
+    const { error } = await supabase
+      .from('orders')
+      .update({
+        has_issue: false,
+        issue_reason: null,
+        issue_reported_at: null,
+        issue_reported_by: null,
+      })
+      .eq('id', orderId);
+
+    if (error) {
+      console.error('Error resolving issue:', error);
+      toast.error('حدث خطأ في حل المشكلة');
+      // Revert on error
+      fetchOrders();
+      return false;
+    }
+
+    playNotificationSound('orderReady');
+    toast.success('تم حل المشكلة', { id: `resolve-${orderId}` });
+    return true;
+  };
+
   return {
     orders,
     menuItems,
@@ -556,6 +657,8 @@ export function useSupabaseOrders(options: UseSupabaseOrdersOptions = {}) {
     rejectDelivery,
     returnOrder,
     cancelOrder,
+    reportIssue,
+    resolveIssue,
     getOrdersByStatus,
     refetch: fetchOrders,
   };

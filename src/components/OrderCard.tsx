@@ -1,5 +1,5 @@
 import { OrderTimer } from './OrderTimer';
-import { MessageSquare, Truck, Pencil } from 'lucide-react';
+import { MessageSquare, Truck, Pencil, AlertTriangle } from 'lucide-react';
 import { OrderWithItems, DbOrderItem } from '@/hooks/useSupabaseOrders';
 import { toEnglishNumbers, formatNumberWithCommas } from '@/lib/formatNumber';
 
@@ -48,9 +48,25 @@ export function OrderCard({
         ${order.type === 'takeaway' ? 'border-warning/50 bg-warning/5' : 'border-border'}
         ${hasNotes ? 'order-has-notes' : ''}
         ${order.is_edited ? 'ring-2 ring-warning/50' : ''}
+        ${order.has_issue ? 'ring-2 ring-destructive/50 border-destructive/50' : ''}
         ${compact ? 'p-2 sm:p-3' : 'p-3 sm:p-4'}
       `}
     >
+      {/* Issue Alert Banner */}
+      {order.has_issue && (
+        <div className="mb-3 p-2 bg-destructive/20 border border-destructive/40 rounded-lg">
+          <div className="flex items-center gap-2 text-destructive font-medium text-sm">
+            <AlertTriangle className="w-4 h-4" />
+            <span>بلاغ: {order.issue_reason}</span>
+          </div>
+          {order.issue_reported_by && (
+            <p className="text-xs text-destructive/80 mt-1">
+              من: {order.issue_reported_by}
+            </p>
+          )}
+        </div>
+      )}
+
       {/* Header */}
       <div className="flex items-center justify-between mb-2 sm:mb-3 flex-wrap gap-2">
         <div className="flex items-center gap-2 sm:gap-3 flex-wrap">
@@ -67,6 +83,12 @@ export function OrderCard({
             <span className="px-2 py-0.5 rounded-full text-[10px] sm:text-xs font-medium bg-info/20 text-info flex items-center gap-1">
               <Pencil className="w-3 h-3" />
               معدّل
+            </span>
+          )}
+          {order.has_issue && (
+            <span className="px-2 py-0.5 rounded-full text-[10px] sm:text-xs font-medium bg-destructive/20 text-destructive flex items-center gap-1">
+              <AlertTriangle className="w-3 h-3" />
+              بلاغ
             </span>
           )}
         </div>

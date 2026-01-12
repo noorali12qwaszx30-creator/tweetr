@@ -178,9 +178,13 @@ export type Database = {
           delivery_person_id: string | null
           delivery_person_name: string | null
           edited_at: string | null
+          has_issue: boolean | null
           id: string
           is_archived: boolean
           is_edited: boolean | null
+          issue_reason: string | null
+          issue_reported_at: string | null
+          issue_reported_by: string | null
           notes: string | null
           order_number: number
           pending_delivery_acceptance: boolean | null
@@ -205,9 +209,13 @@ export type Database = {
           delivery_person_id?: string | null
           delivery_person_name?: string | null
           edited_at?: string | null
+          has_issue?: boolean | null
           id?: string
           is_archived?: boolean
           is_edited?: boolean | null
+          issue_reason?: string | null
+          issue_reported_at?: string | null
+          issue_reported_by?: string | null
           notes?: string | null
           order_number?: number
           pending_delivery_acceptance?: boolean | null
@@ -232,9 +240,13 @@ export type Database = {
           delivery_person_id?: string | null
           delivery_person_name?: string | null
           edited_at?: string | null
+          has_issue?: boolean | null
           id?: string
           is_archived?: boolean
           is_edited?: boolean | null
+          issue_reason?: string | null
+          issue_reported_at?: string | null
+          issue_reported_by?: string | null
           notes?: string | null
           order_number?: number
           pending_delivery_acceptance?: boolean | null
