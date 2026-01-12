@@ -162,8 +162,17 @@ export function useSupabaseOrders(options: UseSupabaseOrdersOptions = {}) {
           // Only show notification if order type matches the filter
           const shouldNotify = orderTypeFilter === 'all' || newOrder.type === orderTypeFilter;
           
-          // Only show notification if status actually changed
-          if (shouldNotify && oldOrder.status !== newOrder.status) {
+          // Check if status changed
+          const statusChanged = oldOrder.status !== newOrder.status;
+          
+          // Check if delivery was rejected (pending_delivery_acceptance changed from true to false while status is ready)
+          const deliveryRejected = oldOrder.pending_delivery_acceptance === true && 
+                                   newOrder.pending_delivery_acceptance === false && 
+                                   newOrder.status === 'ready' &&
+                                   newOrder.delivery_person_id === null;
+          
+          // Show notification for status changes
+          if (shouldNotify && statusChanged) {
             const notificationKey = `update-${newOrder.id}-${newOrder.status}`;
             
             if (!shownNotifications.has(notificationKey)) {
@@ -182,6 +191,20 @@ export function useSupabaseOrders(options: UseSupabaseOrdersOptions = {}) {
                 playNotificationSound('orderReady');
                 toast.success(`تم تسليم الطلب #${newOrder.order_number}`, { id: notificationKey });
               }
+              
+              // Clear from set after 5 seconds
+              setTimeout(() => shownNotifications.delete(notificationKey), 5000);
+            }
+          }
+          
+          // Show notification for delivery rejection
+          if (shouldNotify && deliveryRejected) {
+            const notificationKey = `rejected-${newOrder.id}`;
+            
+            if (!shownNotifications.has(notificationKey)) {
+              shownNotifications.add(notificationKey);
+              playNotificationSound('alert');
+              toast.warning(`تم رفض الطلب #${newOrder.order_number} من موظف التوصيل`, { id: notificationKey });
               
               // Clear from set after 5 seconds
               setTimeout(() => shownNotifications.delete(notificationKey), 5000);
