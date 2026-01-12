@@ -232,6 +232,22 @@ export function useSupabaseOrders(options: UseSupabaseOrdersOptions = {}) {
             }
           }
           
+          // Check if issue was resolved
+          const issueResolved = oldOrder.has_issue === true && newOrder.has_issue === false;
+          
+          if (shouldNotify && issueResolved) {
+            const notificationKey = `issue-resolved-${newOrder.id}`;
+            
+            if (!shownNotifications.has(notificationKey)) {
+              shownNotifications.add(notificationKey);
+              playNotificationSound('orderReady');
+              toast.success(`✅ تم حل مشكلة الطلب #${newOrder.order_number}`, { id: notificationKey });
+              
+              // Clear from set after 5 seconds
+              setTimeout(() => shownNotifications.delete(notificationKey), 5000);
+            }
+          }
+          
           fetchOrders();
         }
       )
