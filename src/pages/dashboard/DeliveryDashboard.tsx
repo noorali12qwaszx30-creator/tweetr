@@ -62,10 +62,25 @@ export default function DeliveryDashboard() {
   const prevPendingCountRef = useRef<number>(0);
 
   // Orders assigned to this delivery person (pending acceptance)
-  const pendingAcceptanceOrders = orders.filter(o => o.status === 'ready' && o.pending_delivery_acceptance);
-  const deliveringOrders = orders.filter(o => o.status === 'delivering');
-  const deliveredOrders = orders.filter(o => o.status === 'delivered');
-  const cancelledByDelivery = orders.filter(o => o.status === 'cancelled');
+  // Filter by delivery_person_id to show only orders assigned to current user
+  const currentUserId = user?.id;
+  const pendingAcceptanceOrders = orders.filter(o => 
+    o.status === 'ready' && 
+    o.pending_delivery_acceptance && 
+    o.delivery_person_id === currentUserId
+  );
+  const deliveringOrders = orders.filter(o => 
+    o.status === 'delivering' && 
+    o.delivery_person_id === currentUserId
+  );
+  const deliveredOrders = orders.filter(o => 
+    o.status === 'delivered' && 
+    o.delivery_person_id === currentUserId
+  );
+  const cancelledByDelivery = orders.filter(o => 
+    o.status === 'cancelled' && 
+    o.delivery_person_id === currentUserId
+  );
   const readyOrders = orders.filter(o => o.status === 'ready' && !o.pending_delivery_acceptance);
 
   // Show notification when new order is assigned
