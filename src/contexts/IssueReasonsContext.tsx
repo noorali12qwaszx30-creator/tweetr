@@ -1,81 +1,123 @@
-import React, { createContext, useContext, useState, ReactNode } from 'react';
+import React, { createContext, useContext, useState, useEffect, ReactNode, useCallback } from 'react';
+import { supabase } from '@/integrations/supabase/client';
+import { toast } from 'sonner';
 
 export interface IssueReason {
   id: string;
   label: string;
+  display_order: number;
+  is_active: boolean;
 }
 
 interface IssueReasonsContextType {
   reasons: IssueReason[];
-  addReason: (label: string) => void;
-  updateReason: (id: string, label: string) => void;
-  removeReason: (id: string) => void;
-}
-
-const defaultReasons: IssueReason[] = [
-  { id: '1', label: 'نقص في الطلب' },
-  { id: '2', label: 'صنف غير متوفر' },
-  { id: '3', label: 'خطأ في الطلب' },
-  { id: '4', label: 'طلب بارد/غير طازج' },
-  { id: '5', label: 'تغليف غير صحيح' },
-  { id: '6', label: 'عنوان غير واضح' },
-  { id: '7', label: 'الزبون غير راضٍ' },
-  { id: '8', label: 'أخرى' },
-];
-
-const STORAGE_KEY = 'issue_reasons';
-
-function loadReasonsFromStorage(): IssueReason[] {
-  try {
-    const stored = localStorage.getItem(STORAGE_KEY);
-    if (stored) {
-      return JSON.parse(stored);
-    }
-  } catch (error) {
-    console.error('Error loading issue reasons from storage:', error);
-  }
-  return defaultReasons;
-}
-
-function saveReasonsToStorage(reasons: IssueReason[]) {
-  try {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(reasons));
-  } catch (error) {
-    console.error('Error saving issue reasons to storage:', error);
-  }
+  loading: boolean;
+  addReason: (label: string) => Promise<void>;
+  updateReason: (id: string, label: string) => Promise<void>;
+  removeReason: (id: string) => Promise<void>;
+  refetch: () => Promise<void>;
 }
 
 const IssueReasonsContext = createContext<IssueReasonsContextType | undefined>(undefined);
 
 export function IssueReasonsProvider({ children }: { children: ReactNode }) {
-  const [reasons, setReasons] = useState<IssueReason[]>(() => loadReasonsFromStorage());
+  const [reasons, setReasons] = useState<IssueReason[]>([]);
+  const [loading, setLoading] = useState(true);
 
-  const addReason = (label: string) => {
-    const newReason: IssueReason = {
-      id: Date.now().toString(),
-      label,
-    };
-    const updatedReasons = [...reasons, newReason];
-    setReasons(updatedReasons);
-    saveReasonsToStorage(updatedReasons);
+  const fetchReasons = useCallback(async () => {
+    try {
+      const { data, error } = await supabase
+        .from('issue_reasons')
+        .select('*')
+        .order('display_order', { ascending: true });
+
+      if (error) {
+        console.error('Error fetching issue reasons:', error);
+        return;
+      }
+
+      setReasons(data as IssueReason[]);
+    } catch (err) {
+      console.error('Error fetching issue reasons:', err);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    fetchReasons();
+  }, [fetchReasons]);
+
+  const addReason = async (label: string) => {
+    try {
+      const maxOrder = reasons.length > 0 
+        ? Math.max(...reasons.map(r => r.display_order)) + 1 
+        : 1;
+
+      const { data, error } = await supabase
+        .from('issue_reasons')
+        .insert({ label, display_order: maxOrder })
+        .select()
+        .single();
+
+      if (error) {
+        console.error('Error adding issue reason:', error);
+        toast.error('حدث خطأ في إضافة سبب التبليغ');
+        return;
+      }
+
+      setReasons(prev => [...prev, data as IssueReason]);
+      toast.success('تم إضافة سبب التبليغ');
+    } catch (err) {
+      console.error('Error adding issue reason:', err);
+      toast.error('حدث خطأ في إضافة سبب التبليغ');
+    }
   };
 
-  const updateReason = (id: string, label: string) => {
-    const updatedReasons = reasons.map(r => 
-      r.id === id ? { ...r, label } : r
-    );
-    setReasons(updatedReasons);
-    saveReasonsToStorage(updatedReasons);
+  const updateReason = async (id: string, label: string) => {
+    try {
+      const { error } = await supabase
+        .from('issue_reasons')
+        .update({ label })
+        .eq('id', id);
+
+      if (error) {
+        console.error('Error updating issue reason:', error);
+        toast.error('حدث خطأ في تحديث سبب التبليغ');
+        return;
+      }
+
+      setReasons(prev => prev.map(r => r.id === id ? { ...r, label } : r));
+      toast.success('تم تحديث سبب التبليغ');
+    } catch (err) {
+      console.error('Error updating issue reason:', err);
+      toast.error('حدث خطأ في تحديث سبب التبليغ');
+    }
   };
 
-  const removeReason = (id: string) => {
-    const updatedReasons = reasons.filter(r => r.id !== id);
-    setReasons(updatedReasons);
-    saveReasonsToStorage(updatedReasons);
+  const removeReason = async (id: string) => {
+    try {
+      const { error } = await supabase
+        .from('issue_reasons')
+        .delete()
+        .eq('id', id);
+
+      if (error) {
+        console.error('Error removing issue reason:', error);
+        toast.error('حدث خطأ في حذف سبب التبليغ');
+        return;
+      }
+
+      setReasons(prev => prev.filter(r => r.id !== id));
+      toast.success('تم حذف سبب التبليغ');
+    } catch (err) {
+      console.error('Error removing issue reason:', err);
+      toast.error('حدث خطأ في حذف سبب التبليغ');
+    }
   };
 
   return (
-    <IssueReasonsContext.Provider value={{ reasons, addReason, updateReason, removeReason }}>
+    <IssueReasonsContext.Provider value={{ reasons, loading, addReason, updateReason, removeReason, refetch: fetchReasons }}>
       {children}
     </IssueReasonsContext.Provider>
   );
