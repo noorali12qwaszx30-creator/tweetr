@@ -33,7 +33,6 @@ import { Label } from '@/components/ui/label';
 import {
   Truck,
   ClipboardList,
-  Package,
   BarChart3,
   CheckCircle,
   XCircle,
@@ -47,7 +46,7 @@ import {
   AlertTriangle
 } from 'lucide-react';
 
-type TabType = 'orders' | 'delivering' | 'stats' | 'ready' | 'settings';
+type TabType = 'orders' | 'delivering' | 'stats' | 'settings';
 
 export default function DeliveryDashboard() {
   const { role } = useRole();
@@ -89,7 +88,7 @@ export default function DeliveryDashboard() {
     o.status === 'cancelled' && 
     o.delivery_person_id === currentUserId
   );
-  const readyOrders = orders.filter(o => o.status === 'ready' && !o.pending_delivery_acceptance);
+  
 
   // Show notification when new order is assigned
   useEffect(() => {
@@ -194,7 +193,6 @@ export default function DeliveryDashboard() {
     { id: 'orders', label: 'الطلبات', icon: <ClipboardList className="w-5 h-5" />, count: pendingAcceptanceOrders.length },
     { id: 'delivering', label: 'التوصيل', icon: <Truck className="w-5 h-5" />, count: deliveringOrders.length },
     { id: 'stats', label: 'الإحصائيات', icon: <BarChart3 className="w-5 h-5" /> },
-    { id: 'ready', label: 'الجاهز', icon: <Package className="w-5 h-5" />, count: readyOrders.length },
     { id: 'settings', label: 'الإعدادات', icon: <Settings className="w-5 h-5" /> },
   ];
 
@@ -339,27 +337,6 @@ export default function DeliveryDashboard() {
           </div>
         )}
 
-        {activeTab === 'ready' && (
-          <div className="space-y-4">
-            <h2 className="text-xl font-bold">الطلبات الجاهزة ({toEnglishNumbers(readyOrders.length)})</h2>
-            {readyOrders.length === 0 ? (
-              <div className="text-center py-12 text-muted-foreground">
-                <Package className="w-12 h-12 mx-auto mb-4 opacity-50" />
-                <p>لا توجد طلبات جاهزة حالياً</p>
-              </div>
-            ) : (
-              <div className="grid md:grid-cols-2 gap-4">
-                {readyOrders.map(order => (
-                  <OrderCard
-                    key={order.id}
-                    order={order}
-                    showActions={false}
-                  />
-                ))}
-              </div>
-            )}
-          </div>
-        )}
 
         {activeTab === 'settings' && (
           <div className="space-y-4">
