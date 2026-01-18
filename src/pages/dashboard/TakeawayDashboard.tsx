@@ -274,7 +274,10 @@ export default function TakeawayDashboard() {
     { id: 'settings', label: 'الإعدادات', icon: <Settings className="w-5 h-5" /> },
   ];
 
-  if (loading || menuLoading) {
+  // Show skeleton only on initial load when we have no menu items
+  const showFullLoading = menuLoading && menuItems.length === 0;
+
+  if (showFullLoading) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
         <Loader2 className="w-8 h-8 animate-spin text-warning" />

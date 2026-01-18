@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 
@@ -12,38 +12,79 @@ export interface MenuItem {
   display_order: number;
 }
 
-export function useMenuItems() {
-  const [menuItems, setMenuItems] = useState<MenuItem[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [categories, setCategories] = useState<string[]>([]);
+// Simple cache for menu items to avoid loading delay on navigation
+let cachedMenuItems: MenuItem[] | null = null;
+let cachedCategories: string[] | null = null;
 
-  const fetchMenuItems = async () => {
-    setLoading(true);
+export function useMenuItems() {
+  const [menuItems, setMenuItems] = useState<MenuItem[]>(cachedMenuItems || []);
+  const [loading, setLoading] = useState(cachedMenuItems === null);
+  const [categories, setCategories] = useState<string[]>(cachedCategories || []);
+
+  const fetchMenuItems = useCallback(async () => {
+    // Only show loading if we don't have cached data
+    if (!cachedMenuItems) {
+      setLoading(true);
+    }
+    
     const { data, error } = await supabase
       .from('menu_items')
       .select('*')
       .order('category')
-      .order('name');
+      .order('display_order');
 
     if (error) {
       console.error('Error fetching menu items:', error);
-      toast.error('حدث خطأ في جلب القائمة');
+      if (!cachedMenuItems) {
+        toast.error('حدث خطأ في جلب القائمة');
+      }
+      setLoading(false);
       return;
     }
 
-    setMenuItems(data as MenuItem[]);
-    
-    // Extract unique categories
+    const items = data as MenuItem[];
     const uniqueCategories = [...new Set(data.map(item => item.category))];
+    
+    // Update cache
+    cachedMenuItems = items;
+    cachedCategories = uniqueCategories;
+    
+    setMenuItems(items);
     setCategories(uniqueCategories);
     setLoading(false);
-  };
+  }, []);
 
   useEffect(() => {
     fetchMenuItems();
-  }, []);
+    
+    // Subscribe to realtime changes for instant updates
+    const channel = supabase
+      .channel('menu-items-realtime')
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'menu_items' },
+        () => {
+          fetchMenuItems();
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [fetchMenuItems]);
 
   const addMenuItem = async (item: Omit<MenuItem, 'id' | 'is_available' | 'display_order'>) => {
+    // Optimistic update
+    const tempId = `temp-${Date.now()}`;
+    const newItem: MenuItem = {
+      id: tempId,
+      ...item,
+      is_available: true,
+      display_order: menuItems.length,
+    };
+    setMenuItems(prev => [...prev, newItem]);
+
     // Get the max display_order for this category
     const { data: maxOrderData } = await supabase
       .from('menu_items')
@@ -70,15 +111,25 @@ export function useMenuItems() {
     if (error) {
       console.error('Error adding menu item:', error);
       toast.error('حدث خطأ في إضافة الصنف');
+      // Revert optimistic update
+      setMenuItems(prev => prev.filter(i => i.id !== tempId));
       return null;
     }
 
     toast.success('تم إضافة الصنف');
-    fetchMenuItems();
+    // Replace temp item with real item
+    setMenuItems(prev => prev.map(i => i.id === tempId ? data : i));
+    cachedMenuItems = menuItems.map(i => i.id === tempId ? data : i);
     return data;
   };
 
   const updateMenuItem = async (id: string, updates: Partial<MenuItem>) => {
+    // Optimistic update
+    const previousItems = [...menuItems];
+    setMenuItems(prev => prev.map(item => 
+      item.id === id ? { ...item, ...updates } : item
+    ));
+
     const { error } = await supabase
       .from('menu_items')
       .update(updates)
@@ -87,15 +138,21 @@ export function useMenuItems() {
     if (error) {
       console.error('Error updating menu item:', error);
       toast.error('حدث خطأ في تحديث الصنف');
+      // Revert
+      setMenuItems(previousItems);
       return false;
     }
 
     toast.success('تم تحديث الصنف');
-    fetchMenuItems();
+    cachedMenuItems = menuItems.map(item => item.id === id ? { ...item, ...updates } : item);
     return true;
   };
 
   const deleteMenuItem = async (id: string) => {
+    // Optimistic update
+    const previousItems = [...menuItems];
+    setMenuItems(prev => prev.filter(item => item.id !== id));
+
     const { error } = await supabase
       .from('menu_items')
       .delete()
@@ -104,11 +161,13 @@ export function useMenuItems() {
     if (error) {
       console.error('Error deleting menu item:', error);
       toast.error('حدث خطأ في حذف الصنف');
+      // Revert
+      setMenuItems(previousItems);
       return false;
     }
 
     toast.success('تم حذف الصنف');
-    fetchMenuItems();
+    cachedMenuItems = menuItems.filter(item => item.id !== id);
     return true;
   };
 
@@ -122,14 +181,23 @@ export function useMenuItems() {
     menuItems.filter(item => item.category === category && item.is_available);
 
   const updateDisplayOrder = async (items: MenuItem[]) => {
-    // Update display_order for multiple items
-    for (const item of items) {
-      await supabase
+    // Optimistic update
+    const updatedItems = menuItems.map(item => {
+      const updated = items.find(i => i.id === item.id);
+      return updated ? { ...item, display_order: updated.display_order } : item;
+    });
+    setMenuItems(updatedItems);
+    cachedMenuItems = updatedItems;
+
+    // Update display_order for multiple items in parallel
+    const updates = items.map(item => 
+      supabase
         .from('menu_items')
         .update({ display_order: item.display_order })
-        .eq('id', item.id);
-    }
-    fetchMenuItems();
+        .eq('id', item.id)
+    );
+    
+    await Promise.all(updates);
   };
 
   return {
