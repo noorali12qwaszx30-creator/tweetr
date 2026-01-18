@@ -25,7 +25,7 @@ import { toast } from 'sonner';
 import { formatNumberWithCommas, formatTimeEnglish, toEnglishNumbers } from '@/lib/formatNumber';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { ROLE_LABELS } from '@/types';
-import { Settings, Users, BarChart3, RefreshCcw, ShieldCheck, XCircle, CheckCircle, ClipboardList, TrendingUp, DollarSign, Timer, Zap, AlertTriangle, Home, Package, Loader2, UtensilsCrossed, Truck, Trash2, Archive, Eye, Activity, Clock, GitBranch } from 'lucide-react';
+import { Settings, Users, BarChart3, RefreshCcw, ShieldCheck, XCircle, CheckCircle, ClipboardList, TrendingUp, DollarSign, Timer, Zap, AlertTriangle, Home, Package, Loader2, UtensilsCrossed, Truck, Trash2, Eye, Activity, Clock, GitBranch } from 'lucide-react';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 import { supabase } from '@/integrations/supabase/client';
 
@@ -114,16 +114,16 @@ export default function AdminDashboard() {
     refetch();
     toast.success('تم تحديث البيانات');
   };
-  const [isArchivingOrders, setIsArchivingOrders] = useState(false);
-  const handleArchiveAllOrders = async () => {
-    setIsArchivingOrders(true);
+  const [isDeletingOrders, setIsDeletingOrders] = useState(false);
+  const handleDeleteAllOrders = async () => {
+    setIsDeletingOrders(true);
     try {
-      // Archive all non-archived orders (set is_archived = true)
-      const {
-        error: ordersError
-      } = await supabase.from('orders').update({
-        is_archived: true
-      }).eq('is_archived', false);
+      // First delete all order_items
+      const { error: itemsError } = await supabase.from('order_items').delete().neq('id', '00000000-0000-0000-0000-000000000000');
+      if (itemsError) throw itemsError;
+      
+      // Then delete all orders
+      const { error: ordersError } = await supabase.from('orders').delete().neq('id', '00000000-0000-0000-0000-000000000000');
       if (ordersError) throw ordersError;
       
       // Reset order counter to 1
@@ -132,13 +132,13 @@ export default function AdminDashboard() {
         console.error('Error resetting order counter:', resetError);
       }
       
-      toast.success('تم أرشفة جميع الطلبات وإعادة تعيين العداد بنجاح');
+      toast.success('تم حذف جميع الطلبات وإعادة تعيين العداد بنجاح');
       refetch();
     } catch (error: any) {
-      console.error('Error archiving orders:', error);
-      toast.error('حدث خطأ أثناء أرشفة الطلبات');
+      console.error('Error deleting orders:', error);
+      toast.error('حدث خطأ أثناء حذف الطلبات');
     } finally {
-      setIsArchivingOrders(false);
+      setIsDeletingOrders(false);
     }
   };
 
@@ -481,29 +481,28 @@ export default function AdminDashboard() {
                 
                 <AlertDialog>
                   <AlertDialogTrigger asChild>
-                    <Button variant="outline" size="lg" className="w-full justify-start h-auto py-4 border-2 border-amber-500 bg-amber-50 hover:bg-amber-100 text-amber-700 hover:text-amber-800">
-                      <Archive className="w-6 h-6 ml-3 text-amber-600" />
+                    <Button variant="outline" size="lg" className="w-full justify-start h-auto py-4 border-2 border-destructive bg-destructive/10 hover:bg-destructive/20 text-destructive hover:text-destructive">
+                      <Trash2 className="w-6 h-6 ml-3" />
                       <div className="text-right">
-                        <p className="font-bold text-lg">أرشفة جميع الطلبات</p>
-                        
+                        <p className="font-bold text-lg">حذف جميع الطلبات</p>
                       </div>
                     </Button>
                   </AlertDialogTrigger>
                   <AlertDialogContent>
                     <AlertDialogHeader>
                       <AlertDialogTitle className="flex items-center gap-2">
-                        <Archive className="w-5 h-5 text-amber-600" />
-                        أرشفة جميع الطلبات
+                        <Trash2 className="w-5 h-5 text-destructive" />
+                        حذف جميع الطلبات
                       </AlertDialogTitle>
                       <AlertDialogDescription>
-                        سيتم أرشفة جميع الطلبات ({orders.length} طلب) من التطبيق. الطلبات ستبقى محفوظة في قاعدة البيانات ويمكن استرجاعها لاحقاً.
+                        سيتم حذف جميع الطلبات ({orders.length} طلب) نهائياً من قاعدة البيانات. هذا الإجراء لا يمكن التراجع عنه!
                       </AlertDialogDescription>
                     </AlertDialogHeader>
                     <AlertDialogFooter className="flex-row-reverse gap-2">
                       <AlertDialogCancel>إلغاء</AlertDialogCancel>
-                      <AlertDialogAction onClick={handleArchiveAllOrders} className="bg-amber-600 text-white hover:bg-amber-700" disabled={isArchivingOrders}>
-                        {isArchivingOrders ? <Loader2 className="w-4 h-4 animate-spin ml-2" /> : <Archive className="w-4 h-4 ml-2" />}
-                        أرشفة الكل
+                      <AlertDialogAction onClick={handleDeleteAllOrders} className="bg-destructive text-destructive-foreground hover:bg-destructive/90" disabled={isDeletingOrders}>
+                        {isDeletingOrders ? <Loader2 className="w-4 h-4 animate-spin ml-2" /> : <Trash2 className="w-4 h-4 ml-2" />}
+                        حذف الكل
                       </AlertDialogAction>
                     </AlertDialogFooter>
                   </AlertDialogContent>
