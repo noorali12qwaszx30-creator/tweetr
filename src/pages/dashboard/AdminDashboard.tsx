@@ -58,6 +58,7 @@ export default function AdminDashboard() {
   const [settingsSubTab, setSettingsSubTab] = useState<SettingsSubTab>('general');
   const [monitoringSubTab, setMonitoringSubTab] = useState<MonitoringSubTab>('pulse');
   const [selectedOrder, setSelectedOrder] = useState<OrderWithItems | null>(null);
+  const [isDeletingOrders, setIsDeletingOrders] = useState(false);
 
   // Statistics calculations
   const totalOrders = orders.length;
@@ -113,7 +114,6 @@ export default function AdminDashboard() {
     refetch();
     toast.success('تم تحديث البيانات');
   };
-  const [isDeletingOrders, setIsDeletingOrders] = useState(false);
   const handleDeleteAllOrders = async () => {
     setIsDeletingOrders(true);
     try {
