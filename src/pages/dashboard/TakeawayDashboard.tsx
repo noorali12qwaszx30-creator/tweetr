@@ -300,7 +300,7 @@ export default function TakeawayDashboard() {
       </header>
 
       {/* Main Content */}
-      <main className="container py-3 pb-24 space-y-4">
+      <main className="container py-3 pb-36 space-y-4">
         {activeTab === 'menu' && (
           <>
             {/* Cart Summary */}
@@ -561,7 +561,7 @@ export default function TakeawayDashboard() {
       </main>
 
       {/* Bottom Navigation */}
-      <nav className="fixed bottom-0 left-0 right-0 bg-card border-t border-border shadow-elevated">
+      <nav className="fixed bottom-0 left-0 right-0 bg-card border-t border-border shadow-elevated pb-safe">
         <div className="container flex">
           {tabs.map(tab => (
             <button
