@@ -260,6 +260,13 @@ export function useSupabaseOrders(options: UseSupabaseOrdersOptions = {}) {
       )
       .subscribe((status) => {
         console.log('Orders channel status:', status);
+        // Retry connection on error
+        if (status === 'CHANNEL_ERROR') {
+          console.log('Channel error, retrying in 3 seconds...');
+          setTimeout(() => {
+            fetchOrders();
+          }, 3000);
+        }
       });
 
     // Subscribe to order_items changes
@@ -272,7 +279,14 @@ export function useSupabaseOrders(options: UseSupabaseOrdersOptions = {}) {
           fetchOrders();
         }
       )
-      .subscribe();
+      .subscribe((status) => {
+        console.log('Order items channel status:', status);
+        if (status === 'CHANNEL_ERROR') {
+          setTimeout(() => {
+            fetchOrders();
+          }, 3000);
+        }
+      });
 
     return () => {
       supabase.removeChannel(ordersChannel);
