@@ -458,7 +458,10 @@ export default function CashierDashboard() {
                         <SelectValue placeholder="اختر المنطقة" />
                       </div>
                     </SelectTrigger>
-                    <SelectContent>
+                    <SelectContent 
+                      className="max-h-[200px] overflow-y-auto overscroll-contain"
+                      onPointerDownOutside={(e) => e.preventDefault()}
+                    >
                       {areasLoading ? (
                         <div className="flex items-center justify-center py-2">
                           <Loader2 className="w-4 h-4 animate-spin" />
