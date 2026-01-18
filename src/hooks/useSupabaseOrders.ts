@@ -86,33 +86,26 @@ export function useSupabaseOrders(options: UseSupabaseOrdersOptions = {}) {
     setMenuItems(data as DbMenuItem[]);
   }, []);
 
-  // Fetch orders with items
+  // Fetch orders with items in a single query using Supabase relations
   const fetchOrders = useCallback(async () => {
-    const { data: ordersData, error: ordersError } = await supabase
+    const { data, error } = await supabase
       .from('orders')
-      .select('*')
+      .select(`
+        *,
+        order_items (*)
+      `)
       .eq('is_archived', false)
       .order('created_at', { ascending: false });
 
-    if (ordersError) {
-      console.error('Error fetching orders:', ordersError);
+    if (error) {
+      console.error('Error fetching orders:', error);
+      setLoading(false);
       return;
     }
 
-    // Fetch items for all orders
-    const orderIds = ordersData.map(o => o.id);
-    const { data: itemsData, error: itemsError } = await supabase
-      .from('order_items')
-      .select('*')
-      .in('order_id', orderIds.length > 0 ? orderIds : ['']);
-
-    if (itemsError) {
-      console.error('Error fetching order items:', itemsError);
-    }
-
-    const ordersWithItems: OrderWithItems[] = ordersData.map(order => ({
+    const ordersWithItems: OrderWithItems[] = (data || []).map(order => ({
       ...order,
-      items: (itemsData || []).filter(item => item.order_id === order.id) as DbOrderItem[],
+      items: (order.order_items || []) as DbOrderItem[],
     })) as OrderWithItems[];
 
     setOrders(ordersWithItems);
@@ -121,8 +114,8 @@ export function useSupabaseOrders(options: UseSupabaseOrdersOptions = {}) {
 
   // Subscribe to realtime updates
   useEffect(() => {
-    fetchMenuItems();
-    fetchOrders();
+    // Fetch menu items and orders in parallel for faster loading
+    Promise.all([fetchMenuItems(), fetchOrders()]);
 
     // Track shown notifications to prevent duplicates
     const shownNotifications = new Set<string>();
