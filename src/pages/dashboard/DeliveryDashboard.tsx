@@ -6,7 +6,6 @@ import { useCancellationReasons } from '@/contexts/CancellationReasonsContext';
 import { useIssueReasons } from '@/contexts/IssueReasonsContext';
 import { useNotificationPermission } from '@/hooks/useNotificationPermission';
 import { OrderCard } from '@/components/OrderCard';
-import { QuickAccessReturnButton } from '@/components/admin/QuickAccessReturnButton';
 import { LogoutConfirmButton } from '@/components/LogoutConfirmButton';
 import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
@@ -206,7 +205,6 @@ export default function DeliveryDashboard() {
 
   return (
     <div className="min-h-screen bg-background">
-      <QuickAccessReturnButton />
       {/* Header */}
       <header className="bg-card border-b border-border shadow-soft sticky top-0 z-50">
         <div className="container flex items-center justify-between h-14 sm:h-16">

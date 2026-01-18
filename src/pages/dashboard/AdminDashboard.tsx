@@ -9,7 +9,6 @@ import { IssueReasonsManager } from '@/components/IssueReasonsManager';
 import { DeliveryAreasManager } from '@/components/admin/DeliveryAreasManager';
 import { DeliveryAreaAnalytics } from '@/components/admin/DeliveryAreaAnalytics';
 import { UserManagement } from '@/components/admin/UserManagement';
-import { QuickAccessPanel } from '@/components/admin/QuickAccessPanel';
 import { LogoutConfirmButton } from '@/components/LogoutConfirmButton';
 import { KPICard } from '@/components/admin/KPICard';
 import { OrdersChart, WeeklyChart } from '@/components/admin/OrdersChart';
@@ -35,7 +34,7 @@ type MainTab = 'home' | 'menu' | 'orders' | 'stats' | 'monitoring' | 'settings';
 // Sub-tabs for each main section
 type OrdersSubTab = 'completed' | 'cancelled';
 type StatsSubTab = 'items' | 'customers' | 'finance' | 'areas';
-type SettingsSubTab = 'general' | 'users' | 'reasons' | 'issues' | 'quickaccess' | 'areas';
+type SettingsSubTab = 'general' | 'users' | 'reasons' | 'issues' | 'areas';
 type MonitoringSubTab = 'pulse' | 'behavior' | 'timeline' | 'predictive';
 export default function AdminDashboard() {
   const {
@@ -461,9 +460,8 @@ export default function AdminDashboard() {
         {activeTab === 'settings' && <div className="space-y-4">
             {/* Sub-tabs */}
             <Tabs value={settingsSubTab} onValueChange={v => setSettingsSubTab(v as SettingsSubTab)}>
-              <TabsList className="grid w-full grid-cols-6">
+              <TabsList className="grid w-full grid-cols-5">
                 <TabsTrigger value="general" className="text-xs px-1">عام</TabsTrigger>
-                <TabsTrigger value="quickaccess" className="text-xs px-1">دخول</TabsTrigger>
                 <TabsTrigger value="users" className="text-xs px-1">المستخدمين</TabsTrigger>
                 <TabsTrigger value="areas" className="text-xs px-1">المناطق</TabsTrigger>
                 <TabsTrigger value="reasons" className="text-xs px-1">الإلغاء</TabsTrigger>
@@ -511,9 +509,6 @@ export default function AdminDashboard() {
                 <LogoutConfirmButton />
               </TabsContent>
 
-              <TabsContent value="quickaccess" className="mt-4">
-                <QuickAccessPanel />
-              </TabsContent>
 
               <TabsContent value="users" className="mt-4">
                 <UserManagement />

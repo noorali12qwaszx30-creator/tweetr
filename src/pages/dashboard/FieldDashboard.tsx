@@ -5,7 +5,6 @@ import { useSupabaseOrders, OrderWithItems } from '@/hooks/useSupabaseOrders';
 import { OrderCard } from '@/components/OrderCard';
 import { DeliveryPersonSelector } from '@/components/DeliveryPersonSelector';
 import { DeliveryAccountingDialog } from '@/components/DeliveryAccountingDialog';
-import { QuickAccessReturnButton } from '@/components/admin/QuickAccessReturnButton';
 import { LogoutConfirmButton } from '@/components/LogoutConfirmButton';
 import { CancelOrderDialog } from '@/components/CancelOrderDialog';
 import { OrderDetailsDialog } from '@/components/OrderDetailsDialog';
@@ -101,7 +100,6 @@ export default function FieldDashboard() {
 
   return (
     <div className="min-h-screen bg-background">
-      <QuickAccessReturnButton />
       {/* Header */}
       <header className="bg-card border-b border-border shadow-soft sticky top-0 z-50">
         <div className="container flex items-center justify-between h-14 sm:h-16">
