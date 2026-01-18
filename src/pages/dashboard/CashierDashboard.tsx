@@ -392,7 +392,7 @@ export default function CashierDashboard() {
       </header>
 
       {/* Main Content */}
-      <main className="container py-3 pb-24 space-y-4">
+      <main className="container py-3 pb-36 space-y-4">
         {/* Editing Mode Banner */}
         {editingOrder && (
           <div className="bg-warning/20 border border-warning/50 rounded-xl p-3 flex items-center justify-between">
@@ -829,7 +829,7 @@ export default function CashierDashboard() {
       </main>
 
       {/* Bottom Navigation */}
-      <nav className="fixed bottom-0 left-0 right-0 bg-card border-t border-border shadow-elevated">
+      <nav className="fixed bottom-0 left-0 right-0 bg-card border-t border-border shadow-elevated pb-safe">
         <div className="container flex">
           <button
             onClick={() => setActiveTab('menu')}

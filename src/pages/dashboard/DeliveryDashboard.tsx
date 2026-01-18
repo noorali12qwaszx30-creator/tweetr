@@ -221,7 +221,7 @@ export default function DeliveryDashboard() {
       </header>
 
       {/* Main Content */}
-      <main className="container py-3 sm:py-4 pb-24">
+      <main className="container py-3 sm:py-4 pb-36">
         {activeTab === 'orders' && (
           <div className="space-y-3 sm:space-y-4">
             <h2 className="text-lg sm:text-xl font-bold">الطلبات المحولة إليك ({toEnglishNumbers(pendingAcceptanceOrders.length)})</h2>
@@ -390,7 +390,7 @@ export default function DeliveryDashboard() {
       </main>
 
       {/* Bottom Navigation */}
-      <nav className="fixed bottom-0 left-0 right-0 bg-card border-t border-border shadow-elevated">
+      <nav className="fixed bottom-0 left-0 right-0 bg-card border-t border-border shadow-elevated pb-safe">
         <div className="container flex">
           {tabs.map(tab => (
             <button
