@@ -112,6 +112,29 @@ export function useSupabaseOrders(options: UseSupabaseOrdersOptions = {}) {
     setLoading(false);
   }, []);
 
+  // Handle realtime order update - update local state directly instead of refetching
+  const handleRealtimeOrderUpdate = useCallback((newOrder: DbOrder, isInsert = false) => {
+    setOrders(prevOrders => {
+      if (isInsert) {
+        // Check if order already exists (from optimistic update)
+        const exists = prevOrders.some(o => o.id === newOrder.id);
+        if (exists) {
+          // Update existing order
+          return prevOrders.map(o => 
+            o.id === newOrder.id ? { ...o, ...newOrder } : o
+          );
+        }
+        // Add new order at the beginning with empty items (will be fetched)
+        return [{ ...newOrder, items: [] } as OrderWithItems, ...prevOrders];
+      }
+      
+      // Update existing order
+      return prevOrders.map(o => 
+        o.id === newOrder.id ? { ...o, ...newOrder } : o
+      );
+    });
+  }, []);
+
   // Subscribe to realtime updates
   useEffect(() => {
     // Fetch menu items and orders in parallel for faster loading
@@ -129,7 +152,7 @@ export function useSupabaseOrders(options: UseSupabaseOrdersOptions = {}) {
       .on(
         'postgres_changes',
         { event: 'INSERT', schema: 'public', table: 'orders' },
-        (payload) => {
+        async (payload) => {
           console.log('New order received:', payload);
           const newOrder = payload.new as DbOrder;
           const notificationKey = `insert-${newOrder.id}`;
@@ -146,7 +169,25 @@ export function useSupabaseOrders(options: UseSupabaseOrdersOptions = {}) {
             setTimeout(() => shownNotifications.delete(notificationKey), 5000);
           }
           
-          fetchOrders();
+          // Update local state directly - fetch order items for the new order
+          const { data: itemsData } = await supabase
+            .from('order_items')
+            .select('*')
+            .eq('order_id', newOrder.id);
+          
+          const orderWithItems: OrderWithItems = {
+            ...newOrder,
+            items: (itemsData || []) as DbOrderItem[],
+          };
+          
+          setOrders(prevOrders => {
+            // Check if already exists
+            const exists = prevOrders.some(o => o.id === newOrder.id);
+            if (exists) {
+              return prevOrders.map(o => o.id === newOrder.id ? orderWithItems : o);
+            }
+            return [orderWithItems, ...prevOrders];
+          });
         }
       )
       .on(
@@ -156,6 +197,9 @@ export function useSupabaseOrders(options: UseSupabaseOrdersOptions = {}) {
           console.log('Order updated:', payload);
           const newOrder = payload.new as DbOrder;
           const oldOrder = payload.old as Partial<DbOrder>;
+          
+          // Update local state directly (instant update)
+          handleRealtimeOrderUpdate(newOrder, false);
           
           // Only show notification if order type matches the filter
           const shouldNotify = orderTypeFilter === 'all' || newOrder.type === orderTypeFilter;
@@ -240,15 +284,15 @@ export function useSupabaseOrders(options: UseSupabaseOrdersOptions = {}) {
               setTimeout(() => shownNotifications.delete(notificationKey), 5000);
             }
           }
-          
-          fetchOrders();
         }
       )
       .on(
         'postgres_changes',
         { event: 'DELETE', schema: 'public', table: 'orders' },
-        () => {
-          fetchOrders();
+        (payload) => {
+          const deletedOrder = payload.old as DbOrder;
+          // Remove from local state directly
+          setOrders(prevOrders => prevOrders.filter(o => o.id !== deletedOrder.id));
         }
       )
       .subscribe((status) => {
@@ -262,14 +306,31 @@ export function useSupabaseOrders(options: UseSupabaseOrdersOptions = {}) {
         }
       });
 
-    // Subscribe to order_items changes
+    // Subscribe to order_items changes - only refetch when items change
     const itemsChannel = supabase
       .channel(`order-items-realtime-${channelId}`)
       .on(
         'postgres_changes',
         { event: '*', schema: 'public', table: 'order_items' },
-        () => {
-          fetchOrders();
+        async (payload) => {
+          // Get the order_id from the payload
+          const orderItem = (payload.new || payload.old) as DbOrderItem;
+          if (orderItem?.order_id) {
+            // Fetch updated items for this specific order
+            const { data: itemsData } = await supabase
+              .from('order_items')
+              .select('*')
+              .eq('order_id', orderItem.order_id);
+            
+            // Update only this order's items
+            setOrders(prevOrders => 
+              prevOrders.map(o => 
+                o.id === orderItem.order_id 
+                  ? { ...o, items: (itemsData || []) as DbOrderItem[] }
+                  : o
+              )
+            );
+          }
         }
       )
       .subscribe((status) => {
@@ -285,7 +346,7 @@ export function useSupabaseOrders(options: UseSupabaseOrdersOptions = {}) {
       supabase.removeChannel(ordersChannel);
       supabase.removeChannel(itemsChannel);
     };
-  }, [fetchMenuItems, fetchOrders, playNotificationSound, orderTypeFilter]);
+  }, [fetchMenuItems, fetchOrders, playNotificationSound, orderTypeFilter, handleRealtimeOrderUpdate]);
 
   // Add new order via server-side edge function for price validation
   const addOrder = async (orderData: {
