@@ -47,9 +47,16 @@ export function DeliveryAccountingDialog({ orders, onOrdersUpdated }: DeliveryAc
         order => order.delivery_person_id === driver.user_id && order.status === 'cancelled'
       );
 
-      const orderAmount = deliveredOrders.reduce((sum, order) => sum + Number(order.total_price), 0);
+      // أجور التوصيل (للسائق)
       const deliveryFees = deliveredOrders.reduce((sum, order) => sum + Number(order.delivery_fee || 0), 0);
-      const totalAmount = orderAmount + deliveryFees;
+      // قيمة الأصناف فقط = إجمالي السعر - أجور التوصيل (لأن total_price تشمل delivery_fee)
+      const orderAmount = deliveredOrders.reduce((sum, order) => {
+        const totalPrice = Number(order.total_price) || 0;
+        const fee = Number(order.delivery_fee) || 0;
+        return sum + (totalPrice - fee);
+      }, 0);
+      // المستحق للمطعم = قيمة الأصناف فقط (أجور التوصيل للسائق)
+      const totalAmount = orderAmount;
 
       accounting.push({
         id: driver.id,
@@ -91,7 +98,8 @@ export function DeliveryAccountingDialog({ orders, onOrdersUpdated }: DeliveryAc
 
   const totalOrderAmount = driverAccounting.reduce((sum, d) => sum + d.orderAmount, 0);
   const totalDeliveryFees = driverAccounting.reduce((sum, d) => sum + d.deliveryFees, 0);
-  const totalOwed = totalOrderAmount + totalDeliveryFees;
+  // المستحق للمطعم = قيمة الأصناف فقط (أجور التوصيل للسائق)
+  const totalOwed = totalOrderAmount;
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
@@ -131,14 +139,14 @@ export function DeliveryAccountingDialog({ orders, onOrdersUpdated }: DeliveryAc
                   <div className="flex items-center justify-between bg-background/50 rounded p-2">
                     <span className="flex items-center gap-1 text-muted-foreground">
                       <Package className="w-4 h-4" />
-                      قيمة الطلبات
+                      قيمة الأصناف
                     </span>
                     <span className="font-semibold">{formatNumberWithCommas(totalOrderAmount)} د.ع</span>
                   </div>
                   <div className="flex items-center justify-between bg-background/50 rounded p-2">
                     <span className="flex items-center gap-1 text-muted-foreground">
                       <Truck className="w-4 h-4" />
-                      أجور التوصيل
+                      أرباح السائقين
                     </span>
                     <span className="font-semibold text-success">{formatNumberWithCommas(totalDeliveryFees)} د.ع</span>
                   </div>
@@ -170,17 +178,17 @@ export function DeliveryAccountingDialog({ orders, onOrdersUpdated }: DeliveryAc
                     <div className="space-y-4 pt-2">
                       {/* Money breakdown */}
                       <div className="grid grid-cols-2 gap-2 text-sm">
-                        <div className="bg-muted/50 rounded-lg p-3">
+                        <div className="bg-primary/10 rounded-lg p-3">
                           <div className="flex items-center gap-2 mb-1">
-                            <Package className="w-4 h-4 text-muted-foreground" />
-                            <span className="text-muted-foreground">قيمة الطلبات</span>
+                            <Package className="w-4 h-4 text-primary" />
+                            <span className="text-primary">المستحق للمطعم</span>
                           </div>
-                          <p className="font-bold text-lg">{formatNumberWithCommas(driver.orderAmount)} د.ع</p>
+                          <p className="font-bold text-lg text-primary">{formatNumberWithCommas(driver.orderAmount)} د.ع</p>
                         </div>
                         <div className="bg-success/10 rounded-lg p-3">
                           <div className="flex items-center gap-2 mb-1">
                             <Truck className="w-4 h-4 text-success" />
-                            <span className="text-success">أجور التوصيل</span>
+                            <span className="text-success">أرباح السائق</span>
                           </div>
                           <p className="font-bold text-lg text-success">{formatNumberWithCommas(driver.deliveryFees)} د.ع</p>
                         </div>
@@ -237,11 +245,11 @@ export function DeliveryAccountingDialog({ orders, onOrdersUpdated }: DeliveryAc
                               <AlertDialogDescription>
                                 سيتم إزالة جميع الطلبات المكتملة ({toEnglishNumbers(driver.deliveredOrders.length)} طلب) من حساب هذا الموظف.
                                 <br />
-                                قيمة الطلبات: {formatNumberWithCommas(driver.orderAmount)} د.ع
+                                المستحق للمطعم (قيمة الأصناف): {formatNumberWithCommas(driver.orderAmount)} د.ع
                                 <br />
-                                أجور التوصيل: {formatNumberWithCommas(driver.deliveryFees)} د.ع
+                                أرباح السائق (أجور التوصيل): {formatNumberWithCommas(driver.deliveryFees)} د.ع
                                 <br />
-                                <strong>الإجمالي: {formatNumberWithCommas(driver.totalAmount)} د.ع</strong>
+                                <strong>سيُحذف من الحساب: {formatNumberWithCommas(driver.totalAmount)} د.ع</strong>
                               </AlertDialogDescription>
                             </AlertDialogHeader>
                             <AlertDialogFooter>
