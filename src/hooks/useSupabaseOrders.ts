@@ -257,6 +257,8 @@ export function useSupabaseOrders(options: UseSupabaseOrdersOptions = {}) {
         
         if (status === 'SUBSCRIBED') {
           setRealtimeConnected(true);
+          // Fetch latest data when reconnected to ensure sync
+          fetchOrders();
           // Clear polling when connected
           if (pollingIntervalRef.current) {
             clearInterval(pollingIntervalRef.current);
@@ -265,6 +267,8 @@ export function useSupabaseOrders(options: UseSupabaseOrdersOptions = {}) {
         } else if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT') {
           console.log('Realtime error, switching to polling fallback');
           setRealtimeConnected(false);
+          // Fetch immediately when connection lost
+          fetchOrders();
           
           // Clear any pending reconnect
           if (reconnectTimeoutRef.current) {
