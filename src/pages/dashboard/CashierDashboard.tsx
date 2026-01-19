@@ -4,6 +4,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useSupabaseOrders, DbMenuItem, OrderWithItems } from '@/hooks/useSupabaseOrders';
 import { useMenuItems, MenuItem } from '@/hooks/useMenuItems';
 import { useDeliveryAreas } from '@/hooks/useDeliveryAreas';
+import { DashboardHeader } from '@/components/shared/DashboardHeader';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
@@ -140,7 +141,7 @@ function SortableMenuItem({ item, quantity, isAnimating, onSelect }: SortableMen
 export default function CashierDashboard() {
   const { role } = useRole();
   const { user } = useAuth();
-  const { orders, addOrder, updateOrder, updateOrderStatus, cancelOrder, resolveIssue, loading } = useSupabaseOrders({ orderTypeFilter: 'delivery' });
+  const { orders, addOrder, updateOrder, updateOrderStatus, cancelOrder, resolveIssue, loading, realtimeConnected } = useSupabaseOrders({ orderTypeFilter: 'delivery' });
   const { menuItems, categories, loading: menuLoading, updateDisplayOrder } = useMenuItems();
   const { activeAreas, loading: areasLoading } = useDeliveryAreas();
   const [activeTab, setActiveTab] = useState<TabType>('menu');
@@ -376,20 +377,14 @@ export default function CashierDashboard() {
 
   return (
     <div className="min-h-screen bg-background">
-      {/* Header */}
-      <header className="bg-card border-b border-border shadow-soft sticky top-0 z-50">
-        <div className="container flex items-center justify-between h-14">
-          <div className="flex items-center gap-3">
-            <div className="w-9 h-9 rounded-xl gradient-primary flex items-center justify-center">
-              <ShoppingCart className="w-4 h-4 text-primary-foreground" />
-            </div>
-            <div>
-              <h1 className="font-bold text-foreground text-sm">كاشير</h1>
-              <p className="text-xs text-muted-foreground">{user?.fullName || user?.username || ''}</p>
-            </div>
-          </div>
-        </div>
-      </header>
+      <DashboardHeader 
+        title="كاشير" 
+        subtitle={user?.fullName || user?.username || ''} 
+        icon={ShoppingCart} 
+        iconClassName="gradient-primary"
+        realtimeConnected={realtimeConnected}
+        showConnectionIndicator={true}
+      />
 
       {/* Main Content */}
       <main className="container py-3 pb-36 space-y-4">

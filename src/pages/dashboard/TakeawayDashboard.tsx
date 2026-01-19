@@ -46,7 +46,7 @@ type TabType = 'menu' | 'tracking' | 'stats' | 'settings';
 export default function TakeawayDashboard() {
   const { role } = useRole();
   const { user } = useAuth();
-  const { orders, addOrder, updateOrderStatus, cancelOrder, loading } = useSupabaseOrders({ orderTypeFilter: 'takeaway' });
+  const { orders, addOrder, updateOrderStatus, cancelOrder, loading, realtimeConnected } = useSupabaseOrders({ orderTypeFilter: 'takeaway' });
   const { menuItems, categories, loading: menuLoading, updateDisplayOrder } = useMenuItems();
   const { 
     cart, 
@@ -170,7 +170,9 @@ export default function TakeawayDashboard() {
         title="السفري" 
         subtitle={user?.fullName || user?.username || ''} 
         icon={UtensilsCrossed} 
-        iconClassName="bg-warning" 
+        iconClassName="bg-warning"
+        realtimeConnected={realtimeConnected}
+        showConnectionIndicator={true}
       />
 
       <main className="container py-3 pb-36 space-y-4">

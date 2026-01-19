@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { useNotificationSound } from './useNotificationSound';
@@ -37,7 +37,6 @@ export interface DbOrder {
   cancelled_at: string | null;
   is_edited?: boolean;
   edited_at?: string | null;
-  // Issue reporting fields
   has_issue?: boolean;
   issue_reason?: string | null;
   issue_reported_at?: string | null;
@@ -59,16 +58,32 @@ export interface OrderWithItems extends DbOrder {
 }
 
 interface UseSupabaseOrdersOptions {
-  /** Filter orders by type - 'delivery' for field/cashier, 'takeaway' for takeaway dashboard */
   orderTypeFilter?: 'delivery' | 'takeaway' | 'all';
 }
+
+// Polling interval when realtime fails (30 seconds)
+const FALLBACK_POLLING_INTERVAL = 30000;
 
 export function useSupabaseOrders(options: UseSupabaseOrdersOptions = {}) {
   const { orderTypeFilter = 'all' } = options;
   const [orders, setOrders] = useState<OrderWithItems[]>([]);
   const [menuItems, setMenuItems] = useState<DbMenuItem[]>([]);
   const [loading, setLoading] = useState(true);
+  const [realtimeConnected, setRealtimeConnected] = useState(false);
   const { playNotificationSound } = useNotificationSound();
+
+  // Use refs to avoid re-subscriptions
+  const orderTypeFilterRef = useRef(orderTypeFilter);
+  const shownNotificationsRef = useRef(new Set<string>());
+  const channelRef = useRef<ReturnType<typeof supabase.channel> | null>(null);
+  const itemsChannelRef = useRef<ReturnType<typeof supabase.channel> | null>(null);
+  const pollingIntervalRef = useRef<NodeJS.Timeout | null>(null);
+  const reconnectTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+
+  // Update ref when filter changes
+  useEffect(() => {
+    orderTypeFilterRef.current = orderTypeFilter;
+  }, [orderTypeFilter]);
 
   // Fetch menu items
   const fetchMenuItems = useCallback(async () => {
@@ -86,14 +101,11 @@ export function useSupabaseOrders(options: UseSupabaseOrdersOptions = {}) {
     setMenuItems(data as DbMenuItem[]);
   }, []);
 
-  // Fetch orders with items in a single query using Supabase relations
+  // Fetch orders with items
   const fetchOrders = useCallback(async () => {
     const { data, error } = await supabase
       .from('orders')
-      .select(`
-        *,
-        order_items (*)
-      `)
+      .select(`*, order_items (*)`)
       .eq('is_archived', false)
       .order('created_at', { ascending: false });
 
@@ -112,243 +124,210 @@ export function useSupabaseOrders(options: UseSupabaseOrdersOptions = {}) {
     setLoading(false);
   }, []);
 
-  // Handle realtime order update - update local state directly instead of refetching
-  const handleRealtimeOrderUpdate = useCallback((newOrder: DbOrder, isInsert = false) => {
-    setOrders(prevOrders => {
-      if (isInsert) {
-        // Check if order already exists (from optimistic update)
-        const exists = prevOrders.some(o => o.id === newOrder.id);
-        if (exists) {
-          // Update existing order
-          return prevOrders.map(o => 
-            o.id === newOrder.id ? { ...o, ...newOrder } : o
-          );
-        }
-        // Add new order at the beginning with empty items (will be fetched)
-        return [{ ...newOrder, items: [] } as OrderWithItems, ...prevOrders];
+  // Show notification helper
+  const showNotification = useCallback((key: string, type: 'success' | 'info' | 'warning' | 'error', message: string, sound?: string) => {
+    if (!shownNotificationsRef.current.has(key)) {
+      shownNotificationsRef.current.add(key);
+      if (sound) playNotificationSound(sound as any);
+      toast[type](message, { id: key, duration: 3000 });
+      setTimeout(() => shownNotificationsRef.current.delete(key), 5000);
+    }
+  }, [playNotificationSound]);
+
+  // Handle order INSERT
+  const handleOrderInsert = useCallback(async (newOrder: DbOrder) => {
+    const shouldNotify = orderTypeFilterRef.current === 'all' || newOrder.type === orderTypeFilterRef.current;
+    
+    if (shouldNotify) {
+      showNotification(`insert-${newOrder.id}`, 'success', 'طلب جديد!', 'newOrder');
+    }
+
+    // Fetch items for new order
+    const { data: itemsData } = await supabase
+      .from('order_items')
+      .select('*')
+      .eq('order_id', newOrder.id);
+
+    const orderWithItems: OrderWithItems = {
+      ...newOrder,
+      items: (itemsData || []) as DbOrderItem[],
+    };
+
+    setOrders(prev => {
+      const exists = prev.some(o => o.id === newOrder.id);
+      if (exists) {
+        return prev.map(o => o.id === newOrder.id ? orderWithItems : o);
       }
-      
-      // Update existing order
-      return prevOrders.map(o => 
-        o.id === newOrder.id ? { ...o, ...newOrder } : o
-      );
+      return [orderWithItems, ...prev];
     });
+  }, [showNotification]);
+
+  // Handle order UPDATE
+  const handleOrderUpdate = useCallback((newOrder: DbOrder, oldOrder: Partial<DbOrder>) => {
+    const shouldNotify = orderTypeFilterRef.current === 'all' || newOrder.type === orderTypeFilterRef.current;
+
+    // Update local state immediately
+    setOrders(prev => prev.map(o => o.id === newOrder.id ? { ...o, ...newOrder } : o));
+
+    if (!shouldNotify) return;
+
+    // Status change notifications
+    if (oldOrder.status !== newOrder.status) {
+      const key = `update-${newOrder.id}-${newOrder.status}`;
+      switch (newOrder.status) {
+        case 'ready':
+          showNotification(key, 'info', `الطلب #${newOrder.order_number} جاهز!`, 'orderReady');
+          break;
+        case 'cancelled':
+          showNotification(key, 'error', `تم إلغاء الطلب #${newOrder.order_number}`, 'orderCancelled');
+          break;
+        case 'delivering':
+          showNotification(key, 'info', `الطلب #${newOrder.order_number} في الطريق!`, 'orderAssigned');
+          break;
+        case 'delivered':
+          showNotification(key, 'success', `تم تسليم الطلب #${newOrder.order_number}`, 'orderReady');
+          break;
+      }
+    }
+
+    // Delivery rejection notification
+    if (oldOrder.pending_delivery_acceptance === true && 
+        newOrder.pending_delivery_acceptance === false && 
+        newOrder.status === 'ready' && 
+        newOrder.delivery_person_id === null) {
+      showNotification(`rejected-${newOrder.id}`, 'warning', `تم رفض الطلب #${newOrder.order_number} من موظف التوصيل`, 'alert');
+    }
+
+    // Issue reported notification
+    if (oldOrder.has_issue !== true && newOrder.has_issue === true) {
+      showNotification(`issue-${newOrder.id}`, 'error', `⚠️ بلاغ جديد على الطلب #${newOrder.order_number}`, 'alert');
+    }
+
+    // Issue resolved notification
+    if (oldOrder.has_issue === true && newOrder.has_issue === false) {
+      showNotification(`issue-resolved-${newOrder.id}`, 'success', `✅ تم حل مشكلة الطلب #${newOrder.order_number}`, 'orderReady');
+    }
+  }, [showNotification]);
+
+  // Handle order DELETE
+  const handleOrderDelete = useCallback((deletedOrder: DbOrder) => {
+    setOrders(prev => prev.filter(o => o.id !== deletedOrder.id));
   }, []);
 
-  // Subscribe to realtime updates
-  useEffect(() => {
-    // Fetch menu items and orders in parallel for faster loading
-    Promise.all([fetchMenuItems(), fetchOrders()]);
+  // Handle order items change
+  const handleOrderItemsChange = useCallback(async (orderItem: DbOrderItem) => {
+    if (!orderItem?.order_id) return;
 
-    // Track shown notifications to prevent duplicates
-    const shownNotifications = new Set<string>();
-    
-    // Generate unique channel names to avoid conflicts
+    const { data: itemsData } = await supabase
+      .from('order_items')
+      .select('*')
+      .eq('order_id', orderItem.order_id);
+
+    setOrders(prev => prev.map(o => 
+      o.id === orderItem.order_id 
+        ? { ...o, items: (itemsData || []) as DbOrderItem[] }
+        : o
+    ));
+  }, []);
+
+  // Setup realtime channel
+  const setupRealtimeChannel = useCallback(() => {
+    // Clean up existing channels
+    if (channelRef.current) {
+      supabase.removeChannel(channelRef.current);
+    }
+    if (itemsChannelRef.current) {
+      supabase.removeChannel(itemsChannelRef.current);
+    }
+
     const channelId = Math.random().toString(36).substring(7);
-    
-    // Subscribe to orders changes with specific events
-    const ordersChannel = supabase
-      .channel(`orders-realtime-${channelId}`)
-      .on(
-        'postgres_changes',
-        { event: 'INSERT', schema: 'public', table: 'orders' },
-        async (payload) => {
-          console.log('New order received:', payload);
-          const newOrder = payload.new as DbOrder;
-          const notificationKey = `insert-${newOrder.id}`;
-          
-          // Only show notification if order type matches the filter
-          const shouldNotify = orderTypeFilter === 'all' || newOrder.type === orderTypeFilter;
-          
-          if (shouldNotify && !shownNotifications.has(notificationKey)) {
-            shownNotifications.add(notificationKey);
-            playNotificationSound('newOrder');
-            toast.success('طلب جديد!', { duration: 3000, id: notificationKey });
-            
-            // Clear from set after 5 seconds
-            setTimeout(() => shownNotifications.delete(notificationKey), 5000);
-          }
-          
-          // Update local state directly - fetch order items for the new order
-          const { data: itemsData } = await supabase
-            .from('order_items')
-            .select('*')
-            .eq('order_id', newOrder.id);
-          
-          const orderWithItems: OrderWithItems = {
-            ...newOrder,
-            items: (itemsData || []) as DbOrderItem[],
-          };
-          
-          setOrders(prevOrders => {
-            // Check if already exists
-            const exists = prevOrders.some(o => o.id === newOrder.id);
-            if (exists) {
-              return prevOrders.map(o => o.id === newOrder.id ? orderWithItems : o);
-            }
-            return [orderWithItems, ...prevOrders];
-          });
-        }
-      )
-      .on(
-        'postgres_changes',
-        { event: 'UPDATE', schema: 'public', table: 'orders' },
-        (payload) => {
-          console.log('Order updated:', payload);
-          const newOrder = payload.new as DbOrder;
-          const oldOrder = payload.old as Partial<DbOrder>;
-          
-          // Update local state directly (instant update)
-          handleRealtimeOrderUpdate(newOrder, false);
-          
-          // Only show notification if order type matches the filter
-          const shouldNotify = orderTypeFilter === 'all' || newOrder.type === orderTypeFilter;
-          
-          // Check if status changed
-          const statusChanged = oldOrder.status !== newOrder.status;
-          
-          // Check if delivery was rejected (pending_delivery_acceptance changed from true to false while status is ready)
-          const deliveryRejected = oldOrder.pending_delivery_acceptance === true && 
-                                   newOrder.pending_delivery_acceptance === false && 
-                                   newOrder.status === 'ready' &&
-                                   newOrder.delivery_person_id === null;
-          
-          // Show notification for status changes
-          if (shouldNotify && statusChanged) {
-            const notificationKey = `update-${newOrder.id}-${newOrder.status}`;
-            
-            if (!shownNotifications.has(notificationKey)) {
-              shownNotifications.add(notificationKey);
-              
-              if (newOrder.status === 'ready') {
-                playNotificationSound('orderReady');
-                toast.info(`الطلب #${newOrder.order_number} جاهز!`, { id: notificationKey });
-              } else if (newOrder.status === 'cancelled') {
-                playNotificationSound('orderCancelled');
-                toast.error(`تم إلغاء الطلب #${newOrder.order_number}`, { id: notificationKey });
-              } else if (newOrder.status === 'delivering') {
-                playNotificationSound('orderAssigned');
-                toast.info(`الطلب #${newOrder.order_number} في الطريق!`, { id: notificationKey });
-              } else if (newOrder.status === 'delivered') {
-                playNotificationSound('orderReady');
-                toast.success(`تم تسليم الطلب #${newOrder.order_number}`, { id: notificationKey });
-              }
-              
-              // Clear from set after 5 seconds
-              setTimeout(() => shownNotifications.delete(notificationKey), 5000);
-            }
-          }
-          
-          // Show notification for delivery rejection
-          if (shouldNotify && deliveryRejected) {
-            const notificationKey = `rejected-${newOrder.id}`;
-            
-            if (!shownNotifications.has(notificationKey)) {
-              shownNotifications.add(notificationKey);
-              playNotificationSound('alert');
-              toast.warning(`تم رفض الطلب #${newOrder.order_number} من موظف التوصيل`, { id: notificationKey });
-              
-              // Clear from set after 5 seconds
-              setTimeout(() => shownNotifications.delete(notificationKey), 5000);
-            }
-          }
-          
-          // Check if issue was reported
-          const issueReported = oldOrder.has_issue !== true && newOrder.has_issue === true;
-          
-          if (shouldNotify && issueReported) {
-            const notificationKey = `issue-${newOrder.id}`;
-            
-            if (!shownNotifications.has(notificationKey)) {
-              shownNotifications.add(notificationKey);
-              playNotificationSound('alert');
-              toast.error(`⚠️ بلاغ جديد على الطلب #${newOrder.order_number}`, { id: notificationKey });
-              
-              // Clear from set after 5 seconds
-              setTimeout(() => shownNotifications.delete(notificationKey), 5000);
-            }
-          }
-          
-          // Check if issue was resolved
-          const issueResolved = oldOrder.has_issue === true && newOrder.has_issue === false;
-          
-          if (shouldNotify && issueResolved) {
-            const notificationKey = `issue-resolved-${newOrder.id}`;
-            
-            if (!shownNotifications.has(notificationKey)) {
-              shownNotifications.add(notificationKey);
-              playNotificationSound('orderReady');
-              toast.success(`✅ تم حل مشكلة الطلب #${newOrder.order_number}`, { id: notificationKey });
-              
-              // Clear from set after 5 seconds
-              setTimeout(() => shownNotifications.delete(notificationKey), 5000);
-            }
-          }
-        }
-      )
-      .on(
-        'postgres_changes',
-        { event: 'DELETE', schema: 'public', table: 'orders' },
-        (payload) => {
-          const deletedOrder = payload.old as DbOrder;
-          // Remove from local state directly
-          setOrders(prevOrders => prevOrders.filter(o => o.id !== deletedOrder.id));
-        }
-      )
-      .subscribe((status) => {
+
+    // Orders channel
+    channelRef.current = supabase
+      .channel(`orders-${channelId}`)
+      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'orders' }, 
+        (payload) => handleOrderInsert(payload.new as DbOrder))
+      .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'orders' }, 
+        (payload) => handleOrderUpdate(payload.new as DbOrder, payload.old as Partial<DbOrder>))
+      .on('postgres_changes', { event: 'DELETE', schema: 'public', table: 'orders' }, 
+        (payload) => handleOrderDelete(payload.old as DbOrder))
+      .subscribe((status, err) => {
         console.log('Orders channel status:', status);
-        // Retry connection on error
-        if (status === 'CHANNEL_ERROR') {
-          console.log('Channel error, retrying in 3 seconds...');
-          setTimeout(() => {
-            fetchOrders();
-          }, 3000);
+        
+        if (status === 'SUBSCRIBED') {
+          setRealtimeConnected(true);
+          // Clear polling when connected
+          if (pollingIntervalRef.current) {
+            clearInterval(pollingIntervalRef.current);
+            pollingIntervalRef.current = null;
+          }
+        } else if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT') {
+          console.log('Realtime error, switching to polling fallback');
+          setRealtimeConnected(false);
+          
+          // Clear any pending reconnect
+          if (reconnectTimeoutRef.current) {
+            clearTimeout(reconnectTimeoutRef.current);
+          }
+          
+          // Try to reconnect after 5 seconds
+          reconnectTimeoutRef.current = setTimeout(() => {
+            setupRealtimeChannel();
+          }, 5000);
+        } else if (status === 'CLOSED') {
+          setRealtimeConnected(false);
         }
       });
 
-    // Subscribe to order_items changes - only refetch when items change
-    const itemsChannel = supabase
-      .channel(`order-items-realtime-${channelId}`)
-      .on(
-        'postgres_changes',
-        { event: '*', schema: 'public', table: 'order_items' },
-        async (payload) => {
-          // Get the order_id from the payload
-          const orderItem = (payload.new || payload.old) as DbOrderItem;
-          if (orderItem?.order_id) {
-            // Fetch updated items for this specific order
-            const { data: itemsData } = await supabase
-              .from('order_items')
-              .select('*')
-              .eq('order_id', orderItem.order_id);
-            
-            // Update only this order's items
-            setOrders(prevOrders => 
-              prevOrders.map(o => 
-                o.id === orderItem.order_id 
-                  ? { ...o, items: (itemsData || []) as DbOrderItem[] }
-                  : o
-              )
-            );
-          }
-        }
-      )
-      .subscribe((status) => {
-        console.log('Order items channel status:', status);
-        if (status === 'CHANNEL_ERROR') {
-          setTimeout(() => {
-            fetchOrders();
-          }, 3000);
-        }
-      });
+    // Order items channel
+    itemsChannelRef.current = supabase
+      .channel(`order-items-${channelId}`)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'order_items' }, 
+        (payload) => handleOrderItemsChange((payload.new || payload.old) as DbOrderItem))
+      .subscribe();
+
+  }, [handleOrderInsert, handleOrderUpdate, handleOrderDelete, handleOrderItemsChange]);
+
+  // Start/stop polling based on connection status
+  useEffect(() => {
+    if (!realtimeConnected && !pollingIntervalRef.current) {
+      console.log('Starting fallback polling');
+      pollingIntervalRef.current = setInterval(() => {
+        fetchOrders();
+      }, FALLBACK_POLLING_INTERVAL);
+    } else if (realtimeConnected && pollingIntervalRef.current) {
+      console.log('Stopping fallback polling - realtime connected');
+      clearInterval(pollingIntervalRef.current);
+      pollingIntervalRef.current = null;
+    }
+  }, [realtimeConnected, fetchOrders]);
+
+  // Initial setup
+  useEffect(() => {
+    // Fetch data in parallel
+    Promise.all([fetchMenuItems(), fetchOrders()]);
+    
+    // Setup realtime
+    setupRealtimeChannel();
 
     return () => {
-      supabase.removeChannel(ordersChannel);
-      supabase.removeChannel(itemsChannel);
+      // Cleanup
+      if (channelRef.current) {
+        supabase.removeChannel(channelRef.current);
+      }
+      if (itemsChannelRef.current) {
+        supabase.removeChannel(itemsChannelRef.current);
+      }
+      if (pollingIntervalRef.current) {
+        clearInterval(pollingIntervalRef.current);
+      }
+      if (reconnectTimeoutRef.current) {
+        clearTimeout(reconnectTimeoutRef.current);
+      }
     };
-  }, [fetchMenuItems, fetchOrders, playNotificationSound, orderTypeFilter, handleRealtimeOrderUpdate]);
+  }, [fetchMenuItems, fetchOrders, setupRealtimeChannel]);
 
-  // Add new order via server-side edge function for price validation
+  // Add new order
   const addOrder = async (orderData: {
     customer_name: string;
     customer_phone: string;
@@ -377,7 +356,7 @@ export function useSupabaseOrders(options: UseSupabaseOrdersOptions = {}) {
         return null;
       }
 
-      // Immediately add the order to local state (optimistic update)
+      // Optimistic update
       if (data?.order) {
         const newOrderWithItems: OrderWithItems = {
           ...data.order,
@@ -392,9 +371,7 @@ export function useSupabaseOrders(options: UseSupabaseOrdersOptions = {}) {
           })),
         };
         
-        setOrders(prevOrders => [newOrderWithItems, ...prevOrders]);
-        
-        // Fetch fresh data in background to get correct items
+        setOrders(prev => [newOrderWithItems, ...prev]);
         setTimeout(() => fetchOrders(), 500);
       }
 
@@ -408,12 +385,9 @@ export function useSupabaseOrders(options: UseSupabaseOrdersOptions = {}) {
 
   // Update order status
   const updateOrderStatus = async (orderId: string, status: DbOrder['status']) => {
-    // Optimistic update - immediately update local state
-    setOrders(prevOrders => 
-      prevOrders.map(order => 
-        order.id === orderId ? { ...order, status } : order
-      )
-    );
+    setOrders(prev => prev.map(order => 
+      order.id === orderId ? { ...order, status } : order
+    ));
 
     const { error } = await supabase
       .from('orders')
@@ -423,7 +397,6 @@ export function useSupabaseOrders(options: UseSupabaseOrdersOptions = {}) {
     if (error) {
       console.error('Error updating order status:', error);
       toast.error('حدث خطأ في تحديث حالة الطلب');
-      // Revert on error
       fetchOrders();
       return false;
     }
@@ -433,19 +406,11 @@ export function useSupabaseOrders(options: UseSupabaseOrdersOptions = {}) {
 
   // Assign delivery person
   const assignDelivery = async (orderId: string, deliveryPersonId: string, deliveryPersonName: string) => {
-    // Optimistic update - immediately update local state
-    setOrders(prevOrders => 
-      prevOrders.map(order => 
-        order.id === orderId 
-          ? { 
-              ...order, 
-              delivery_person_id: deliveryPersonId, 
-              delivery_person_name: deliveryPersonName, 
-              pending_delivery_acceptance: true 
-            } 
-          : order
-      )
-    );
+    setOrders(prev => prev.map(order => 
+      order.id === orderId 
+        ? { ...order, delivery_person_id: deliveryPersonId, delivery_person_name: deliveryPersonName, pending_delivery_acceptance: true } 
+        : order
+    ));
 
     const { error } = await supabase
       .from('orders')
@@ -459,7 +424,6 @@ export function useSupabaseOrders(options: UseSupabaseOrdersOptions = {}) {
     if (error) {
       console.error('Error assigning delivery:', error);
       toast.error('حدث خطأ في تعيين موظف التوصيل');
-      // Revert on error
       fetchOrders();
       return false;
     }
@@ -471,27 +435,20 @@ export function useSupabaseOrders(options: UseSupabaseOrdersOptions = {}) {
 
   // Accept delivery
   const acceptDelivery = async (orderId: string) => {
-    // Optimistic update - immediately update local state
-    setOrders(prevOrders => 
-      prevOrders.map(order => 
-        order.id === orderId 
-          ? { ...order, status: 'delivering' as const, pending_delivery_acceptance: false } 
-          : order
-      )
-    );
+    setOrders(prev => prev.map(order => 
+      order.id === orderId 
+        ? { ...order, status: 'delivering' as const, pending_delivery_acceptance: false } 
+        : order
+    ));
 
     const { error } = await supabase
       .from('orders')
-      .update({
-        status: 'delivering',
-        pending_delivery_acceptance: false,
-      })
+      .update({ status: 'delivering', pending_delivery_acceptance: false })
       .eq('id', orderId);
 
     if (error) {
       console.error('Error accepting delivery:', error);
       toast.error('حدث خطأ في قبول الطلب');
-      // Revert on error
       fetchOrders();
       return false;
     }
@@ -503,20 +460,11 @@ export function useSupabaseOrders(options: UseSupabaseOrdersOptions = {}) {
 
   // Reject delivery
   const rejectDelivery = async (orderId: string) => {
-    // Optimistic update - immediately update local state
-    setOrders(prevOrders => 
-      prevOrders.map(order => 
-        order.id === orderId 
-          ? { 
-              ...order, 
-              delivery_person_id: null, 
-              delivery_person_name: null, 
-              pending_delivery_acceptance: false,
-              status: 'ready' as const
-            } 
-          : order
-      )
-    );
+    setOrders(prev => prev.map(order => 
+      order.id === orderId 
+        ? { ...order, delivery_person_id: null, delivery_person_name: null, pending_delivery_acceptance: false, status: 'ready' as const } 
+        : order
+    ));
 
     const { error } = await supabase
       .from('orders')
@@ -531,7 +479,6 @@ export function useSupabaseOrders(options: UseSupabaseOrdersOptions = {}) {
     if (error) {
       console.error('Error rejecting delivery:', error);
       toast.error('حدث خطأ في رفض الطلب');
-      // Revert on error
       fetchOrders();
       return false;
     }
@@ -541,31 +488,24 @@ export function useSupabaseOrders(options: UseSupabaseOrdersOptions = {}) {
     return true;
   };
 
-  // Return order (delivery person returns order - marks as cancelled with reason)
+  // Return order
   const returnOrder = async (orderId: string, reason?: string) => {
     const cancellationReason = reason || 'راجع';
     
-    // Optimistic update
-    setOrders(prevOrders => 
-      prevOrders.map(order => 
-        order.id === orderId 
-          ? { ...order, status: 'cancelled' as const, cancellation_reason: cancellationReason } 
-          : order
-      )
-    );
+    setOrders(prev => prev.map(order => 
+      order.id === orderId 
+        ? { ...order, status: 'cancelled' as const, cancellation_reason: cancellationReason } 
+        : order
+    ));
 
     const { error } = await supabase
       .from('orders')
-      .update({
-        status: 'cancelled',
-        cancellation_reason: cancellationReason,
-      })
+      .update({ status: 'cancelled', cancellation_reason: cancellationReason })
       .eq('id', orderId);
 
     if (error) {
       console.error('Error returning order:', error);
       toast.error('حدث خطأ في إرجاع الطلب');
-      // Revert on error
       fetchOrders();
       return false;
     }
@@ -577,27 +517,20 @@ export function useSupabaseOrders(options: UseSupabaseOrdersOptions = {}) {
 
   // Cancel order
   const cancelOrder = async (orderId: string, reason?: string) => {
-    // Optimistic update - immediately update local state
-    setOrders(prevOrders => 
-      prevOrders.map(order => 
-        order.id === orderId 
-          ? { ...order, status: 'cancelled' as const, cancellation_reason: reason || null } 
-          : order
-      )
-    );
+    setOrders(prev => prev.map(order => 
+      order.id === orderId 
+        ? { ...order, status: 'cancelled' as const, cancellation_reason: reason || null } 
+        : order
+    ));
 
     const { error } = await supabase
       .from('orders')
-      .update({
-        status: 'cancelled',
-        cancellation_reason: reason || null,
-      })
+      .update({ status: 'cancelled', cancellation_reason: reason || null })
       .eq('id', orderId);
 
     if (error) {
       console.error('Error cancelling order:', error);
       toast.error('حدث خطأ في إلغاء الطلب');
-      // Revert on error
       fetchOrders();
       return false;
     }
@@ -612,7 +545,7 @@ export function useSupabaseOrders(options: UseSupabaseOrdersOptions = {}) {
     return orders.filter(o => o.status === status);
   };
 
-  // Update order (edit items, customer info, etc.)
+  // Update order
   const updateOrder = async (orderId: string, orderData: {
     customer_name?: string;
     customer_phone?: string;
@@ -649,22 +582,19 @@ export function useSupabaseOrders(options: UseSupabaseOrdersOptions = {}) {
     }
   };
 
-  // Report issue on order (for delivery person)
+  // Report issue
   const reportIssue = async (orderId: string, reason: string, reporterName: string) => {
-    // Optimistic update
-    setOrders(prevOrders => 
-      prevOrders.map(order => 
-        order.id === orderId 
-          ? { 
-              ...order, 
-              has_issue: true,
-              issue_reason: reason,
-              issue_reported_at: new Date().toISOString(),
-              issue_reported_by: reporterName
-            } 
-          : order
-      )
-    );
+    setOrders(prev => prev.map(order => 
+      order.id === orderId 
+        ? { 
+            ...order, 
+            has_issue: true,
+            issue_reason: reason,
+            issue_reported_at: new Date().toISOString(),
+            issue_reported_by: reporterName
+          } 
+        : order
+    ));
 
     const { error } = await supabase
       .from('orders')
@@ -679,7 +609,6 @@ export function useSupabaseOrders(options: UseSupabaseOrdersOptions = {}) {
     if (error) {
       console.error('Error reporting issue:', error);
       toast.error('حدث خطأ في التبليغ عن المشكلة');
-      // Revert on error
       fetchOrders();
       return false;
     }
@@ -689,22 +618,13 @@ export function useSupabaseOrders(options: UseSupabaseOrdersOptions = {}) {
     return true;
   };
 
-  // Resolve issue on order (for cashier)
+  // Resolve issue
   const resolveIssue = async (orderId: string) => {
-    // Optimistic update
-    setOrders(prevOrders => 
-      prevOrders.map(order => 
-        order.id === orderId 
-          ? { 
-              ...order, 
-              has_issue: false,
-              issue_reason: null,
-              issue_reported_at: null,
-              issue_reported_by: null
-            } 
-          : order
-      )
-    );
+    setOrders(prev => prev.map(order => 
+      order.id === orderId 
+        ? { ...order, has_issue: false, issue_reason: null, issue_reported_at: null, issue_reported_by: null } 
+        : order
+    ));
 
     const { error } = await supabase
       .from('orders')
@@ -719,7 +639,6 @@ export function useSupabaseOrders(options: UseSupabaseOrdersOptions = {}) {
     if (error) {
       console.error('Error resolving issue:', error);
       toast.error('حدث خطأ في حل المشكلة');
-      // Revert on error
       fetchOrders();
       return false;
     }
@@ -733,6 +652,7 @@ export function useSupabaseOrders(options: UseSupabaseOrdersOptions = {}) {
     orders,
     menuItems,
     loading,
+    realtimeConnected,
     addOrder,
     updateOrder,
     updateOrderStatus,

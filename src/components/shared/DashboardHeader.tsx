@@ -1,13 +1,23 @@
 import { LucideIcon } from 'lucide-react';
+import { ConnectionIndicator } from './ConnectionIndicator';
 
 interface DashboardHeaderProps {
   title: string;
   subtitle?: string;
   icon: LucideIcon;
   iconClassName?: string;
+  realtimeConnected?: boolean;
+  showConnectionIndicator?: boolean;
 }
 
-export function DashboardHeader({ title, subtitle, icon: Icon, iconClassName = 'bg-primary' }: DashboardHeaderProps) {
+export function DashboardHeader({ 
+  title, 
+  subtitle, 
+  icon: Icon, 
+  iconClassName = 'bg-primary',
+  realtimeConnected = true,
+  showConnectionIndicator = false
+}: DashboardHeaderProps) {
   return (
     <header className="bg-card border-b border-border shadow-soft sticky top-0 z-50">
       <div className="container flex items-center justify-between h-14 sm:h-16">
@@ -20,6 +30,9 @@ export function DashboardHeader({ title, subtitle, icon: Icon, iconClassName = '
             {subtitle && <p className="text-[10px] sm:text-xs text-muted-foreground">{subtitle}</p>}
           </div>
         </div>
+        {showConnectionIndicator && (
+          <ConnectionIndicator connected={realtimeConnected} />
+        )}
       </div>
     </header>
   );
