@@ -297,6 +297,8 @@ export function useSupabaseOrders(options: UseSupabaseOrdersOptions = {}) {
   useEffect(() => {
     if (!realtimeConnected && !pollingIntervalRef.current) {
       console.log('Starting fallback polling');
+      // Fetch immediately when polling starts, don't wait for first interval
+      fetchOrders();
       pollingIntervalRef.current = setInterval(() => {
         fetchOrders();
       }, FALLBACK_POLLING_INTERVAL);
