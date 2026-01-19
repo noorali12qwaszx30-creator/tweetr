@@ -7,6 +7,7 @@ import { useIssueReasons } from '@/contexts/IssueReasonsContext';
 import { useNotificationPermission } from '@/hooks/useNotificationPermission';
 import { OrderCard } from '@/components/OrderCard';
 import { LogoutConfirmButton } from '@/components/LogoutConfirmButton';
+import { DashboardHeader } from '@/components/shared/DashboardHeader';
 import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
 import { ROLE_LABELS } from '@/types';
@@ -50,7 +51,7 @@ type TabType = 'orders' | 'delivering' | 'stats' | 'settings';
 export default function DeliveryDashboard() {
   const { role } = useRole();
   const { user } = useAuth();
-  const { orders, updateOrderStatus, acceptDelivery, rejectDelivery, returnOrder, reportIssue, loading } = useSupabaseOrders({ orderTypeFilter: 'delivery' });
+  const { orders, updateOrderStatus, acceptDelivery, rejectDelivery, returnOrder, reportIssue, loading, realtimeConnected } = useSupabaseOrders({ orderTypeFilter: 'delivery' });
   const { reasons } = useCancellationReasons();
   const { reasons: issueReasons } = useIssueReasons();
   const { permission, isSupported, requestPermission, showNotification } = useNotificationPermission();
@@ -205,20 +206,14 @@ export default function DeliveryDashboard() {
 
   return (
     <div className="min-h-screen bg-background">
-      {/* Header */}
-      <header className="bg-card border-b border-border shadow-soft sticky top-0 z-50">
-        <div className="container flex items-center justify-between h-14 sm:h-16">
-          <div className="flex items-center gap-2 sm:gap-3">
-            <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-xl bg-info flex items-center justify-center">
-              <Truck className="w-4 h-4 sm:w-5 sm:h-5 text-info-foreground" />
-            </div>
-            <div>
-              <h1 className="font-bold text-foreground text-sm sm:text-base">موظف توصيل</h1>
-              <p className="text-[10px] sm:text-xs text-muted-foreground">{user?.fullName || user?.username || ''}</p>
-            </div>
-          </div>
-        </div>
-      </header>
+      <DashboardHeader 
+        title="موظف توصيل" 
+        subtitle={user?.fullName || user?.username || ''} 
+        icon={Truck} 
+        iconClassName="bg-info"
+        realtimeConnected={realtimeConnected}
+        showConnectionIndicator={true}
+      />
 
       {/* Main Content */}
       <main className="container py-3 sm:py-4 pb-36">
