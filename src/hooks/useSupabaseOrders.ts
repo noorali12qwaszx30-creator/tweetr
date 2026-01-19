@@ -65,6 +65,9 @@ interface UseSupabaseOrdersOptions {
 // Polling interval when realtime fails (30 seconds)
 const FALLBACK_POLLING_INTERVAL = 30000;
 
+// Silent background refresh interval (3 seconds)
+const SILENT_REFRESH_INTERVAL = 3000;
+
 export function useSupabaseOrders(options: UseSupabaseOrdersOptions = {}) {
   const { orderTypeFilter = 'all' } = options;
   const [orders, setOrders] = useState<OrderWithItems[]>([]);
@@ -79,6 +82,7 @@ export function useSupabaseOrders(options: UseSupabaseOrdersOptions = {}) {
   const channelRef = useRef<ReturnType<typeof supabase.channel> | null>(null);
   const itemsChannelRef = useRef<ReturnType<typeof supabase.channel> | null>(null);
   const pollingIntervalRef = useRef<NodeJS.Timeout | null>(null);
+  const silentRefreshIntervalRef = useRef<NodeJS.Timeout | null>(null);
   const reconnectTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   // Update ref when filter changes
@@ -102,8 +106,8 @@ export function useSupabaseOrders(options: UseSupabaseOrdersOptions = {}) {
     setMenuItems(data as DbMenuItem[]);
   }, []);
 
-  // Fetch orders with items
-  const fetchOrders = useCallback(async () => {
+  // Fetch orders with items (silent mode doesn't change loading state)
+  const fetchOrders = useCallback(async (silent = false) => {
     const { data, error } = await supabase
       .from('orders')
       .select(`*, order_items (*)`)
@@ -112,7 +116,7 @@ export function useSupabaseOrders(options: UseSupabaseOrdersOptions = {}) {
 
     if (error) {
       console.error('Error fetching orders:', error);
-      setLoading(false);
+      if (!silent) setLoading(false);
       return;
     }
 
@@ -122,7 +126,7 @@ export function useSupabaseOrders(options: UseSupabaseOrdersOptions = {}) {
     })) as OrderWithItems[];
 
     setOrders(ordersWithItems);
-    setLoading(false);
+    if (!silent) setLoading(false);
   }, []);
 
   // Show notification helper
@@ -309,6 +313,19 @@ export function useSupabaseOrders(options: UseSupabaseOrdersOptions = {}) {
     }
   }, [realtimeConnected, fetchOrders]);
 
+  // Silent background refresh every 3 seconds
+  useEffect(() => {
+    silentRefreshIntervalRef.current = setInterval(() => {
+      fetchOrders(true); // Silent refresh - no loading indicator
+    }, SILENT_REFRESH_INTERVAL);
+
+    return () => {
+      if (silentRefreshIntervalRef.current) {
+        clearInterval(silentRefreshIntervalRef.current);
+      }
+    };
+  }, [fetchOrders]);
+
   // Initial setup
   useEffect(() => {
     // Fetch data in parallel
@@ -330,6 +347,9 @@ export function useSupabaseOrders(options: UseSupabaseOrdersOptions = {}) {
       }
       if (reconnectTimeoutRef.current) {
         clearTimeout(reconnectTimeoutRef.current);
+      }
+      if (silentRefreshIntervalRef.current) {
+        clearInterval(silentRefreshIntervalRef.current);
       }
     };
   }, [fetchMenuItems, fetchOrders, setupRealtimeChannel]);
