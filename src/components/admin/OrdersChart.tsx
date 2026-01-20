@@ -110,7 +110,8 @@ export function WeeklyChart({ orders }: WeeklyChartProps) {
       const day = new Date(order.createdAt).getDay();
       dayStats[day].orders++;
       if (order.status === 'delivered') {
-        dayStats[day].revenue += order.totalPrice;
+        // Revenue = totalPrice - deliveryFee (excluding delivery fees)
+        dayStats[day].revenue += order.totalPrice - (order.deliveryFee || 0);
       }
     });
 

@@ -13,15 +13,18 @@ export function FinanceBreakdown({ orders }: FinanceBreakdownProps) {
     const completed = orders.filter(o => o.status === 'delivered');
     const cancelled = orders.filter(o => o.status === 'cancelled');
     
-    const totalSales = completed.reduce((sum, o) => sum + o.totalPrice, 0);
+    // Total sales = totalPrice - deliveryFee (excluding delivery fees from revenue)
+    const totalSales = completed.reduce((sum, o) => sum + (o.totalPrice - (o.deliveryFee || 0)), 0);
     const totalDeliveryFees = completed.reduce((sum, o) => sum + (o.deliveryFee || 0), 0);
     const grossProfit = totalSales * 0.6;
     const netProfit = totalSales * 0.15;
     
-    const cashRevenue = totalSales + totalDeliveryFees;
+    // Cash revenue = sales only (without delivery fees since they go to drivers)
+    const cashRevenue = totalSales;
     const onlineRevenue = 0;
     
-    const cancelledValue = cancelled.reduce((sum, o) => sum + o.totalPrice, 0);
+    // Cancelled value excludes delivery fees too
+    const cancelledValue = cancelled.reduce((sum, o) => sum + (o.totalPrice - (o.deliveryFee || 0)), 0);
 
     return {
       totalSales,

@@ -66,8 +66,9 @@ export default function AdminDashboard() {
   const cancelledOrders = orders.filter(o => o.status === 'cancelled');
   const pendingOrders = orders.filter(o => o.status === 'pending');
   const inProgressOrders = orders.filter(o => ['preparing', 'ready', 'delivering'].includes(o.status));
-  const totalRevenue = completedOrders.reduce((sum, o) => sum + Number(o.total_price), 0);
-  const cancelledRevenue = cancelledOrders.reduce((sum, o) => sum + Number(o.total_price), 0);
+  // Revenue = total_price - delivery_fee (only completed orders, excluding delivery fees)
+  const totalRevenue = completedOrders.reduce((sum, o) => sum + (Number(o.total_price) - Number(o.delivery_fee || 0)), 0);
+  const cancelledRevenue = cancelledOrders.reduce((sum, o) => sum + (Number(o.total_price) - Number(o.delivery_fee || 0)), 0);
   const averageOrderValue = completedOrders.length > 0 ? totalRevenue / completedOrders.length : 0;
 
   // Simulated time stats
