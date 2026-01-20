@@ -313,26 +313,18 @@ export function useSupabaseOrders(options: UseSupabaseOrdersOptions = {}) {
     }
   }, [realtimeConnected, fetchOrders]);
 
-  // Silent background refresh every 3 seconds
-  useEffect(() => {
-    silentRefreshIntervalRef.current = setInterval(() => {
-      fetchOrders(true); // Silent refresh - no loading indicator
-    }, SILENT_REFRESH_INTERVAL);
-
-    return () => {
-      if (silentRefreshIntervalRef.current) {
-        clearInterval(silentRefreshIntervalRef.current);
-      }
-    };
-  }, [fetchOrders]);
-
-  // Initial setup
+  // Initial setup and silent background refresh
   useEffect(() => {
     // Fetch data in parallel
     Promise.all([fetchMenuItems(), fetchOrders()]);
     
     // Setup realtime
     setupRealtimeChannel();
+
+    // Start silent background refresh every 3 seconds
+    silentRefreshIntervalRef.current = setInterval(() => {
+      fetchOrders(true); // Silent refresh - no loading indicator
+    }, SILENT_REFRESH_INTERVAL);
 
     return () => {
       // Cleanup
