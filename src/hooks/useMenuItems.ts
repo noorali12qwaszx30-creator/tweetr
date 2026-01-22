@@ -17,16 +17,13 @@ let cachedMenuItems: MenuItem[] | null = null;
 let cachedCategories: string[] | null = null;
 
 export function useMenuItems() {
-  // Initialize with cached data immediately - no loading state if cache exists
-  const hasCache = cachedMenuItems && cachedMenuItems.length > 0;
   const [menuItems, setMenuItems] = useState<MenuItem[]>(cachedMenuItems || []);
-  const [loading, setLoading] = useState(!hasCache); // Only show loading if no cache
+  const [loading, setLoading] = useState(true); // Always start loading
   const [categories, setCategories] = useState<string[]>(cachedCategories || []);
   const isMounted = useRef(true);
+  const hasFetchedRef = useRef(false);
 
-  const fetchMenuItems = useCallback(async (showLoading = false) => {
-    if (showLoading) setLoading(true);
-    
+  const fetchMenuItems = useCallback(async () => {
     try {
       const { data, error } = await supabase
         .from('menu_items')
@@ -60,9 +57,17 @@ export function useMenuItems() {
 
   useEffect(() => {
     isMounted.current = true;
+    hasFetchedRef.current = false;
     
-    // Fetch fresh data in background (no loading spinner if cache exists)
-    fetchMenuItems(false);
+    // If we have cached data, show it immediately but still fetch
+    if (cachedMenuItems && cachedMenuItems.length > 0) {
+      setMenuItems(cachedMenuItems);
+      setCategories(cachedCategories || []);
+      setLoading(false);
+    }
+    
+    // Always fetch fresh data on mount
+    fetchMenuItems();
     
     // Subscribe to realtime changes
     const channel = supabase
@@ -70,12 +75,12 @@ export function useMenuItems() {
       .on(
         'postgres_changes',
         { event: '*', schema: 'public', table: 'menu_items' },
-        () => fetchMenuItems(false)
+        () => fetchMenuItems()
       )
       .subscribe();
 
-    // Refresh every 60 seconds (less aggressive)
-    const refreshInterval = setInterval(() => fetchMenuItems(false), 60000);
+    // Refresh every 30 seconds
+    const refreshInterval = setInterval(() => fetchMenuItems(), 30000);
 
     return () => {
       isMounted.current = false;

@@ -323,22 +323,17 @@ export function useSupabaseOrders(options: UseSupabaseOrdersOptions = {}) {
     }
   }, [realtimeConnected, fetchOrders]);
 
-  // Initial setup and silent background refresh
+  // Initial setup
   useEffect(() => {
-    // Fetch data in parallel
+    // Fetch data in parallel - ALWAYS fetch on mount
     Promise.all([fetchMenuItems(), fetchOrders()]);
     
     // Setup realtime
     setupRealtimeChannel();
 
-    // Start silent background refresh - only when realtime is connected
-    // This is just a backup sync, not the primary data source
+    // Silent background refresh every 10 seconds (always active as backup)
     silentRefreshIntervalRef.current = setInterval(() => {
-      // Only do silent refresh if realtime is connected
-      // If not connected, polling is already handling updates
-      if (realtimeConnected) {
-        fetchOrders(true); // Silent refresh - no loading indicator
-      }
+      fetchOrders(true); // Silent refresh - no loading indicator
     }, SILENT_REFRESH_INTERVAL);
 
     return () => {
