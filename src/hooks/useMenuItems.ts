@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 
@@ -12,80 +12,65 @@ export interface MenuItem {
   display_order: number;
 }
 
-// Cache stored in a ref-like pattern to survive HMR
-const menuCache = {
-  items: null as MenuItem[] | null,
-  categories: null as string[] | null,
-};
+// Simple cache for menu items to avoid loading delay on navigation
+let cachedMenuItems: MenuItem[] | null = null;
+let cachedCategories: string[] | null = null;
 
 export function useMenuItems() {
-  const [menuItems, setMenuItems] = useState<MenuItem[]>(() => menuCache.items || []);
-  const [loading, setLoading] = useState(true);
-  const [categories, setCategories] = useState<string[]>(() => menuCache.categories || []);
-  const isMounted = useRef(true);
+  const [menuItems, setMenuItems] = useState<MenuItem[]>(cachedMenuItems || []);
+  const [loading, setLoading] = useState(cachedMenuItems === null);
+  const [categories, setCategories] = useState<string[]>(cachedCategories || []);
 
   const fetchMenuItems = useCallback(async () => {
-    try {
-      const { data, error } = await supabase
-        .from('menu_items')
-        .select('*')
-        .order('category')
-        .order('display_order');
-
-      if (error) {
-        console.error('[useMenuItems] Error:', error);
-        if (isMounted.current) setLoading(false);
-        return;
-      }
-
-      const items = (data || []) as MenuItem[];
-      const uniqueCategories = [...new Set(items.map(item => item.category))];
-      
-      // Update cache
-      menuCache.items = items;
-      menuCache.categories = uniqueCategories;
-      
-      if (isMounted.current) {
-        setMenuItems(items);
-        setCategories(uniqueCategories);
-        setLoading(false);
-      }
-    } catch (err) {
-      console.error('[useMenuItems] Unexpected error:', err);
-      if (isMounted.current) setLoading(false);
+    // Only show loading if we don't have cached data
+    if (!cachedMenuItems) {
+      setLoading(true);
     }
+    
+    const { data, error } = await supabase
+      .from('menu_items')
+      .select('*')
+      .order('category')
+      .order('display_order');
+
+    if (error) {
+      console.error('Error fetching menu items:', error);
+      if (!cachedMenuItems) {
+        toast.error('حدث خطأ في جلب القائمة');
+      }
+      setLoading(false);
+      return;
+    }
+
+    const items = data as MenuItem[];
+    const uniqueCategories = [...new Set(data.map(item => item.category))];
+    
+    // Update cache
+    cachedMenuItems = items;
+    cachedCategories = uniqueCategories;
+    
+    setMenuItems(items);
+    setCategories(uniqueCategories);
+    setLoading(false);
   }, []);
 
   useEffect(() => {
-    isMounted.current = true;
-    
-    // If we have cached data, show it immediately but still fetch
-    if (menuCache.items && menuCache.items.length > 0) {
-      setMenuItems(menuCache.items);
-      setCategories(menuCache.categories || []);
-      setLoading(false);
-    }
-    
-    // Always fetch fresh data on mount
     fetchMenuItems();
     
-    // Subscribe to realtime changes
+    // Subscribe to realtime changes for instant updates
     const channel = supabase
-      .channel('menu-realtime')
+      .channel('menu-items-realtime')
       .on(
         'postgres_changes',
         { event: '*', schema: 'public', table: 'menu_items' },
-        () => fetchMenuItems()
+        () => {
+          fetchMenuItems();
+        }
       )
       .subscribe();
 
-    // Refresh every 30 seconds
-    const refreshInterval = setInterval(() => fetchMenuItems(), 30000);
-
     return () => {
-      isMounted.current = false;
       supabase.removeChannel(channel);
-      clearInterval(refreshInterval);
     };
   }, [fetchMenuItems]);
 
@@ -133,9 +118,8 @@ export function useMenuItems() {
 
     toast.success('تم إضافة الصنف');
     // Replace temp item with real item
-    const newItems = menuItems.map(i => i.id === tempId ? data : i);
-    setMenuItems(newItems);
-    menuCache.items = newItems;
+    setMenuItems(prev => prev.map(i => i.id === tempId ? data : i));
+    cachedMenuItems = menuItems.map(i => i.id === tempId ? data : i);
     return data;
   };
 
@@ -160,7 +144,7 @@ export function useMenuItems() {
     }
 
     toast.success('تم تحديث الصنف');
-    menuCache.items = menuItems.map(item => item.id === id ? { ...item, ...updates } : item);
+    cachedMenuItems = menuItems.map(item => item.id === id ? { ...item, ...updates } : item);
     return true;
   };
 
@@ -183,7 +167,7 @@ export function useMenuItems() {
     }
 
     toast.success('تم حذف الصنف');
-    menuCache.items = menuItems.filter(item => item.id !== id);
+    cachedMenuItems = menuItems.filter(item => item.id !== id);
     return true;
   };
 
@@ -203,7 +187,7 @@ export function useMenuItems() {
       return updated ? { ...item, display_order: updated.display_order } : item;
     });
     setMenuItems(updatedItems);
-    menuCache.items = updatedItems;
+    cachedMenuItems = updatedItems;
 
     // Update display_order for multiple items in parallel
     const updates = items.map(item => 

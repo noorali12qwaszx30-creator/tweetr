@@ -65,19 +65,14 @@ interface UseSupabaseOrdersOptions {
 // Polling interval when realtime fails (30 seconds)
 const FALLBACK_POLLING_INTERVAL = 30000;
 
-// Silent background refresh interval (10 seconds - more stable)
-const SILENT_REFRESH_INTERVAL = 10000;
-
-// Cache stored in object to survive HMR
-const ordersCache = {
-  orders: null as OrderWithItems[] | null,
-};
+// Silent background refresh interval (3 seconds)
+const SILENT_REFRESH_INTERVAL = 3000;
 
 export function useSupabaseOrders(options: UseSupabaseOrdersOptions = {}) {
   const { orderTypeFilter = 'all' } = options;
-  const [orders, setOrders] = useState<OrderWithItems[]>(() => ordersCache.orders || []);
+  const [orders, setOrders] = useState<OrderWithItems[]>([]);
   const [menuItems, setMenuItems] = useState<DbMenuItem[]>([]);
-  const [loading, setLoading] = useState(() => ordersCache.orders === null);
+  const [loading, setLoading] = useState(true);
   const [realtimeConnected, setRealtimeConnected] = useState(false);
   const { playNotificationSound } = useNotificationSound();
 
@@ -113,11 +108,6 @@ export function useSupabaseOrders(options: UseSupabaseOrdersOptions = {}) {
 
   // Fetch orders with items (silent mode doesn't change loading state)
   const fetchOrders = useCallback(async (silent = false) => {
-    // Only show loading if we don't have cached data
-    if (!silent && !ordersCache.orders) {
-      setLoading(true);
-    }
-    
     const { data, error } = await supabase
       .from('orders')
       .select(`*, order_items (*)`)
@@ -135,8 +125,6 @@ export function useSupabaseOrders(options: UseSupabaseOrdersOptions = {}) {
       items: (order.order_items || []) as DbOrderItem[],
     })) as OrderWithItems[];
 
-    // Update cache
-    ordersCache.orders = ordersWithItems;
     setOrders(ordersWithItems);
     if (!silent) setLoading(false);
   }, []);
@@ -325,15 +313,15 @@ export function useSupabaseOrders(options: UseSupabaseOrdersOptions = {}) {
     }
   }, [realtimeConnected, fetchOrders]);
 
-  // Initial setup
+  // Initial setup and silent background refresh
   useEffect(() => {
-    // Fetch data in parallel - ALWAYS fetch on mount
+    // Fetch data in parallel
     Promise.all([fetchMenuItems(), fetchOrders()]);
     
     // Setup realtime
     setupRealtimeChannel();
 
-    // Silent background refresh every 10 seconds (always active as backup)
+    // Start silent background refresh every 3 seconds
     silentRefreshIntervalRef.current = setInterval(() => {
       fetchOrders(true); // Silent refresh - no loading indicator
     }, SILENT_REFRESH_INTERVAL);

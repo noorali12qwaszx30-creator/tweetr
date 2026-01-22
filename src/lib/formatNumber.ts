@@ -68,10 +68,3 @@ export const formatDateEnglish = (date: Date | string): string => {
   const day = d.getDate().toString().padStart(2, '0');
   return `${year}/${month}/${day}`;
 };
-
-/**
- * Formats a number with commas (alias for formatNumberWithCommas)
- */
-export const formatNumber = (num: number): string => {
-  return formatNumberWithCommas(num);
-};
