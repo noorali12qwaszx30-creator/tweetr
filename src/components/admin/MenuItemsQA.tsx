@@ -3,18 +3,19 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Loader2, UtensilsCrossed, Send, TrendingUp, MapPin, Package, BarChart3 } from 'lucide-react';
+import { Loader2, UtensilsCrossed, Send, TrendingUp, MapPin, Package, BarChart3, Database, RefreshCcw } from 'lucide-react';
 import { formatNumber, toEnglishNumbers } from '@/lib/formatNumber';
 import { toast } from 'sonner';
 
 interface MenuItemStats {
   id: string;
-  name: string;
+  menu_item_id: string | null;
+  menu_item_name: string;
   category: string;
-  total_sold: number;
+  total_quantity_sold: number;
   total_revenue: number;
-  delivery_count: number;
-  takeaway_count: number;
+  delivery_quantity: number;
+  takeaway_quantity: number;
   areas: { name: string; count: number }[];
 }
 
@@ -34,87 +35,54 @@ export function MenuItemsQA() {
   const [isAsking, setIsAsking] = useState(false);
   const [selectedItem, setSelectedItem] = useState<MenuItemStats | null>(null);
 
-  // Fetch menu item statistics
+  // Fetch permanent menu item statistics
   const fetchMenuStats = useCallback(async () => {
     try {
-      // Fetch all menu items
-      const { data: menuItems, error: menuError } = await supabase
-        .from('menu_items')
-        .select('id, name, category');
+      // Fetch from permanent statistics table
+      const { data: stats, error: statsError } = await supabase
+        .from('menu_item_statistics' as any)
+        .select('*')
+        .order('total_quantity_sold', { ascending: false });
       
-      if (menuError) throw menuError;
+      if (statsError) throw statsError;
 
-      // Fetch all order items with their orders
-      const { data: orderItems, error: orderError } = await supabase
-        .from('order_items')
-        .select('menu_item_id, menu_item_name, menu_item_price, quantity, order_id');
+      // Fetch area breakdowns
+      const { data: areaStats, error: areaError } = await supabase
+        .from('menu_item_area_stats' as any)
+        .select('*');
       
-      if (orderError) throw orderError;
+      if (areaError) throw areaError;
 
-      // Fetch orders with their details
-      const { data: orders, error: ordersError } = await supabase
-        .from('orders')
-        .select('id, type, status, delivery_area_id');
-      
-      if (ordersError) throw ordersError;
-
-      // Fetch delivery areas
-      const { data: areas, error: areasError } = await supabase
-        .from('delivery_areas')
-        .select('id, name');
-      
-      if (areasError) throw areasError;
-
-      const areaMap = new Map(areas?.map(a => [a.id, a.name]) || []);
-      const orderMap = new Map(orders?.map(o => [o.id, o]) || []);
-
-      // Calculate stats for each menu item
-      const stats: MenuItemStats[] = (menuItems || []).map(item => {
-        const itemOrders = (orderItems || []).filter(oi => 
-          oi.menu_item_id === item.id || oi.menu_item_name === item.name
-        );
-
-        let totalSold = 0;
-        let totalRevenue = 0;
-        let deliveryCount = 0;
-        let takeawayCount = 0;
-        const areaStats: Record<string, number> = {};
-
-        itemOrders.forEach(oi => {
-          const order = orderMap.get(oi.order_id);
-          if (order && order.status !== 'cancelled') {
-            totalSold += oi.quantity;
-            totalRevenue += oi.quantity * Number(oi.menu_item_price);
-            
-            if (order.type === 'delivery') {
-              deliveryCount += oi.quantity;
-              if (order.delivery_area_id) {
-                const areaName = areaMap.get(order.delivery_area_id) || 'غير محدد';
-                areaStats[areaName] = (areaStats[areaName] || 0) + oi.quantity;
-              }
-            } else {
-              takeawayCount += oi.quantity;
-            }
-          }
+      // Group area stats by menu item
+      const areasByItem: Record<string, { name: string; count: number }[]> = {};
+      (areaStats || []).forEach((area: any) => {
+        if (!areasByItem[area.menu_item_name]) {
+          areasByItem[area.menu_item_name] = [];
+        }
+        areasByItem[area.menu_item_name].push({
+          name: area.delivery_area_name,
+          count: area.quantity_sold
         });
+      });
 
-        const areasArray = Object.entries(areaStats)
-          .map(([name, count]) => ({ name, count }))
-          .sort((a, b) => b.count - a.count);
+      // Sort areas by count
+      Object.keys(areasByItem).forEach(key => {
+        areasByItem[key].sort((a, b) => b.count - a.count);
+      });
 
-        return {
-          id: item.id,
-          name: item.name,
-          category: item.category,
-          total_sold: totalSold,
-          total_revenue: totalRevenue,
-          delivery_count: deliveryCount,
-          takeaway_count: takeawayCount,
-          areas: areasArray
-        };
-      }).sort((a, b) => b.total_sold - a.total_sold);
+      const formattedStats: MenuItemStats[] = (stats || []).map((item: any) => ({
+        id: item.id,
+        menu_item_id: item.menu_item_id,
+        menu_item_name: item.menu_item_name,
+        category: item.category || '',
+        total_quantity_sold: item.total_quantity_sold || 0,
+        total_revenue: Number(item.total_revenue) || 0,
+        delivery_quantity: item.delivery_quantity || 0,
+        takeaway_quantity: item.takeaway_quantity || 0,
+        areas: areasByItem[item.menu_item_name] || []
+      }));
 
-      setMenuStats(stats);
+      setMenuStats(formattedStats);
     } catch (err) {
       console.error('Error fetching menu stats:', err);
       toast.error('حدث خطأ في جلب الإحصائيات');
@@ -145,12 +113,12 @@ export function MenuItemsQA() {
     try {
       // Prepare menu data for AI
       const menuDataSummary = menuStats.map(item => ({
-        name: item.name,
+        name: item.menu_item_name,
         category: item.category,
-        total_sold: item.total_sold,
+        total_sold: item.total_quantity_sold,
         revenue: item.total_revenue,
-        delivery: item.delivery_count,
-        takeaway: item.takeaway_count,
+        delivery: item.delivery_quantity,
+        takeaway: item.takeaway_quantity,
         top_areas: item.areas.slice(0, 3).map(a => `${a.name}: ${a.count}`)
       }));
 
@@ -206,6 +174,9 @@ export function MenuItemsQA() {
     { label: 'مقارنة التوصيل والاستلام', question: 'قارن بين مبيعات التوصيل والاستلام' },
   ];
 
+  const totalSold = menuStats.reduce((sum, item) => sum + item.total_quantity_sold, 0);
+  const totalRevenue = menuStats.reduce((sum, item) => sum + item.total_revenue, 0);
+
   if (loading) {
     return (
       <div className="flex items-center justify-center py-12">
@@ -218,14 +189,29 @@ export function MenuItemsQA() {
     <div className="space-y-4">
       {/* Header */}
       <div className="bg-gradient-to-br from-orange-500/10 via-orange-500/5 to-transparent border border-orange-500/20 rounded-xl p-4">
-        <div className="flex items-center gap-3">
-          <div className="w-12 h-12 rounded-xl bg-orange-500/20 flex items-center justify-center">
-            <UtensilsCrossed className="w-6 h-6 text-orange-500" />
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <div className="w-12 h-12 rounded-xl bg-orange-500/20 flex items-center justify-center">
+              <UtensilsCrossed className="w-6 h-6 text-orange-500" />
+            </div>
+            <div>
+              <h2 className="text-lg font-bold flex items-center gap-2">
+                إحصائيات الأكلات الدائمة
+                <Database className="w-4 h-4 text-orange-500" />
+              </h2>
+              <p className="text-sm text-muted-foreground">لا تتأثر بحذف الطلبات أو إعادة الضبط</p>
+            </div>
           </div>
-          <div>
-            <h2 className="text-lg font-bold">إحصائيات الأكلات</h2>
-            <p className="text-sm text-muted-foreground">اسأل عن مبيعات وإحصائيات أي صنف</p>
-          </div>
+          <Button 
+            variant="outline" 
+            size="icon"
+            onClick={() => {
+              setLoading(true);
+              fetchMenuStats();
+            }}
+          >
+            <RefreshCcw className="w-4 h-4" />
+          </Button>
         </div>
       </div>
 
@@ -234,87 +220,116 @@ export function MenuItemsQA() {
         <div className="bg-card border border-border rounded-xl p-4">
           <div className="flex items-center gap-2 mb-2">
             <TrendingUp className="w-4 h-4 text-success" />
-            <span className="text-sm text-muted-foreground">الأكثر مبيعاً</span>
+            <span className="text-sm text-muted-foreground">إجمالي المبيعات</span>
           </div>
-          <p className="font-bold text-lg">{menuStats[0]?.name || '-'}</p>
-          <p className="text-sm text-success">{toEnglishNumbers(menuStats[0]?.total_sold || 0)} قطعة</p>
+          <p className="font-bold text-2xl text-success">{toEnglishNumbers(totalSold)}</p>
+          <p className="text-xs text-muted-foreground">قطعة مباعة</p>
         </div>
         <div className="bg-card border border-border rounded-xl p-4">
           <div className="flex items-center gap-2 mb-2">
             <BarChart3 className="w-4 h-4 text-primary" />
             <span className="text-sm text-muted-foreground">إجمالي الإيرادات</span>
           </div>
-          <p className="font-bold text-lg text-primary">
-            {formatNumber(menuStats.reduce((sum, item) => sum + item.total_revenue, 0))}
+          <p className="font-bold text-2xl text-primary">
+            {formatNumber(totalRevenue)}
           </p>
-          <p className="text-sm text-muted-foreground">دينار</p>
+          <p className="text-xs text-muted-foreground">دينار</p>
         </div>
       </div>
+
+      {/* Top Seller */}
+      {menuStats.length > 0 && (
+        <div className="bg-gradient-to-r from-success/10 to-success/5 border border-success/20 rounded-xl p-4">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-xs text-success mb-1">🏆 الأكثر مبيعاً</p>
+              <p className="font-bold text-lg">{menuStats[0]?.menu_item_name}</p>
+              <p className="text-sm text-muted-foreground">{menuStats[0]?.category}</p>
+            </div>
+            <div className="text-left">
+              <p className="text-2xl font-bold text-success">{toEnglishNumbers(menuStats[0]?.total_quantity_sold || 0)}</p>
+              <p className="text-xs text-muted-foreground">قطعة</p>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Menu Items List */}
       <div className="bg-card border border-border rounded-xl p-4">
         <h3 className="font-bold mb-3 flex items-center gap-2">
           <Package className="w-5 h-5 text-muted-foreground" />
-          جميع الأصناف
+          جميع الأصناف ({toEnglishNumbers(menuStats.length)})
         </h3>
-        <div className="space-y-2 max-h-64 overflow-y-auto">
-          {menuStats.map(item => (
-            <div 
-              key={item.id}
-              onClick={() => setSelectedItem(selectedItem?.id === item.id ? null : item)}
-              className={`p-3 rounded-lg cursor-pointer transition-all ${
-                selectedItem?.id === item.id 
-                  ? 'bg-primary/10 border border-primary/30' 
-                  : 'bg-muted/50 hover:bg-muted'
-              }`}
-            >
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="font-medium">{item.name}</p>
-                  <p className="text-xs text-muted-foreground">{item.category}</p>
-                </div>
-                <div className="text-left">
-                  <p className="font-bold text-primary">{toEnglishNumbers(item.total_sold)}</p>
-                  <p className="text-xs text-muted-foreground">مبيعات</p>
-                </div>
-              </div>
-              
-              {selectedItem?.id === item.id && (
-                <div className="mt-3 pt-3 border-t border-border space-y-2">
-                  <div className="grid grid-cols-2 gap-2 text-sm">
-                    <div className="bg-background rounded p-2">
-                      <p className="text-muted-foreground text-xs">توصيل</p>
-                      <p className="font-medium">{toEnglishNumbers(item.delivery_count)}</p>
-                    </div>
-                    <div className="bg-background rounded p-2">
-                      <p className="text-muted-foreground text-xs">استلام</p>
-                      <p className="font-medium">{toEnglishNumbers(item.takeaway_count)}</p>
+        
+        {menuStats.length === 0 ? (
+          <div className="text-center py-8 text-muted-foreground">
+            <Database className="w-12 h-12 mx-auto mb-2 opacity-50" />
+            <p>لا توجد إحصائيات بعد</p>
+            <p className="text-xs">ستظهر الإحصائيات عند اكتمال الطلبات</p>
+          </div>
+        ) : (
+          <div className="space-y-2 max-h-64 overflow-y-auto">
+            {menuStats.map((item, index) => (
+              <div 
+                key={item.id}
+                onClick={() => setSelectedItem(selectedItem?.id === item.id ? null : item)}
+                className={`p-3 rounded-lg cursor-pointer transition-all ${
+                  selectedItem?.id === item.id 
+                    ? 'bg-primary/10 border border-primary/30' 
+                    : 'bg-muted/50 hover:bg-muted'
+                }`}
+              >
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <span className="text-xs text-muted-foreground w-5">{toEnglishNumbers(index + 1)}</span>
+                    <div>
+                      <p className="font-medium">{item.menu_item_name}</p>
+                      <p className="text-xs text-muted-foreground">{item.category}</p>
                     </div>
                   </div>
-                  <div className="bg-background rounded p-2">
-                    <p className="text-muted-foreground text-xs mb-1">الإيرادات</p>
-                    <p className="font-medium text-success">{formatNumber(item.total_revenue)} دينار</p>
+                  <div className="text-left">
+                    <p className="font-bold text-primary">{toEnglishNumbers(item.total_quantity_sold)}</p>
+                    <p className="text-xs text-muted-foreground">مبيعات</p>
                   </div>
-                  {item.areas.length > 0 && (
-                    <div className="bg-background rounded p-2">
-                      <p className="text-muted-foreground text-xs mb-1 flex items-center gap-1">
-                        <MapPin className="w-3 h-3" />
-                        المناطق
-                      </p>
-                      <div className="flex flex-wrap gap-1">
-                        {item.areas.slice(0, 5).map((area, idx) => (
-                          <span key={idx} className="text-xs bg-primary/10 text-primary px-2 py-0.5 rounded">
-                            {area.name}: {toEnglishNumbers(area.count)}
-                          </span>
-                        ))}
+                </div>
+                
+                {selectedItem?.id === item.id && (
+                  <div className="mt-3 pt-3 border-t border-border space-y-2">
+                    <div className="grid grid-cols-2 gap-2 text-sm">
+                      <div className="bg-background rounded p-2">
+                        <p className="text-muted-foreground text-xs">توصيل</p>
+                        <p className="font-medium">{toEnglishNumbers(item.delivery_quantity)}</p>
+                      </div>
+                      <div className="bg-background rounded p-2">
+                        <p className="text-muted-foreground text-xs">استلام</p>
+                        <p className="font-medium">{toEnglishNumbers(item.takeaway_quantity)}</p>
                       </div>
                     </div>
-                  )}
-                </div>
-              )}
-            </div>
-          ))}
-        </div>
+                    <div className="bg-background rounded p-2">
+                      <p className="text-muted-foreground text-xs mb-1">الإيرادات</p>
+                      <p className="font-medium text-success">{formatNumber(item.total_revenue)} دينار</p>
+                    </div>
+                    {item.areas.length > 0 && (
+                      <div className="bg-background rounded p-2">
+                        <p className="text-muted-foreground text-xs mb-1 flex items-center gap-1">
+                          <MapPin className="w-3 h-3" />
+                          المناطق
+                        </p>
+                        <div className="flex flex-wrap gap-1">
+                          {item.areas.slice(0, 5).map((area, idx) => (
+                            <span key={idx} className="text-xs bg-primary/10 text-primary px-2 py-0.5 rounded">
+                              {area.name}: {toEnglishNumbers(area.count)}
+                            </span>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
+            ))}
+          </div>
+        )}
       </div>
 
       {/* Chat Section */}
