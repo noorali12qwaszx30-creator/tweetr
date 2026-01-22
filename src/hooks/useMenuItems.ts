@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 
@@ -15,16 +15,16 @@ export interface MenuItem {
 // Simple cache for menu items to avoid loading delay on navigation
 let cachedMenuItems: MenuItem[] | null = null;
 let cachedCategories: string[] | null = null;
-let lastFetchTime: number = 0;
-const CACHE_DURATION = 5000; // 5 seconds cache validity
 
 export function useMenuItems() {
-  const [menuItems, setMenuItems] = useState<MenuItem[]>([]);
+  const [menuItems, setMenuItems] = useState<MenuItem[]>(cachedMenuItems || []);
   const [loading, setLoading] = useState(true);
-  const [categories, setCategories] = useState<string[]>([]);
+  const [categories, setCategories] = useState<string[]>(cachedCategories || []);
+  const hasFetched = useRef(false);
 
   const fetchMenuItems = useCallback(async () => {
     try {
+      console.log('[useMenuItems] Fetching menu items...');
       const { data, error } = await supabase
         .from('menu_items')
         .select('*')
@@ -32,55 +32,66 @@ export function useMenuItems() {
         .order('display_order');
 
       if (error) {
-        console.error('Error fetching menu items:', error);
+        console.error('[useMenuItems] Error fetching menu items:', error);
         toast.error('حدث خطأ في جلب القائمة');
         setLoading(false);
         return;
       }
 
+      console.log('[useMenuItems] Fetched', data?.length || 0, 'items');
       const items = (data || []) as MenuItem[];
       const uniqueCategories = [...new Set(items.map(item => item.category))];
       
       // Update cache
       cachedMenuItems = items;
       cachedCategories = uniqueCategories;
-      lastFetchTime = Date.now();
       
       setMenuItems(items);
       setCategories(uniqueCategories);
       setLoading(false);
     } catch (err) {
-      console.error('Unexpected error fetching menu items:', err);
+      console.error('[useMenuItems] Unexpected error:', err);
       setLoading(false);
     }
   }, []);
 
-  // Initialize from cache immediately, then fetch fresh data
+  // Initialize and fetch data
   useEffect(() => {
-    // If we have cached data, use it immediately
+    // Use cached data immediately if available
     if (cachedMenuItems && cachedMenuItems.length > 0) {
+      console.log('[useMenuItems] Using cached data:', cachedMenuItems.length, 'items');
       setMenuItems(cachedMenuItems);
       setCategories(cachedCategories || []);
       setLoading(false);
     }
     
-    // Always fetch fresh data
-    fetchMenuItems();
+    // Always fetch fresh data on mount
+    if (!hasFetched.current) {
+      hasFetched.current = true;
+      fetchMenuItems();
+    }
     
     // Subscribe to realtime changes for instant updates
     const channel = supabase
-      .channel('menu-items-realtime')
+      .channel('menu-items-realtime-' + Date.now())
       .on(
         'postgres_changes',
         { event: '*', schema: 'public', table: 'menu_items' },
         () => {
+          console.log('[useMenuItems] Realtime update received');
           fetchMenuItems();
         }
       )
       .subscribe();
 
+    // Periodic refresh every 30 seconds
+    const refreshInterval = setInterval(() => {
+      fetchMenuItems();
+    }, 30000);
+
     return () => {
       supabase.removeChannel(channel);
+      clearInterval(refreshInterval);
     };
   }, [fetchMenuItems]);
 

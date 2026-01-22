@@ -62,11 +62,11 @@ interface UseSupabaseOrdersOptions {
   orderTypeFilter?: 'delivery' | 'takeaway' | 'all';
 }
 
-// Polling interval when realtime fails (15 seconds)
-const FALLBACK_POLLING_INTERVAL = 15000;
+// Polling interval when realtime fails (30 seconds)
+const FALLBACK_POLLING_INTERVAL = 30000;
 
-// Silent background refresh interval (3 seconds - seamless auto-sync)
-const SILENT_REFRESH_INTERVAL = 3000;
+// Silent background refresh interval (10 seconds - more stable)
+const SILENT_REFRESH_INTERVAL = 10000;
 
 // Simple cache for orders to avoid loading delay on navigation
 let cachedOrders: OrderWithItems[] | null = null;
