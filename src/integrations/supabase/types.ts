@@ -14,6 +14,179 @@ export type Database = {
   }
   public: {
     Tables: {
+      ai_analysis_snapshots: {
+        Row: {
+          analysis_period: string | null
+          area_stats: Json | null
+          average_order_value: number | null
+          avg_delivery_time_minutes: number | null
+          avg_preparation_time_minutes: number | null
+          cancellation_reasons: Json | null
+          cancelled_orders: number | null
+          cancelled_revenue: number | null
+          cashier_stats: Json | null
+          completed_orders: number | null
+          congestion_status: Json | null
+          created_at: string | null
+          created_by: string | null
+          delay_rate: number | null
+          delayed_orders_count: number | null
+          delivery_fees_total: number | null
+          delivery_orders: number | null
+          delivery_stats: Json | null
+          hourly_distribution: Json | null
+          id: string
+          issue_reasons: Json | null
+          least_selling_items: Json | null
+          menu_summary: Json | null
+          new_customers: number | null
+          peak_hour: number | null
+          pending_orders: number | null
+          returning_customers: number | null
+          snapshot_date: string
+          takeaway_orders: number | null
+          top_customers: Json | null
+          top_selling_items: Json | null
+          total_customers: number | null
+          total_orders: number | null
+          total_revenue: number | null
+        }
+        Insert: {
+          analysis_period?: string | null
+          area_stats?: Json | null
+          average_order_value?: number | null
+          avg_delivery_time_minutes?: number | null
+          avg_preparation_time_minutes?: number | null
+          cancellation_reasons?: Json | null
+          cancelled_orders?: number | null
+          cancelled_revenue?: number | null
+          cashier_stats?: Json | null
+          completed_orders?: number | null
+          congestion_status?: Json | null
+          created_at?: string | null
+          created_by?: string | null
+          delay_rate?: number | null
+          delayed_orders_count?: number | null
+          delivery_fees_total?: number | null
+          delivery_orders?: number | null
+          delivery_stats?: Json | null
+          hourly_distribution?: Json | null
+          id?: string
+          issue_reasons?: Json | null
+          least_selling_items?: Json | null
+          menu_summary?: Json | null
+          new_customers?: number | null
+          peak_hour?: number | null
+          pending_orders?: number | null
+          returning_customers?: number | null
+          snapshot_date?: string
+          takeaway_orders?: number | null
+          top_customers?: Json | null
+          top_selling_items?: Json | null
+          total_customers?: number | null
+          total_orders?: number | null
+          total_revenue?: number | null
+        }
+        Update: {
+          analysis_period?: string | null
+          area_stats?: Json | null
+          average_order_value?: number | null
+          avg_delivery_time_minutes?: number | null
+          avg_preparation_time_minutes?: number | null
+          cancellation_reasons?: Json | null
+          cancelled_orders?: number | null
+          cancelled_revenue?: number | null
+          cashier_stats?: Json | null
+          completed_orders?: number | null
+          congestion_status?: Json | null
+          created_at?: string | null
+          created_by?: string | null
+          delay_rate?: number | null
+          delayed_orders_count?: number | null
+          delivery_fees_total?: number | null
+          delivery_orders?: number | null
+          delivery_stats?: Json | null
+          hourly_distribution?: Json | null
+          id?: string
+          issue_reasons?: Json | null
+          least_selling_items?: Json | null
+          menu_summary?: Json | null
+          new_customers?: number | null
+          peak_hour?: number | null
+          pending_orders?: number | null
+          returning_customers?: number | null
+          snapshot_date?: string
+          takeaway_orders?: number | null
+          top_customers?: Json | null
+          top_selling_items?: Json | null
+          total_customers?: number | null
+          total_orders?: number | null
+          total_revenue?: number | null
+        }
+        Relationships: []
+      }
+      ai_insights: {
+        Row: {
+          analysis_type: string
+          created_at: string | null
+          id: string
+          insights: Json | null
+          model_used: string | null
+          opportunities: Json | null
+          overall_score: number | null
+          performance_grade: string | null
+          raw_response: string | null
+          recommendations: Json | null
+          requested_by: string | null
+          snapshot_id: string | null
+          summary: string | null
+          tokens_used: number | null
+          warnings: Json | null
+        }
+        Insert: {
+          analysis_type?: string
+          created_at?: string | null
+          id?: string
+          insights?: Json | null
+          model_used?: string | null
+          opportunities?: Json | null
+          overall_score?: number | null
+          performance_grade?: string | null
+          raw_response?: string | null
+          recommendations?: Json | null
+          requested_by?: string | null
+          snapshot_id?: string | null
+          summary?: string | null
+          tokens_used?: number | null
+          warnings?: Json | null
+        }
+        Update: {
+          analysis_type?: string
+          created_at?: string | null
+          id?: string
+          insights?: Json | null
+          model_used?: string | null
+          opportunities?: Json | null
+          overall_score?: number | null
+          performance_grade?: string | null
+          raw_response?: string | null
+          recommendations?: Json | null
+          requested_by?: string | null
+          snapshot_id?: string | null
+          summary?: string | null
+          tokens_used?: number | null
+          warnings?: Json | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ai_insights_snapshot_id_fkey"
+            columns: ["snapshot_id"]
+            isOneToOne: false
+            referencedRelation: "ai_analysis_snapshots"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       customers: {
         Row: {
           address: string | null
@@ -41,6 +214,66 @@ export type Database = {
           notes?: string | null
           phone?: string
           updated_at?: string
+        }
+        Relationships: []
+      }
+      daily_statistics: {
+        Row: {
+          area_distribution: Json | null
+          avg_delivery_time: number | null
+          cancelled_orders: number | null
+          completed_orders: number | null
+          created_at: string | null
+          delivery_fees: number | null
+          delivery_orders: number | null
+          id: string
+          new_customers: number | null
+          peak_hour: number | null
+          stat_date: string
+          takeaway_orders: number | null
+          top_selling_items: Json | null
+          total_customers: number | null
+          total_orders: number | null
+          total_revenue: number | null
+          updated_at: string | null
+        }
+        Insert: {
+          area_distribution?: Json | null
+          avg_delivery_time?: number | null
+          cancelled_orders?: number | null
+          completed_orders?: number | null
+          created_at?: string | null
+          delivery_fees?: number | null
+          delivery_orders?: number | null
+          id?: string
+          new_customers?: number | null
+          peak_hour?: number | null
+          stat_date: string
+          takeaway_orders?: number | null
+          top_selling_items?: Json | null
+          total_customers?: number | null
+          total_orders?: number | null
+          total_revenue?: number | null
+          updated_at?: string | null
+        }
+        Update: {
+          area_distribution?: Json | null
+          avg_delivery_time?: number | null
+          cancelled_orders?: number | null
+          completed_orders?: number | null
+          created_at?: string | null
+          delivery_fees?: number | null
+          delivery_orders?: number | null
+          id?: string
+          new_customers?: number | null
+          peak_hour?: number | null
+          stat_date?: string
+          takeaway_orders?: number | null
+          top_selling_items?: Json | null
+          total_customers?: number | null
+          total_orders?: number | null
+          total_revenue?: number | null
+          updated_at?: string | null
         }
         Relationships: []
       }
