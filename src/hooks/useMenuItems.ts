@@ -12,16 +12,17 @@ export interface MenuItem {
   display_order: number;
 }
 
-// Simple cache for menu items to avoid loading delay on navigation
-let cachedMenuItems: MenuItem[] | null = null;
-let cachedCategories: string[] | null = null;
+// Cache stored in a ref-like pattern to survive HMR
+const menuCache = {
+  items: null as MenuItem[] | null,
+  categories: null as string[] | null,
+};
 
 export function useMenuItems() {
-  const [menuItems, setMenuItems] = useState<MenuItem[]>(cachedMenuItems || []);
-  const [loading, setLoading] = useState(true); // Always start loading
-  const [categories, setCategories] = useState<string[]>(cachedCategories || []);
+  const [menuItems, setMenuItems] = useState<MenuItem[]>(() => menuCache.items || []);
+  const [loading, setLoading] = useState(true);
+  const [categories, setCategories] = useState<string[]>(() => menuCache.categories || []);
   const isMounted = useRef(true);
-  const hasFetchedRef = useRef(false);
 
   const fetchMenuItems = useCallback(async () => {
     try {
@@ -41,8 +42,8 @@ export function useMenuItems() {
       const uniqueCategories = [...new Set(items.map(item => item.category))];
       
       // Update cache
-      cachedMenuItems = items;
-      cachedCategories = uniqueCategories;
+      menuCache.items = items;
+      menuCache.categories = uniqueCategories;
       
       if (isMounted.current) {
         setMenuItems(items);
@@ -57,12 +58,11 @@ export function useMenuItems() {
 
   useEffect(() => {
     isMounted.current = true;
-    hasFetchedRef.current = false;
     
     // If we have cached data, show it immediately but still fetch
-    if (cachedMenuItems && cachedMenuItems.length > 0) {
-      setMenuItems(cachedMenuItems);
-      setCategories(cachedCategories || []);
+    if (menuCache.items && menuCache.items.length > 0) {
+      setMenuItems(menuCache.items);
+      setCategories(menuCache.categories || []);
       setLoading(false);
     }
     
@@ -133,8 +133,9 @@ export function useMenuItems() {
 
     toast.success('تم إضافة الصنف');
     // Replace temp item with real item
-    setMenuItems(prev => prev.map(i => i.id === tempId ? data : i));
-    cachedMenuItems = menuItems.map(i => i.id === tempId ? data : i);
+    const newItems = menuItems.map(i => i.id === tempId ? data : i);
+    setMenuItems(newItems);
+    menuCache.items = newItems;
     return data;
   };
 
@@ -159,7 +160,7 @@ export function useMenuItems() {
     }
 
     toast.success('تم تحديث الصنف');
-    cachedMenuItems = menuItems.map(item => item.id === id ? { ...item, ...updates } : item);
+    menuCache.items = menuItems.map(item => item.id === id ? { ...item, ...updates } : item);
     return true;
   };
 
@@ -182,7 +183,7 @@ export function useMenuItems() {
     }
 
     toast.success('تم حذف الصنف');
-    cachedMenuItems = menuItems.filter(item => item.id !== id);
+    menuCache.items = menuItems.filter(item => item.id !== id);
     return true;
   };
 
@@ -202,7 +203,7 @@ export function useMenuItems() {
       return updated ? { ...item, display_order: updated.display_order } : item;
     });
     setMenuItems(updatedItems);
-    cachedMenuItems = updatedItems;
+    menuCache.items = updatedItems;
 
     // Update display_order for multiple items in parallel
     const updates = items.map(item => 
