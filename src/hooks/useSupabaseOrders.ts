@@ -68,14 +68,16 @@ const FALLBACK_POLLING_INTERVAL = 30000;
 // Silent background refresh interval (10 seconds - more stable)
 const SILENT_REFRESH_INTERVAL = 10000;
 
-// Simple cache for orders to avoid loading delay on navigation
-let cachedOrders: OrderWithItems[] | null = null;
+// Cache stored in object to survive HMR
+const ordersCache = {
+  orders: null as OrderWithItems[] | null,
+};
 
 export function useSupabaseOrders(options: UseSupabaseOrdersOptions = {}) {
   const { orderTypeFilter = 'all' } = options;
-  const [orders, setOrders] = useState<OrderWithItems[]>(cachedOrders || []);
+  const [orders, setOrders] = useState<OrderWithItems[]>(() => ordersCache.orders || []);
   const [menuItems, setMenuItems] = useState<DbMenuItem[]>([]);
-  const [loading, setLoading] = useState(cachedOrders === null);
+  const [loading, setLoading] = useState(() => ordersCache.orders === null);
   const [realtimeConnected, setRealtimeConnected] = useState(false);
   const { playNotificationSound } = useNotificationSound();
 
@@ -112,7 +114,7 @@ export function useSupabaseOrders(options: UseSupabaseOrdersOptions = {}) {
   // Fetch orders with items (silent mode doesn't change loading state)
   const fetchOrders = useCallback(async (silent = false) => {
     // Only show loading if we don't have cached data
-    if (!silent && !cachedOrders) {
+    if (!silent && !ordersCache.orders) {
       setLoading(true);
     }
     
@@ -134,7 +136,7 @@ export function useSupabaseOrders(options: UseSupabaseOrdersOptions = {}) {
     })) as OrderWithItems[];
 
     // Update cache
-    cachedOrders = ordersWithItems;
+    ordersCache.orders = ordersWithItems;
     setOrders(ordersWithItems);
     if (!silent) setLoading(false);
   }, []);
