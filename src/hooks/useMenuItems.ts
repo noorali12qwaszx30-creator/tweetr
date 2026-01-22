@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 
@@ -17,60 +17,70 @@ let cachedMenuItems: MenuItem[] | null = null;
 let cachedCategories: string[] | null = null;
 
 export function useMenuItems() {
+  // Initialize with cached data immediately - no loading state if cache exists
+  const hasCache = cachedMenuItems && cachedMenuItems.length > 0;
   const [menuItems, setMenuItems] = useState<MenuItem[]>(cachedMenuItems || []);
-  const [loading, setLoading] = useState(cachedMenuItems === null);
+  const [loading, setLoading] = useState(!hasCache); // Only show loading if no cache
   const [categories, setCategories] = useState<string[]>(cachedCategories || []);
+  const isMounted = useRef(true);
 
-  const fetchMenuItems = useCallback(async () => {
-    // Only show loading if we don't have cached data
-    if (!cachedMenuItems) {
-      setLoading(true);
-    }
+  const fetchMenuItems = useCallback(async (showLoading = false) => {
+    if (showLoading) setLoading(true);
     
-    const { data, error } = await supabase
-      .from('menu_items')
-      .select('*')
-      .order('category')
-      .order('display_order');
+    try {
+      const { data, error } = await supabase
+        .from('menu_items')
+        .select('*')
+        .order('category')
+        .order('display_order');
 
-    if (error) {
-      console.error('Error fetching menu items:', error);
-      if (!cachedMenuItems) {
-        toast.error('حدث خطأ في جلب القائمة');
+      if (error) {
+        console.error('[useMenuItems] Error:', error);
+        if (isMounted.current) setLoading(false);
+        return;
       }
-      setLoading(false);
-      return;
-    }
 
-    const items = data as MenuItem[];
-    const uniqueCategories = [...new Set(data.map(item => item.category))];
-    
-    // Update cache
-    cachedMenuItems = items;
-    cachedCategories = uniqueCategories;
-    
-    setMenuItems(items);
-    setCategories(uniqueCategories);
-    setLoading(false);
+      const items = (data || []) as MenuItem[];
+      const uniqueCategories = [...new Set(items.map(item => item.category))];
+      
+      // Update cache
+      cachedMenuItems = items;
+      cachedCategories = uniqueCategories;
+      
+      if (isMounted.current) {
+        setMenuItems(items);
+        setCategories(uniqueCategories);
+        setLoading(false);
+      }
+    } catch (err) {
+      console.error('[useMenuItems] Unexpected error:', err);
+      if (isMounted.current) setLoading(false);
+    }
   }, []);
 
   useEffect(() => {
-    fetchMenuItems();
+    isMounted.current = true;
     
-    // Subscribe to realtime changes for instant updates
+    // Fetch fresh data in background (no loading spinner if cache exists)
+    fetchMenuItems(false);
+    
+    // Subscribe to realtime changes
     const channel = supabase
-      .channel('menu-items-realtime')
+      .channel('menu-realtime')
       .on(
         'postgres_changes',
         { event: '*', schema: 'public', table: 'menu_items' },
-        () => {
-          fetchMenuItems();
-        }
+        () => fetchMenuItems(false)
       )
       .subscribe();
 
+    // Refresh every 60 seconds (less aggressive)
+    const refreshInterval = setInterval(() => fetchMenuItems(false), 60000);
+
     return () => {
+      isMounted.current = false;
       supabase.removeChannel(channel);
+      clearInterval(refreshInterval);
     };
   }, [fetchMenuItems]);
 
