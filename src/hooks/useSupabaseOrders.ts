@@ -65,14 +65,17 @@ interface UseSupabaseOrdersOptions {
 // Polling interval when realtime fails (30 seconds)
 const FALLBACK_POLLING_INTERVAL = 30000;
 
-// Silent background refresh interval (3 seconds)
-const SILENT_REFRESH_INTERVAL = 3000;
+// Silent background refresh interval (10 seconds - reduced from 3 to improve performance)
+const SILENT_REFRESH_INTERVAL = 10000;
+
+// Simple cache for orders to avoid loading delay on navigation
+let cachedOrders: OrderWithItems[] | null = null;
 
 export function useSupabaseOrders(options: UseSupabaseOrdersOptions = {}) {
   const { orderTypeFilter = 'all' } = options;
-  const [orders, setOrders] = useState<OrderWithItems[]>([]);
+  const [orders, setOrders] = useState<OrderWithItems[]>(cachedOrders || []);
   const [menuItems, setMenuItems] = useState<DbMenuItem[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(cachedOrders === null);
   const [realtimeConnected, setRealtimeConnected] = useState(false);
   const { playNotificationSound } = useNotificationSound();
 
@@ -108,6 +111,11 @@ export function useSupabaseOrders(options: UseSupabaseOrdersOptions = {}) {
 
   // Fetch orders with items (silent mode doesn't change loading state)
   const fetchOrders = useCallback(async (silent = false) => {
+    // Only show loading if we don't have cached data
+    if (!silent && !cachedOrders) {
+      setLoading(true);
+    }
+    
     const { data, error } = await supabase
       .from('orders')
       .select(`*, order_items (*)`)
@@ -125,6 +133,8 @@ export function useSupabaseOrders(options: UseSupabaseOrdersOptions = {}) {
       items: (order.order_items || []) as DbOrderItem[],
     })) as OrderWithItems[];
 
+    // Update cache
+    cachedOrders = ordersWithItems;
     setOrders(ordersWithItems);
     if (!silent) setLoading(false);
   }, []);
@@ -321,9 +331,14 @@ export function useSupabaseOrders(options: UseSupabaseOrdersOptions = {}) {
     // Setup realtime
     setupRealtimeChannel();
 
-    // Start silent background refresh every 3 seconds
+    // Start silent background refresh - only when realtime is connected
+    // This is just a backup sync, not the primary data source
     silentRefreshIntervalRef.current = setInterval(() => {
-      fetchOrders(true); // Silent refresh - no loading indicator
+      // Only do silent refresh if realtime is connected
+      // If not connected, polling is already handling updates
+      if (realtimeConnected) {
+        fetchOrders(true); // Silent refresh - no loading indicator
+      }
     }, SILENT_REFRESH_INTERVAL);
 
     return () => {
