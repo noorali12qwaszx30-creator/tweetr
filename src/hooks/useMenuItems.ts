@@ -19,56 +19,53 @@ let lastFetchTime: number = 0;
 const CACHE_DURATION = 5000; // 5 seconds cache validity
 
 export function useMenuItems() {
-  const [menuItems, setMenuItems] = useState<MenuItem[]>(cachedMenuItems || []);
-  const [loading, setLoading] = useState(!cachedMenuItems || cachedMenuItems.length === 0);
-  const [categories, setCategories] = useState<string[]>(cachedCategories || []);
+  const [menuItems, setMenuItems] = useState<MenuItem[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [categories, setCategories] = useState<string[]>([]);
 
-  const fetchMenuItems = useCallback(async (forceRefresh = false) => {
-    // Skip if we have valid cache and not forcing refresh
-    const now = Date.now();
-    if (!forceRefresh && cachedMenuItems && cachedMenuItems.length > 0 && (now - lastFetchTime) < CACHE_DURATION) {
+  const fetchMenuItems = useCallback(async () => {
+    try {
+      const { data, error } = await supabase
+        .from('menu_items')
+        .select('*')
+        .order('category')
+        .order('display_order');
+
+      if (error) {
+        console.error('Error fetching menu items:', error);
+        toast.error('حدث خطأ في جلب القائمة');
+        setLoading(false);
+        return;
+      }
+
+      const items = (data || []) as MenuItem[];
+      const uniqueCategories = [...new Set(items.map(item => item.category))];
+      
+      // Update cache
+      cachedMenuItems = items;
+      cachedCategories = uniqueCategories;
+      lastFetchTime = Date.now();
+      
+      setMenuItems(items);
+      setCategories(uniqueCategories);
+      setLoading(false);
+    } catch (err) {
+      console.error('Unexpected error fetching menu items:', err);
+      setLoading(false);
+    }
+  }, []);
+
+  // Initialize from cache immediately, then fetch fresh data
+  useEffect(() => {
+    // If we have cached data, use it immediately
+    if (cachedMenuItems && cachedMenuItems.length > 0) {
       setMenuItems(cachedMenuItems);
       setCategories(cachedCategories || []);
       setLoading(false);
-      return;
-    }
-
-    // Only show loading if we don't have cached data
-    if (!cachedMenuItems || cachedMenuItems.length === 0) {
-      setLoading(true);
     }
     
-    const { data, error } = await supabase
-      .from('menu_items')
-      .select('*')
-      .order('category')
-      .order('display_order');
-
-    if (error) {
-      console.error('Error fetching menu items:', error);
-      if (!cachedMenuItems || cachedMenuItems.length === 0) {
-        toast.error('حدث خطأ في جلب القائمة');
-      }
-      setLoading(false);
-      return;
-    }
-
-    const items = data as MenuItem[];
-    const uniqueCategories = [...new Set(data.map(item => item.category))];
-    
-    // Update cache
-    cachedMenuItems = items;
-    cachedCategories = uniqueCategories;
-    lastFetchTime = now;
-    
-    setMenuItems(items);
-    setCategories(uniqueCategories);
-    setLoading(false);
-  }, []);
-
-  useEffect(() => {
-    // Force initial fetch to ensure data loads
-    fetchMenuItems(true);
+    // Always fetch fresh data
+    fetchMenuItems();
     
     // Subscribe to realtime changes for instant updates
     const channel = supabase
@@ -77,7 +74,7 @@ export function useMenuItems() {
         'postgres_changes',
         { event: '*', schema: 'public', table: 'menu_items' },
         () => {
-          fetchMenuItems(true);
+          fetchMenuItems();
         }
       )
       .subscribe();
