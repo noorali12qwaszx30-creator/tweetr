@@ -367,9 +367,13 @@ export default function CashierDashboard() {
   const handleResolveIssue = async (orderId: string) => {
     await resolveIssue(orderId);
   };
-  // Show skeleton UI instead of blocking the entire interface
-  const isInitialLoading = loading && orders.length === 0;
-  const isMenuInitialLoading = menuLoading && menuItems.length === 0;
+  if (loading || menuLoading) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <Loader2 className="w-8 h-8 animate-spin text-primary" />
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-background">
@@ -545,41 +549,26 @@ export default function CashierDashboard() {
             </div>
 
             {/* Menu Items - Strip Layout */}
-            {isMenuInitialLoading ? (
-              <div className="space-y-2">
-                {[...Array(6)].map((_, i) => (
-                  <div key={i} className="flex items-center gap-3 bg-card border rounded-xl p-3 animate-pulse">
-                    <div className="w-4 h-4 bg-muted rounded" />
-                    <div className="w-12 h-12 bg-muted rounded-lg" />
-                    <div className="flex-1 space-y-2">
-                      <div className="h-4 bg-muted rounded w-3/4" />
-                      <div className="h-3 bg-muted rounded w-1/2" />
-                    </div>
-                  </div>
-                ))}
-              </div>
-            ) : (
-              <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
-                <SortableContext items={sortedItems.map(i => i.id)} strategy={verticalListSortingStrategy}>
-                  <div className="space-y-2">
-                    {sortedItems.map(item => {
-                      const cartItem = cart.find(c => c.menuItem.id === item.id);
-                      return (
-                        <SortableMenuItem 
-                          key={item.id} 
-                          item={item} 
-                          quantity={cartItem?.quantity || 0}
-                          isAnimating={animatingItemId === item.id}
-                          onSelect={addToCart} 
-                        />
-                      );
-                    })}
-                  </div>
-                </SortableContext>
-              </DndContext>
-            )}
+            <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
+              <SortableContext items={sortedItems.map(i => i.id)} strategy={verticalListSortingStrategy}>
+                <div className="space-y-2">
+                  {sortedItems.map(item => {
+                    const cartItem = cart.find(c => c.menuItem.id === item.id);
+                    return (
+                      <SortableMenuItem 
+                        key={item.id} 
+                        item={item} 
+                        quantity={cartItem?.quantity || 0}
+                        isAnimating={animatingItemId === item.id}
+                        onSelect={addToCart} 
+                      />
+                    );
+                  })}
+                </div>
+              </SortableContext>
+            </DndContext>
 
-            {!isMenuInitialLoading && sortedItems.length === 0 && (
+            {sortedItems.length === 0 && (
               <div className="text-center py-8 text-muted-foreground">
                 <MenuIcon className="w-10 h-10 mx-auto mb-2 opacity-50" />
                 <p className="text-sm">لا توجد أصناف</p>
