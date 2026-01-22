@@ -15,15 +15,26 @@ export interface MenuItem {
 // Simple cache for menu items to avoid loading delay on navigation
 let cachedMenuItems: MenuItem[] | null = null;
 let cachedCategories: string[] | null = null;
+let lastFetchTime: number = 0;
+const CACHE_DURATION = 5000; // 5 seconds cache validity
 
 export function useMenuItems() {
   const [menuItems, setMenuItems] = useState<MenuItem[]>(cachedMenuItems || []);
-  const [loading, setLoading] = useState(cachedMenuItems === null);
+  const [loading, setLoading] = useState(!cachedMenuItems || cachedMenuItems.length === 0);
   const [categories, setCategories] = useState<string[]>(cachedCategories || []);
 
-  const fetchMenuItems = useCallback(async () => {
+  const fetchMenuItems = useCallback(async (forceRefresh = false) => {
+    // Skip if we have valid cache and not forcing refresh
+    const now = Date.now();
+    if (!forceRefresh && cachedMenuItems && cachedMenuItems.length > 0 && (now - lastFetchTime) < CACHE_DURATION) {
+      setMenuItems(cachedMenuItems);
+      setCategories(cachedCategories || []);
+      setLoading(false);
+      return;
+    }
+
     // Only show loading if we don't have cached data
-    if (!cachedMenuItems) {
+    if (!cachedMenuItems || cachedMenuItems.length === 0) {
       setLoading(true);
     }
     
@@ -35,7 +46,7 @@ export function useMenuItems() {
 
     if (error) {
       console.error('Error fetching menu items:', error);
-      if (!cachedMenuItems) {
+      if (!cachedMenuItems || cachedMenuItems.length === 0) {
         toast.error('حدث خطأ في جلب القائمة');
       }
       setLoading(false);
@@ -48,6 +59,7 @@ export function useMenuItems() {
     // Update cache
     cachedMenuItems = items;
     cachedCategories = uniqueCategories;
+    lastFetchTime = now;
     
     setMenuItems(items);
     setCategories(uniqueCategories);
@@ -55,7 +67,8 @@ export function useMenuItems() {
   }, []);
 
   useEffect(() => {
-    fetchMenuItems();
+    // Force initial fetch to ensure data loads
+    fetchMenuItems(true);
     
     // Subscribe to realtime changes for instant updates
     const channel = supabase
@@ -64,7 +77,7 @@ export function useMenuItems() {
         'postgres_changes',
         { event: '*', schema: 'public', table: 'menu_items' },
         () => {
-          fetchMenuItems();
+          fetchMenuItems(true);
         }
       )
       .subscribe();
