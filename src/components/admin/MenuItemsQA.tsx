@@ -3,7 +3,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Loader2, UtensilsCrossed, Send, TrendingUp, MapPin, Package, BarChart3, Database, RefreshCcw } from 'lucide-react';
+import { Loader2, UtensilsCrossed, Send, TrendingUp, MapPin, Package, BarChart3, Database, RefreshCcw, History } from 'lucide-react';
 import { formatNumber, toEnglishNumbers } from '@/lib/formatNumber';
 import { toast } from 'sonner';
 
@@ -34,6 +34,7 @@ export function MenuItemsQA() {
   const [chatHistory, setChatHistory] = useState<ChatMessage[]>([]);
   const [isAsking, setIsAsking] = useState(false);
   const [selectedItem, setSelectedItem] = useState<MenuItemStats | null>(null);
+  const [isSyncing, setIsSyncing] = useState(false);
 
   // Fetch permanent menu item statistics
   const fetchMenuStats = useCallback(async () => {
@@ -166,6 +167,175 @@ export function MenuItemsQA() {
     }
   };
 
+  // Sync old delivered orders with permanent statistics
+  const syncOldOrders = async () => {
+    setIsSyncing(true);
+    try {
+      // Get all delivered orders
+      const { data: deliveredOrders, error: ordersError } = await supabase
+        .from('orders')
+        .select(`
+          id,
+          type,
+          delivery_area_id
+        `)
+        .eq('status', 'delivered');
+
+      if (ordersError) throw ordersError;
+
+      if (!deliveredOrders || deliveredOrders.length === 0) {
+        toast.info('لا توجد طلبات مكتملة للمزامنة');
+        setIsSyncing(false);
+        return;
+      }
+
+      // Get delivery areas for area names
+      const { data: areas } = await supabase
+        .from('delivery_areas')
+        .select('id, name');
+      
+      const areaMap: Record<string, string> = {};
+      (areas || []).forEach(a => {
+        areaMap[a.id] = a.name;
+      });
+
+      // Get menu items for categories
+      const { data: menuItems } = await supabase
+        .from('menu_items')
+        .select('id, category');
+      
+      const menuCategoryMap: Record<string, string> = {};
+      (menuItems || []).forEach(m => {
+        menuCategoryMap[m.id] = m.category;
+      });
+
+      // Get all order items for delivered orders
+      const orderIds = deliveredOrders.map(o => o.id);
+      const { data: orderItems, error: itemsError } = await supabase
+        .from('order_items')
+        .select('*')
+        .in('order_id', orderIds);
+
+      if (itemsError) throw itemsError;
+
+      // Create a map of order id to order for quick lookup
+      const orderMap: Record<string, typeof deliveredOrders[0]> = {};
+      deliveredOrders.forEach(o => {
+        orderMap[o.id] = o;
+      });
+
+      // Aggregate statistics
+      const itemStats: Record<string, {
+        menu_item_id: string | null;
+        menu_item_name: string;
+        category: string;
+        total_quantity: number;
+        total_revenue: number;
+        delivery_quantity: number;
+        takeaway_quantity: number;
+      }> = {};
+
+      const areaStats: Record<string, {
+        menu_item_name: string;
+        delivery_area_id: string;
+        delivery_area_name: string;
+        quantity: number;
+      }> = {};
+
+      (orderItems || []).forEach(item => {
+        const order = orderMap[item.order_id];
+        if (!order) return;
+
+        const itemName = item.menu_item_name;
+        const category = item.menu_item_id ? menuCategoryMap[item.menu_item_id] || '' : '';
+        const isDelivery = order.type === 'delivery';
+
+        // Aggregate item stats
+        if (!itemStats[itemName]) {
+          itemStats[itemName] = {
+            menu_item_id: item.menu_item_id,
+            menu_item_name: itemName,
+            category,
+            total_quantity: 0,
+            total_revenue: 0,
+            delivery_quantity: 0,
+            takeaway_quantity: 0
+          };
+        }
+
+        itemStats[itemName].total_quantity += item.quantity;
+        itemStats[itemName].total_revenue += item.quantity * Number(item.menu_item_price);
+        if (isDelivery) {
+          itemStats[itemName].delivery_quantity += item.quantity;
+        } else {
+          itemStats[itemName].takeaway_quantity += item.quantity;
+        }
+
+        // Aggregate area stats for delivery orders
+        if (isDelivery && order.delivery_area_id) {
+          const areaName = areaMap[order.delivery_area_id];
+          if (areaName) {
+            const areaKey = `${itemName}-${areaName}`;
+            if (!areaStats[areaKey]) {
+              areaStats[areaKey] = {
+                menu_item_name: itemName,
+                delivery_area_id: order.delivery_area_id,
+                delivery_area_name: areaName,
+                quantity: 0
+              };
+            }
+            areaStats[areaKey].quantity += item.quantity;
+          }
+        }
+      });
+
+      // Clear existing stats and insert new ones
+      await supabase.from('menu_item_statistics' as any).delete().neq('id', '00000000-0000-0000-0000-000000000000');
+      await supabase.from('menu_item_area_stats' as any).delete().neq('id', '00000000-0000-0000-0000-000000000000');
+
+      // Insert aggregated item stats
+      const itemStatsArray = Object.values(itemStats);
+      if (itemStatsArray.length > 0) {
+        const { error: insertError } = await supabase
+          .from('menu_item_statistics' as any)
+          .insert(itemStatsArray.map(s => ({
+            menu_item_id: s.menu_item_id,
+            menu_item_name: s.menu_item_name,
+            category: s.category,
+            total_quantity_sold: s.total_quantity,
+            total_revenue: s.total_revenue,
+            delivery_quantity: s.delivery_quantity,
+            takeaway_quantity: s.takeaway_quantity
+          })));
+
+        if (insertError) throw insertError;
+      }
+
+      // Insert area stats
+      const areaStatsArray = Object.values(areaStats);
+      if (areaStatsArray.length > 0) {
+        const { error: areaInsertError } = await supabase
+          .from('menu_item_area_stats' as any)
+          .insert(areaStatsArray.map(s => ({
+            menu_item_name: s.menu_item_name,
+            delivery_area_id: s.delivery_area_id,
+            delivery_area_name: s.delivery_area_name,
+            quantity_sold: s.quantity
+          })));
+
+        if (areaInsertError) throw areaInsertError;
+      }
+
+      toast.success(`تم مزامنة ${deliveredOrders.length} طلب مكتمل بنجاح`);
+      fetchMenuStats();
+    } catch (err) {
+      console.error('Error syncing old orders:', err);
+      toast.error('حدث خطأ أثناء المزامنة');
+    } finally {
+      setIsSyncing(false);
+    }
+  };
+
   // Quick question buttons
   const quickQuestions = [
     { label: 'أكثر صنف مبيعاً', question: 'ما هو أكثر صنف مبيعاً؟' },
@@ -202,16 +372,32 @@ export function MenuItemsQA() {
               <p className="text-sm text-muted-foreground">لا تتأثر بحذف الطلبات أو إعادة الضبط</p>
             </div>
           </div>
-          <Button 
-            variant="outline" 
-            size="icon"
-            onClick={() => {
-              setLoading(true);
-              fetchMenuStats();
-            }}
-          >
-            <RefreshCcw className="w-4 h-4" />
-          </Button>
+          <div className="flex items-center gap-2">
+            <Button 
+              variant="outline" 
+              size="sm"
+              onClick={syncOldOrders}
+              disabled={isSyncing}
+              className="gap-2"
+            >
+              {isSyncing ? (
+                <Loader2 className="w-4 h-4 animate-spin" />
+              ) : (
+                <History className="w-4 h-4" />
+              )}
+              مزامنة القديمة
+            </Button>
+            <Button 
+              variant="outline" 
+              size="icon"
+              onClick={() => {
+                setLoading(true);
+                fetchMenuStats();
+              }}
+            >
+              <RefreshCcw className="w-4 h-4" />
+            </Button>
+          </div>
         </div>
       </div>
 
