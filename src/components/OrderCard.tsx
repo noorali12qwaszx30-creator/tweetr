@@ -2,16 +2,7 @@ import { OrderTimer } from './OrderTimer';
 import { MessageSquare, Truck, Pencil, AlertTriangle } from 'lucide-react';
 import { OrderWithItems, DbOrderItem } from '@/hooks/useSupabaseOrders';
 import { toEnglishNumbers, formatNumberWithCommas } from '@/lib/formatNumber';
-
-// Status labels in Arabic
-const ORDER_STATUS_LABELS: Record<string, string> = {
-  pending: 'قيد الانتظار',
-  preparing: 'قيد التجهيز',
-  ready: 'جاهز',
-  delivering: 'قيد التوصيل',
-  delivered: 'تم التسليم',
-  cancelled: 'ملغي',
-};
+import { ORDER_STATUS_LABELS, ORDER_STATUS_COLORS } from '@/types';
 
 interface OrderCardProps {
   order: OrderWithItems;
@@ -32,14 +23,7 @@ export function OrderCard({
 }: OrderCardProps) {
   const hasNotes = !!order.notes || order.items.some((item: DbOrderItem) => !!item.notes);
 
-  const statusColors: Record<string, string> = {
-    pending: 'bg-warning/10 text-warning border-warning/30',
-    preparing: 'bg-info/10 text-info border-info/30',
-    ready: 'bg-success/10 text-success border-success/30',
-    delivering: 'bg-secondary/10 text-secondary border-secondary/30',
-    delivered: 'bg-muted text-muted-foreground border-border',
-    cancelled: 'bg-destructive/10 text-destructive border-destructive/30',
-  };
+  const statusColors = ORDER_STATUS_COLORS;
 
   return (
     <div

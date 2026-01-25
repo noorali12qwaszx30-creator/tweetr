@@ -1,6 +1,6 @@
 import { format } from 'date-fns';
 import { ar } from 'date-fns/locale';
-import { ActivityLog } from '@/contexts/ShiftContext';
+import { ActivityLog } from '@/contexts/ActivityLogContext';
 import { 
   Activity, 
   UserPlus, 
