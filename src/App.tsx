@@ -7,7 +7,7 @@ import { AuthProvider } from "@/contexts/AuthContext";
 import { RoleProvider } from "@/contexts/RoleContext";
 import { CancellationReasonsProvider } from "@/contexts/CancellationReasonsContext";
 import { IssueReasonsProvider } from "@/contexts/IssueReasonsContext";
-import { ShiftProvider } from "@/contexts/ShiftContext";
+import { ActivityLogProvider } from "@/contexts/ActivityLogContext";
 import RoleSelector from "./pages/RoleSelector";
 import Dashboard from "./pages/Dashboard";
 import NotFound from "./pages/NotFound";
@@ -21,7 +21,7 @@ const App = () => (
         <RoleProvider>
           <CancellationReasonsProvider>
             <IssueReasonsProvider>
-              <ShiftProvider>
+              <ActivityLogProvider>
                 <TooltipProvider>
                   <Toaster />
                   <Sonner />
@@ -31,7 +31,7 @@ const App = () => (
                     <Route path="*" element={<NotFound />} />
                   </Routes>
                 </TooltipProvider>
-              </ShiftProvider>
+              </ActivityLogProvider>
             </IssueReasonsProvider>
           </CancellationReasonsProvider>
         </RoleProvider>

@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { useRole } from '@/contexts/RoleContext';
 import { useAuth } from '@/contexts/AuthContext';
 import { useSupabaseOrders, OrderWithItems } from '@/hooks/useSupabaseOrders';
-import { useShift } from '@/contexts/ShiftContext';
+import { useActivityLog } from '@/contexts/ActivityLogContext';
 import { Button } from '@/components/ui/button';
 import { CancellationReasonsManager } from '@/components/CancellationReasonsManager';
 import { IssueReasonsManager } from '@/components/IssueReasonsManager';
@@ -51,7 +51,7 @@ export default function AdminDashboard() {
   const {
     activityLogs,
     addActivityLog
-  } = useShift();
+  } = useActivityLog();
   const [activeTab, setActiveTab] = useState<MainTab>('home');
   const [ordersSubTab, setOrdersSubTab] = useState<OrdersSubTab>('completed');
   const [statsSubTab, setStatsSubTab] = useState<StatsSubTab>('items');

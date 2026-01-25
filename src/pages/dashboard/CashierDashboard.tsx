@@ -5,9 +5,9 @@ import { useSupabaseOrders, DbMenuItem, OrderWithItems } from '@/hooks/useSupaba
 import { useMenuItems, MenuItem } from '@/hooks/useMenuItems';
 import { useDeliveryAreas } from '@/hooks/useDeliveryAreas';
 import { DashboardHeader } from '@/components/shared/DashboardHeader';
+import { SortableMenuItem } from '@/components/shared/SortableMenuItem';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Textarea } from '@/components/ui/textarea';
 import { OrderCard } from '@/components/OrderCard';
 import { CancelOrderDialog } from '@/components/CancelOrderDialog';
 import { OrderDetailsDialog } from '@/components/OrderDetailsDialog';
@@ -15,6 +15,7 @@ import { LogoutConfirmButton } from '@/components/LogoutConfirmButton';
 import { toast } from 'sonner';
 import { ROLE_LABELS } from '@/types';
 import { toEnglishNumbers, formatNumberWithCommas, formatDateEnglish, formatTimeEnglish } from '@/lib/formatNumber';
+import { Textarea } from '@/components/ui/textarea';
 import { 
   ShoppingCart, 
   Trash2, 
@@ -31,7 +32,6 @@ import {
   CheckCircle,
   XCircle,
   Loader2,
-  GripVertical,
   ChevronDown,
   Pencil,
   AlertTriangle
@@ -56,10 +56,8 @@ import {
   arrayMove,
   SortableContext,
   sortableKeyboardCoordinates,
-  useSortable,
   verticalListSortingStrategy,
 } from '@dnd-kit/sortable';
-import { CSS } from '@dnd-kit/utilities';
 
 type TabType = 'menu' | 'orders' | 'reports' | 'settings';
 
@@ -67,75 +65,6 @@ interface CartItem {
   menuItem: DbMenuItem;
   quantity: number;
   notes?: string;
-}
-
-interface SortableMenuItemProps {
-  item: MenuItem;
-  quantity: number;
-  isAnimating: boolean;
-  onSelect: (item: MenuItem) => void;
-}
-
-function SortableMenuItem({ item, quantity, isAnimating, onSelect }: SortableMenuItemProps) {
-  const {
-    attributes,
-    listeners,
-    setNodeRef,
-    transform,
-    transition,
-    isDragging,
-  } = useSortable({ id: item.id });
-
-  const style = {
-    transform: CSS.Transform.toString(transform),
-    transition,
-    opacity: isDragging ? 0.5 : 1,
-  };
-
-  return (
-    <div
-      ref={setNodeRef}
-      style={style}
-      onClick={() => onSelect(item)}
-      className={`flex items-center gap-3 bg-card border rounded-xl p-3 hover:border-primary hover:shadow-soft transition-all duration-200 cursor-pointer relative ${
-        quantity > 0 ? 'border-warning bg-warning/5' : 'border-border'
-      } ${isAnimating ? 'animate-[pop_0.3s_ease-out]' : ''}`}
-    >
-      {quantity > 0 && (
-        <div className={`absolute -top-2 -right-2 w-6 h-6 bg-warning text-warning-foreground rounded-full flex items-center justify-center text-xs font-bold shadow-md ${isAnimating ? 'animate-[bounce_0.3s_ease-out]' : ''}`}>
-          {toEnglishNumbers(quantity)}
-        </div>
-      )}
-      
-      <div
-        {...attributes}
-        {...listeners}
-        className="p-1 cursor-grab active:cursor-grabbing touch-none"
-        onClick={(e) => e.stopPropagation()}
-      >
-        <GripVertical className="w-4 h-4 text-muted-foreground" />
-      </div>
-      
-      {item.image ? (
-        <div className="w-12 h-12 rounded-lg overflow-hidden flex-shrink-0">
-          <img src={item.image} alt={item.name} className="w-full h-full object-cover" />
-        </div>
-      ) : (
-        <div className="w-12 h-12 bg-muted rounded-lg flex items-center justify-center flex-shrink-0">
-          <MenuIcon className="w-5 h-5 text-muted-foreground" />
-        </div>
-      )}
-      
-      <div className="flex-1 min-w-0">
-        <h3 className="font-semibold text-sm text-foreground truncate">{item.name}</h3>
-        <p className="text-primary font-bold text-sm">{formatNumberWithCommas(item.price)} د.ع</p>
-      </div>
-      
-      <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center text-primary flex-shrink-0">
-        <Plus className="w-5 h-5" />
-      </div>
-    </div>
-  );
 }
 
 export default function CashierDashboard() {
