@@ -1,0 +1,140 @@
+import { RefreshCw, ChefHat } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Card } from '@/components/ui/card';
+import { useSupabaseOrders, OrderWithItems } from '@/hooks/useSupabaseOrders';
+import { OrderTimer } from '@/components/OrderTimer';
+import { LogoutConfirmButton } from '@/components/LogoutConfirmButton';
+import { ConnectionIndicator } from '@/components/shared/ConnectionIndicator';
+import { toEnglishNumbers } from '@/lib/formatNumber';
+
+// Kitchen order card component - optimized for large display
+function KitchenOrderCard({ order }: { order: OrderWithItems }) {
+  return (
+    <Card className="p-6 bg-card border-2 border-border hover:border-primary/30 transition-colors">
+      {/* Order number and timer */}
+      <div className="flex items-center justify-between mb-6">
+        <span className="text-4xl font-black text-primary">
+          #{toEnglishNumbers(order.order_number.toString())}
+        </span>
+        <OrderTimer startTime={order.created_at} className="text-2xl px-4 py-2" />
+      </div>
+      
+      {/* Order type badge */}
+      <div className={`inline-block px-3 py-1 rounded-full text-sm font-bold mb-4 ${
+        order.type === 'delivery' 
+          ? 'bg-info/20 text-info' 
+          : 'bg-success/20 text-success'
+      }`}>
+        {order.type === 'delivery' ? 'توصيل' : 'سفري'}
+      </div>
+      
+      {/* Items list */}
+      <ul className="space-y-3">
+        {order.items.map(item => (
+          <li key={item.id} className="text-xl">
+            <div className="flex items-start gap-2">
+              <span className="font-black text-primary min-w-[3rem]">
+                {toEnglishNumbers(item.quantity.toString())}×
+              </span>
+              <div className="flex-1">
+                <span className="font-bold text-foreground">{item.menu_item_name}</span>
+                {item.notes && (
+                  <p className="text-warning text-base mt-1 font-medium">
+                    ⚠️ {item.notes}
+                  </p>
+                )}
+              </div>
+            </div>
+          </li>
+        ))}
+      </ul>
+      
+      {/* Order notes */}
+      {order.notes && (
+        <div className="mt-6 p-4 bg-warning/10 border-2 border-warning/30 rounded-xl">
+          <p className="text-warning text-lg font-bold">
+            ⚠️ {order.notes}
+          </p>
+        </div>
+      )}
+    </Card>
+  );
+}
+
+export default function KitchenDashboard() {
+  const { orders, loading, realtimeConnected, refetch } = useSupabaseOrders();
+  
+  // Filter only preparing orders and sort by oldest first
+  const preparingOrders = orders
+    .filter(o => o.status === 'preparing')
+    .sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime());
+
+  return (
+    <div className="min-h-screen bg-background" dir="rtl">
+      {/* Header */}
+      <header className="bg-card border-b-2 border-border shadow-lg sticky top-0 z-50">
+        <div className="container flex items-center justify-between h-20 px-6">
+          {/* Refresh button */}
+          <Button 
+            onClick={() => refetch()} 
+            variant="outline" 
+            size="lg"
+            className="gap-3 text-lg font-bold h-14 px-6"
+          >
+            <RefreshCw className="w-6 h-6" />
+            تحديث
+          </Button>
+          
+          {/* Title */}
+          <div className="flex items-center gap-4">
+            <div className="w-14 h-14 rounded-xl bg-primary flex items-center justify-center">
+              <ChefHat className="w-8 h-8 text-primary-foreground" />
+            </div>
+            <div className="text-center">
+              <h1 className="text-2xl font-black text-foreground">
+                المطبخ - قيد التجهيز
+              </h1>
+              <p className="text-3xl font-black text-primary">
+                ({toEnglishNumbers(preparingOrders.length.toString())})
+              </p>
+            </div>
+            <ConnectionIndicator connected={realtimeConnected} />
+          </div>
+          
+          {/* Logout button */}
+          <LogoutConfirmButton variant="compact" />
+        </div>
+      </header>
+
+      {/* Main content */}
+      <main className="container p-6">
+        {loading ? (
+          <div className="flex items-center justify-center h-[60vh]">
+            <div className="text-center">
+              <div className="w-16 h-16 border-4 border-primary/30 border-t-primary rounded-full animate-spin mx-auto mb-4" />
+              <p className="text-xl text-muted-foreground">جاري تحميل الطلبات...</p>
+            </div>
+          </div>
+        ) : preparingOrders.length === 0 ? (
+          <div className="flex flex-col items-center justify-center h-[60vh] text-center">
+            <div className="w-32 h-32 rounded-full bg-muted flex items-center justify-center mb-6">
+              <ChefHat className="w-16 h-16 text-muted-foreground" />
+            </div>
+            <h2 className="text-3xl font-bold text-muted-foreground mb-2">
+              لا توجد طلبات قيد التجهيز
+            </h2>
+            <p className="text-xl text-muted-foreground">
+              ستظهر الطلبات الجديدة هنا تلقائياً
+            </p>
+          </div>
+        ) : (
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6 gap-6">
+            {preparingOrders.map(order => (
+              <KitchenOrderCard key={order.id} order={order} />
+            ))}
+          </div>
+        )}
+      </main>
+    </div>
+  );
+}
