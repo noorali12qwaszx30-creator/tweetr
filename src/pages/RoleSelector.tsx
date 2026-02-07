@@ -27,6 +27,7 @@ const ROLE_ICONS: Record<UserRole, React.ReactNode> = {
   field: <MapPin className="w-8 h-8" />,
   delivery: <Truck className="w-8 h-8" />,
   takeaway: <ShoppingBag className="w-8 h-8" />,
+  kitchen: <ChefHat className="w-8 h-8" />,
   admin: <Shield className="w-8 h-8" />,
 };
 
@@ -35,12 +36,13 @@ const ROLE_DESCRIPTIONS: Record<UserRole, string> = {
   field: 'متابعة التوصيل والميدان',
   delivery: 'توصيل الطلبات للزبائن',
   takeaway: 'طلبات السفري',
+  kitchen: 'عرض الطلبات قيد التجهيز',
   admin: 'إدارة النظام الكاملة',
 };
 
-// First row: 2 items, Second row: admin centered, Third row: 2 items
+// First row: 2 items, Second row: kitchen + admin, Third row: 2 items
 const ROLES_TOP: UserRole[] = ['cashier', 'field'];
-const ROLES_CENTER: UserRole[] = ['admin'];
+const ROLES_CENTER: UserRole[] = ['kitchen', 'admin'];
 const ROLES_BOTTOM: UserRole[] = ['delivery', 'takeaway'];
 
 // RoleButton component
@@ -314,10 +316,10 @@ export default function RoleSelector() {
             ))}
           </div>
           
-          {/* Center row - Admin centered */}
-          <div className="flex justify-center">
+          {/* Center row - Kitchen + Admin */}
+          <div className="grid grid-cols-2 gap-3 sm:gap-4 md:gap-6 max-w-2xl mx-auto w-full">
             {ROLES_CENTER.map((role, index) => (
-              <RoleButton key={role} role={role} index={index + 2} mounted={mounted} onSelect={handleSelectRole} isCenter />
+              <RoleButton key={role} role={role} index={index + 2} mounted={mounted} onSelect={handleSelectRole} />
             ))}
           </div>
           
