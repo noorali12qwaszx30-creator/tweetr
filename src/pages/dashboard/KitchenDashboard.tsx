@@ -10,17 +10,17 @@ import { toEnglishNumbers } from '@/lib/formatNumber';
 // Kitchen order card component - optimized for large display
 function KitchenOrderCard({ order }: { order: OrderWithItems }) {
   return (
-    <Card className="p-6 bg-card border-2 border-border hover:border-primary/30 transition-colors">
+    <Card className="p-3 bg-card border-2 border-border hover:border-primary/30 transition-colors h-full flex flex-col">
       {/* Order number and timer */}
-      <div className="flex items-center justify-between mb-6">
-        <span className="text-4xl font-black text-primary">
+      <div className="flex items-center justify-between mb-2">
+        <span className="text-2xl font-black text-primary">
           #{toEnglishNumbers(order.order_number.toString())}
         </span>
-        <OrderTimer startTime={order.created_at} className="text-2xl px-4 py-2" />
+        <OrderTimer startTime={order.created_at} className="text-base px-2 py-1" />
       </div>
       
       {/* Order type badge */}
-      <div className={`inline-block px-3 py-1 rounded-full text-sm font-bold mb-4 ${
+      <div className={`inline-block px-2 py-0.5 rounded-full text-xs font-bold mb-2 w-fit ${
         order.type === 'delivery' 
           ? 'bg-info/20 text-info' 
           : 'bg-success/20 text-success'
@@ -29,17 +29,17 @@ function KitchenOrderCard({ order }: { order: OrderWithItems }) {
       </div>
       
       {/* Items list */}
-      <ul className="space-y-3">
+      <ul className="space-y-1 flex-1">
         {order.items.map(item => (
-          <li key={item.id} className="text-xl">
-            <div className="flex items-start gap-2">
-              <span className="font-black text-primary min-w-[3rem]">
+          <li key={item.id} className="text-sm">
+            <div className="flex items-start gap-1">
+              <span className="font-black text-primary min-w-[2rem]">
                 {toEnglishNumbers(item.quantity.toString())}×
               </span>
               <div className="flex-1">
                 <span className="font-bold text-foreground">{item.menu_item_name}</span>
                 {item.notes && (
-                  <p className="text-warning text-base mt-1 font-medium">
+                  <p className="text-warning text-xs mt-0.5 font-medium">
                     ⚠️ {item.notes}
                   </p>
                 )}
@@ -51,8 +51,8 @@ function KitchenOrderCard({ order }: { order: OrderWithItems }) {
       
       {/* Order notes */}
       {order.notes && (
-        <div className="mt-6 p-4 bg-warning/10 border-2 border-warning/30 rounded-xl">
-          <p className="text-warning text-lg font-bold">
+        <div className="mt-2 p-2 bg-warning/10 border border-warning/30 rounded-lg">
+          <p className="text-warning text-xs font-bold">
             ⚠️ {order.notes}
           </p>
         </div>
@@ -107,7 +107,7 @@ export default function KitchenDashboard() {
       </header>
 
       {/* Main content */}
-      <main className="container p-6">
+      <main className="container p-3">
         {loading ? (
           <div className="flex items-center justify-center h-[60vh]">
             <div className="text-center">
@@ -128,7 +128,7 @@ export default function KitchenDashboard() {
             </p>
           </div>
         ) : (
-          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6 gap-6">
+          <div className="grid grid-cols-6 gap-3 auto-rows-[calc((100vh-6rem)/3)]">
             {preparingOrders.map(order => (
               <KitchenOrderCard key={order.id} order={order} />
             ))}
