@@ -10,7 +10,11 @@ import { toEnglishNumbers } from '@/lib/formatNumber';
 // Kitchen order card component - optimized for large display
 function KitchenOrderCard({ order }: { order: OrderWithItems }) {
   return (
-    <Card className="p-3 bg-card border-2 border-border hover:border-primary/30 transition-colors h-full flex flex-col">
+    <Card className={`p-3 border-2 hover:border-primary/30 transition-colors h-full flex flex-col ${
+      order.type === 'delivery' 
+        ? 'bg-info/5 border-info/40' 
+        : 'bg-success/5 border-success/40'
+    }`}>
       {/* Order number and timer */}
       <div className="flex items-center justify-between mb-2">
         <span className="text-2xl font-black text-primary">
