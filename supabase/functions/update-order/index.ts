@@ -1,6 +1,10 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 import { getCorsHeaders } from "../_shared/cors.ts";
 
+// Sanitize text input: strip HTML tags and trim
+function sanitizeText(input: string, maxLength: number): string {
+  return input.replace(/<[^>]*>/g, '').replace(/[<>]/g, '').trim().slice(0, maxLength);
+}
 interface OrderItem {
   menu_item_id?: string;
   menu_item_name: string;
@@ -59,7 +63,7 @@ Deno.serve(async (req) => {
 
     // Parse request
     const requestData: UpdateOrderRequest = await req.json();
-    console.log('Received update order request:', JSON.stringify(requestData, null, 2));
+    console.log('Update order request for:', requestData.order_id);
 
     const { order_id, customer_name, customer_phone, customer_address, delivery_area_id, notes, items } = requestData;
 
@@ -99,11 +103,11 @@ Deno.serve(async (req) => {
       edited_at: new Date().toISOString(),
     };
 
-    if (customer_name) orderUpdate.customer_name = customer_name;
-    if (customer_phone) orderUpdate.customer_phone = customer_phone;
-    if (customer_address !== undefined) orderUpdate.customer_address = customer_address;
+    if (customer_name) orderUpdate.customer_name = sanitizeText(customer_name, 100);
+    if (customer_phone) orderUpdate.customer_phone = customer_phone.replace(/\D/g, '').slice(0, 20);
+    if (customer_address !== undefined) orderUpdate.customer_address = customer_address ? sanitizeText(customer_address, 500) : null;
     if (delivery_area_id) orderUpdate.delivery_area_id = delivery_area_id;
-    if (notes !== undefined) orderUpdate.notes = notes;
+    if (notes !== undefined) orderUpdate.notes = notes ? sanitizeText(notes, 500) : null;
 
     // Get delivery fee if delivery_area_id changed or exists
     let deliveryFee = existingOrder.delivery_fee || 0;
@@ -156,7 +160,7 @@ Deno.serve(async (req) => {
         }
       }
 
-      console.log('Server calculated total:', serverCalculatedTotal, 'Delivery fee:', deliveryFee);
+      console.log('Total recalculated for order:', order_id);
       orderUpdate.total_price = serverCalculatedTotal + deliveryFee; // Include delivery fee
 
       // Delete existing order items
@@ -177,10 +181,10 @@ Deno.serve(async (req) => {
       const orderItems = items.map(item => ({
         order_id,
         menu_item_id: item.menu_item_id || null,
-        menu_item_name: item.menu_item_name,
+        menu_item_name: sanitizeText(item.menu_item_name, 200),
         menu_item_price: item.menu_item_price,
         quantity: item.quantity,
-        notes: item.notes || null,
+        notes: item.notes ? sanitizeText(item.notes, 500) : null,
       }));
 
       const { error: itemsInsertError } = await supabaseAdmin
@@ -212,7 +216,7 @@ Deno.serve(async (req) => {
       );
     }
 
-    console.log('Order updated successfully:', order_id);
+    console.log('Order updated:', order_id);
 
     return new Response(
       JSON.stringify({ success: true, order: updatedOrder }),

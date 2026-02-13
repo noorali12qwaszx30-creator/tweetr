@@ -22,6 +22,11 @@ interface OrderRequest {
   items: OrderItem[];
 }
 
+// Sanitize text input: strip HTML tags and trim
+function sanitizeText(input: string, maxLength: number): string {
+  return input.replace(/<[^>]*>/g, '').replace(/[<>]/g, '').trim().slice(0, maxLength);
+}
+
 serve(async (req) => {
   const origin = req.headers.get('Origin');
   const corsHeaders = getCorsHeaders(origin);
@@ -63,7 +68,6 @@ serve(async (req) => {
     }
 
     const orderData: OrderRequest = await req.json();
-    console.log('Received order request:', JSON.stringify(orderData, null, 2));
 
     // Validate required fields
     if (!orderData.customer_name || orderData.customer_name.trim().length < 2) {
@@ -102,7 +106,7 @@ serve(async (req) => {
     for (const item of orderData.items) {
       if (!item.quantity || item.quantity < 1 || item.quantity > 100) {
         return new Response(
-          JSON.stringify({ error: 'كمية غير صالحة للعنصر: ' + item.menu_item_name }),
+          JSON.stringify({ error: 'كمية غير صالحة لأحد العناصر' }),
           { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
         );
       }
@@ -162,24 +166,24 @@ serve(async (req) => {
             menu_item_name: menuItem.name, // Use server-side name
             menu_item_price: serverPrice,  // Use server-side price
             quantity: item.quantity,
-            notes: item.notes?.trim().slice(0, 500) || undefined,
+            notes: item.notes ? sanitizeText(item.notes, 500) : undefined,
           });
         } else {
           // For items without menu_item_id, validate the price is reasonable
           const price = Number(item.menu_item_price);
           if (isNaN(price) || price < 0 || price > 1000000) {
             return new Response(
-              JSON.stringify({ error: 'سعر غير صالح للعنصر: ' + item.menu_item_name }),
+              JSON.stringify({ error: 'سعر غير صالح للعنصر' }),
               { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
             );
           }
           
           serverCalculatedTotal += price * item.quantity;
           validatedItems.push({
-            menu_item_name: item.menu_item_name.trim().slice(0, 200),
+            menu_item_name: sanitizeText(item.menu_item_name, 200),
             menu_item_price: price,
             quantity: item.quantity,
-            notes: item.notes?.trim().slice(0, 500) || undefined,
+            notes: item.notes ? sanitizeText(item.notes, 500) : undefined,
           });
         }
       }
@@ -189,22 +193,22 @@ serve(async (req) => {
         const price = Number(item.menu_item_price);
         if (isNaN(price) || price < 0 || price > 1000000) {
           return new Response(
-            JSON.stringify({ error: 'سعر غير صالح للعنصر: ' + item.menu_item_name }),
+            JSON.stringify({ error: 'سعر غير صالح للعنصر' }),
             { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
           );
         }
         
         serverCalculatedTotal += price * item.quantity;
         validatedItems.push({
-          menu_item_name: item.menu_item_name.trim().slice(0, 200),
+          menu_item_name: sanitizeText(item.menu_item_name, 200),
           menu_item_price: price,
           quantity: item.quantity,
-          notes: item.notes?.trim().slice(0, 500) || undefined,
+          notes: item.notes ? sanitizeText(item.notes, 500) : undefined,
         });
       }
     }
 
-    console.log('Server calculated total:', serverCalculatedTotal);
+    // Total calculated server-side
 
     // Get delivery fee from delivery area if provided
     let deliveryFee = 0;
@@ -220,7 +224,7 @@ serve(async (req) => {
       }
     }
 
-    console.log('Delivery fee:', deliveryFee);
+    
 
     // Check if customer already exists by phone number, or create new one
     let customerId: string | null = null;
@@ -240,8 +244,8 @@ serve(async (req) => {
         await supabaseAdmin
           .from('customers')
           .update({
-            name: orderData.customer_name.trim().slice(0, 100),
-            address: orderData.customer_address?.trim().slice(0, 500) || null,
+            name: sanitizeText(orderData.customer_name, 100),
+            address: orderData.customer_address ? sanitizeText(orderData.customer_address, 500) : null,
           })
           .eq('id', customerId);
       } else {
@@ -249,9 +253,9 @@ serve(async (req) => {
         const { data: newCustomer, error: customerError } = await supabaseAdmin
           .from('customers')
           .insert({
-            name: orderData.customer_name.trim().slice(0, 100),
+            name: sanitizeText(orderData.customer_name, 100),
             phone: customerPhone.slice(0, 20),
-            address: orderData.customer_address?.trim().slice(0, 500) || null,
+            address: orderData.customer_address ? sanitizeText(orderData.customer_address, 500) : null,
           })
           .select('id')
           .single();
@@ -268,16 +272,16 @@ serve(async (req) => {
       .from('orders')
       .insert({
         customer_id: customerId, // Link to customers table
-        customer_name: orderData.customer_name.trim().slice(0, 100),
-        customer_phone: orderData.customer_phone.trim().slice(0, 20),
-        customer_address: orderData.customer_address?.trim().slice(0, 500) || null,
+        customer_name: sanitizeText(orderData.customer_name, 100),
+        customer_phone: orderData.customer_phone.replace(/\D/g, '').slice(0, 20),
+        customer_address: orderData.customer_address ? sanitizeText(orderData.customer_address, 500) : null,
         delivery_area_id: orderData.delivery_area_id || null,
         type: orderData.type,
-        notes: orderData.notes?.trim().slice(0, 500) || null,
+        notes: orderData.notes ? sanitizeText(orderData.notes, 500) : null,
         total_price: serverCalculatedTotal + deliveryFee, // Include delivery fee in total
         delivery_fee: deliveryFee,
         cashier_id: user.id, // Always use the authenticated user's ID
-        cashier_name: orderData.cashier_name?.trim().slice(0, 100) || null,
+        cashier_name: orderData.cashier_name ? sanitizeText(orderData.cashier_name, 100) : null,
         status: 'pending',
       })
       .select()
@@ -315,7 +319,7 @@ serve(async (req) => {
       );
     }
 
-    console.log('Order created successfully:', newOrder.id, 'Total:', serverCalculatedTotal);
+    console.log('Order created:', newOrder.id);
 
     return new Response(
       JSON.stringify({ order: newOrder }),

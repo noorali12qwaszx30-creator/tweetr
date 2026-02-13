@@ -69,7 +69,7 @@ serve(async (req) => {
       );
     }
 
-    console.log("Deleting user:", user_id);
+    console.log("Deleting user");
 
     // Delete user role first
     const { error: roleDeleteError } = await supabaseAdmin
@@ -102,7 +102,7 @@ serve(async (req) => {
       );
     }
 
-    console.log("User deleted successfully:", user_id);
+    console.log("User deleted successfully");
 
     return new Response(
       JSON.stringify({ success: true }),
