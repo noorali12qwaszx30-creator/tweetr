@@ -64,9 +64,9 @@ function KitchenOrderCard({ order }: { order: OrderWithItems }) {
 export default function KitchenDashboard() {
   const { orders, loading, realtimeConnected, refetch } = useSupabaseOrders();
   
-  // Filter only preparing orders and sort by oldest first
-  const preparingOrders = orders
-    .filter(o => o.status === 'preparing')
+  // Filter preparing and pending orders, sort by oldest first
+  const activeOrders = orders
+    .filter(o => o.status === 'preparing' || o.status === 'pending')
     .sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime());
 
   return (
@@ -95,7 +95,7 @@ export default function KitchenDashboard() {
                 المطبخ - قيد التجهيز
               </h1>
               <p className="text-3xl font-black text-primary">
-                ({toEnglishNumbers(preparingOrders.length.toString())})
+                ({toEnglishNumbers(activeOrders.length.toString())})
               </p>
             </div>
             <ConnectionIndicator connected={realtimeConnected} />
@@ -115,7 +115,7 @@ export default function KitchenDashboard() {
               <p className="text-xl text-muted-foreground">جاري تحميل الطلبات...</p>
             </div>
           </div>
-        ) : preparingOrders.length === 0 ? (
+        ) : activeOrders.length === 0 ? (
           <div className="flex flex-col items-center justify-center h-[60vh] text-center">
             <div className="w-32 h-32 rounded-full bg-muted flex items-center justify-center mb-6">
               <ChefHat className="w-16 h-16 text-muted-foreground" />
@@ -129,7 +129,7 @@ export default function KitchenDashboard() {
           </div>
         ) : (
           <div className="grid grid-cols-6 gap-3 auto-rows-[calc((100vh-6rem)/3)]">
-            {preparingOrders.map(order => (
+            {activeOrders.map(order => (
               <KitchenOrderCard key={order.id} order={order} />
             ))}
           </div>
