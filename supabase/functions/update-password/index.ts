@@ -64,7 +64,7 @@ serve(async (req) => {
       );
     }
 
-    console.log("Updating password for user:", user_id);
+    console.log("Updating password for user");
 
     // Update user password using admin API
     const { error: updateError } = await supabaseAdmin.auth.admin.updateUserById(
@@ -83,7 +83,7 @@ serve(async (req) => {
     // Note: Password is securely hashed by Supabase Auth
     // We no longer store plain text passwords for security reasons
 
-    console.log("Password updated successfully for user:", user_id);
+    console.log("Password updated successfully");
 
     return new Response(
       JSON.stringify({ success: true }),

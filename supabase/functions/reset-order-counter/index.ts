@@ -87,7 +87,7 @@ serve(async (req) => {
       }
     }
 
-    console.log('Order counter reset to 1 by admin:', user.id);
+    console.log('Order counter reset to 1');
 
     return new Response(
       JSON.stringify({ success: true, message: 'تم إعادة ضبط عداد الطلبات إلى 1' }),
