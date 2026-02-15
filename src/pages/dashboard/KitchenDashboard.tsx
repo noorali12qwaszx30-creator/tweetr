@@ -10,22 +10,22 @@ import { toEnglishNumbers } from '@/lib/formatNumber';
 // Kitchen order card component - optimized for large display
 function KitchenOrderCard({ order }: { order: OrderWithItems }) {
   return (
-    <Card className={`p-2 border-2 hover:border-primary/30 transition-colors h-full flex flex-col overflow-hidden ${
+    <Card className={`border-2 hover:border-primary/30 transition-colors h-full flex flex-col overflow-hidden ${
       order.type === 'delivery' 
         ? 'bg-info/5 border-info/40' 
         : 'bg-success/5 border-success/40'
     }`}>
       {/* Unified top bar */}
-      <div className={`flex items-center justify-between mb-1 px-2 py-1.5 rounded-md -mx-2 -mt-2 ${
+      <div className={`flex items-center justify-between px-2 py-1.5 shrink-0 ${
         order.type === 'delivery' 
           ? 'bg-info/40 border-b-2 border-info' 
           : 'bg-success/40 border-b-2 border-success'
       }`}>
-        <div className="flex items-center gap-1">
-          <span className="text-sm font-black text-primary">
+        <div className="flex items-center gap-1 min-w-0">
+          <span className="text-sm font-black text-primary whitespace-nowrap">
             #{toEnglishNumbers(order.order_number.toString())}
           </span>
-          <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded ${
+          <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded whitespace-nowrap ${
             order.type === 'delivery' ? 'bg-info/30 text-info' : 'bg-success/30 text-success'
           }`}>
             {order.type === 'delivery' ? 'توصيل' : 'سفري'}
@@ -35,7 +35,7 @@ function KitchenOrderCard({ order }: { order: OrderWithItems }) {
       </div>
       
       {/* Items list */}
-      <ul className="space-y-0.5 flex-1">
+      <ul className="space-y-0.5 flex-1 p-2 overflow-auto">
         {order.items.map(item => (
           <li key={item.id} className="text-xs">
             <div className="flex items-start gap-1">
@@ -57,7 +57,7 @@ function KitchenOrderCard({ order }: { order: OrderWithItems }) {
       
       {/* Order notes */}
       {order.notes && (
-        <div className="mt-1 p-1.5 bg-warning/10 border border-warning/30 rounded">
+        <div className="mx-2 mb-2 p-1.5 bg-warning/10 border border-warning/30 rounded shrink-0">
           <p className="text-warning text-[10px] font-bold">
             ⚠️ {order.notes}
           </p>
