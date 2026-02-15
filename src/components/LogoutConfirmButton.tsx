@@ -38,15 +38,12 @@ export function LogoutConfirmButton({ variant = 'default' }: LogoutConfirmButton
       <>
         <Button 
           variant="destructive" 
-          size="lg" 
-          className="w-full justify-start h-auto py-4"
+          size="sm" 
+          className="gap-1 text-xs px-3 py-1.5"
           onClick={() => setIsOpen(true)}
         >
-          <LogOut className="w-5 h-5 ml-3" />
-          <div className="text-right">
-            <p className="font-semibold">تسجيل الخروج</p>
-            <p className="text-sm text-destructive-foreground/70">العودة لاختيار الدور</p>
-          </div>
+          <LogOut className="w-4 h-4" />
+          خروج
         </Button>
 
         <AlertDialog open={isOpen} onOpenChange={setIsOpen}>
