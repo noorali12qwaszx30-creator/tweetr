@@ -16,22 +16,22 @@ function KitchenOrderCard({ order }: { order: OrderWithItems }) {
         : 'bg-success/5 border-success/40'
     }`}>
       {/* Unified top bar */}
-      <div className={`flex items-center justify-between mb-1 px-2 py-1 rounded-md -mx-2 -mt-2 ${
+      <div className={`flex items-center justify-between mb-1 px-2 py-1.5 rounded-md -mx-2 -mt-2 ${
         order.type === 'delivery' 
-          ? 'bg-info/20' 
-          : 'bg-success/20'
+          ? 'bg-info/40 border-b-2 border-info' 
+          : 'bg-success/40 border-b-2 border-success'
       }`}>
-        <div className="flex items-center gap-1.5">
-          <span className="text-lg font-black text-primary">
+        <div className="flex items-center gap-1">
+          <span className="text-sm font-black text-primary">
             #{toEnglishNumbers(order.order_number.toString())}
           </span>
-          <span className={`text-[10px] font-bold ${
-            order.type === 'delivery' ? 'text-info' : 'text-success'
+          <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded ${
+            order.type === 'delivery' ? 'bg-info/30 text-info' : 'bg-success/30 text-success'
           }`}>
             {order.type === 'delivery' ? 'توصيل' : 'سفري'}
           </span>
         </div>
-        <OrderTimer startTime={order.created_at} className="text-xs px-1.5 py-0.5" />
+        <OrderTimer startTime={order.created_at} compact />
       </div>
       
       {/* Items list */}

@@ -5,18 +5,17 @@ import { toEnglishNumbers } from '@/lib/formatNumber';
 interface OrderTimerProps {
   startTime: Date | string;
   className?: string;
+  compact?: boolean;
 }
 
-export function OrderTimer({ startTime, className = '' }: OrderTimerProps) {
+export function OrderTimer({ startTime, className = '', compact = false }: OrderTimerProps) {
   const [elapsed, setElapsed] = useState('00:00');
 
   useEffect(() => {
     const updateTimer = () => {
       const now = new Date();
-      // Parse the start time - if it's a string, ensure it's treated as UTC
       let start: Date;
       if (typeof startTime === 'string') {
-        // If the string doesn't end with Z or have timezone info, assume it's UTC
         const timeStr = startTime.endsWith('Z') || startTime.includes('+') 
           ? startTime 
           : startTime + 'Z';
@@ -27,7 +26,6 @@ export function OrderTimer({ startTime, className = '' }: OrderTimerProps) {
       
       const diff = Math.floor((now.getTime() - start.getTime()) / 1000);
       
-      // Handle negative diff (future time) by showing 00:00
       if (diff < 0) {
         setElapsed('00:00');
         return;
@@ -47,6 +45,19 @@ export function OrderTimer({ startTime, className = '' }: OrderTimerProps) {
   const minutes = parseInt(elapsed.split(':')[0]);
   const isLate = minutes >= 30;
   const isWarning = minutes >= 20 && minutes < 30;
+
+  if (compact) {
+    return (
+      <span className={`
+        text-[11px] font-mono font-bold px-1.5 py-0.5 rounded
+        ${isLate ? 'bg-destructive text-destructive-foreground animate-pulse' : ''}
+        ${isWarning ? 'bg-warning text-warning-foreground animate-pulse' : ''}
+        ${!isLate && !isWarning ? 'bg-background/50 text-foreground' : ''}
+      `}>
+        {elapsed}
+      </span>
+    );
+  }
 
   return (
     <div className={`
