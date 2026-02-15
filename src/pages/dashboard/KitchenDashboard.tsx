@@ -10,40 +10,42 @@ import { toEnglishNumbers } from '@/lib/formatNumber';
 // Kitchen order card component - optimized for large display
 function KitchenOrderCard({ order }: { order: OrderWithItems }) {
   return (
-    <Card className={`p-3 border-2 hover:border-primary/30 transition-colors h-full flex flex-col ${
+    <Card className={`p-2 border-2 hover:border-primary/30 transition-colors h-full flex flex-col overflow-hidden ${
       order.type === 'delivery' 
         ? 'bg-info/5 border-info/40' 
         : 'bg-success/5 border-success/40'
     }`}>
-      {/* Order number and timer */}
-      <div className="flex items-center justify-between mb-2">
-        <span className="text-2xl font-black text-primary">
-          #{toEnglishNumbers(order.order_number.toString())}
-        </span>
-        <OrderTimer startTime={order.created_at} className="text-base px-2 py-1" />
-      </div>
-      
-      {/* Order type badge */}
-      <div className={`inline-block px-2 py-0.5 rounded-full text-xs font-bold mb-2 w-fit ${
+      {/* Unified top bar */}
+      <div className={`flex items-center justify-between mb-1 px-2 py-1 rounded-md -mx-2 -mt-2 ${
         order.type === 'delivery' 
-          ? 'bg-info/20 text-info' 
-          : 'bg-success/20 text-success'
+          ? 'bg-info/20' 
+          : 'bg-success/20'
       }`}>
-        {order.type === 'delivery' ? 'توصيل' : 'سفري'}
+        <div className="flex items-center gap-1.5">
+          <span className="text-lg font-black text-primary">
+            #{toEnglishNumbers(order.order_number.toString())}
+          </span>
+          <span className={`text-[10px] font-bold ${
+            order.type === 'delivery' ? 'text-info' : 'text-success'
+          }`}>
+            {order.type === 'delivery' ? 'توصيل' : 'سفري'}
+          </span>
+        </div>
+        <OrderTimer startTime={order.created_at} className="text-xs px-1.5 py-0.5" />
       </div>
       
       {/* Items list */}
-      <ul className="space-y-1 flex-1">
+      <ul className="space-y-0.5 flex-1">
         {order.items.map(item => (
-          <li key={item.id} className="text-sm">
+          <li key={item.id} className="text-xs">
             <div className="flex items-start gap-1">
-              <span className="font-black text-primary min-w-[2rem]">
+              <span className="font-black text-primary min-w-[1.5rem]">
                 {toEnglishNumbers(item.quantity.toString())}×
               </span>
               <div className="flex-1">
                 <span className="font-bold text-foreground">{item.menu_item_name}</span>
                 {item.notes && (
-                  <p className="text-warning text-xs mt-0.5 font-medium">
+                  <p className="text-warning text-[10px] mt-0.5 font-medium">
                     ⚠️ {item.notes}
                   </p>
                 )}
@@ -55,8 +57,8 @@ function KitchenOrderCard({ order }: { order: OrderWithItems }) {
       
       {/* Order notes */}
       {order.notes && (
-        <div className="mt-2 p-2 bg-warning/10 border border-warning/30 rounded-lg">
-          <p className="text-warning text-xs font-bold">
+        <div className="mt-1 p-1.5 bg-warning/10 border border-warning/30 rounded">
+          <p className="text-warning text-[10px] font-bold">
             ⚠️ {order.notes}
           </p>
         </div>
