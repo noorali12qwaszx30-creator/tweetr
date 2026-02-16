@@ -1,3 +1,4 @@
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { RefreshCw, ChefHat } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
@@ -6,6 +7,67 @@ import { OrderTimer } from '@/components/OrderTimer';
 import { LogoutConfirmButton } from '@/components/LogoutConfirmButton';
 import { ConnectionIndicator } from '@/components/shared/ConnectionIndicator';
 import { toEnglishNumbers } from '@/lib/formatNumber';
+
+// Kitchen alarm hook - plays urgent alarm when any order exceeds 30 minutes
+function useKitchenAlarm(orders: OrderWithItems[]) {
+  const alarmIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const audioCtxRef = useRef<AudioContext | null>(null);
+  const [alarmActive, setAlarmActive] = useState(false);
+
+  const playAlarmBeep = useCallback(() => {
+    try {
+      if (!audioCtxRef.current) {
+        audioCtxRef.current = new (window.AudioContext || (window as any).webkitAudioContext)();
+      }
+      const ctx = audioCtxRef.current;
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      osc.type = 'square';
+      osc.frequency.setValueAtTime(900, ctx.currentTime);
+      osc.frequency.setValueAtTime(600, ctx.currentTime + 0.1);
+      osc.frequency.setValueAtTime(900, ctx.currentTime + 0.2);
+      gain.gain.setValueAtTime(0.35, ctx.currentTime);
+      gain.gain.setValueAtTime(0, ctx.currentTime + 0.08);
+      gain.gain.setValueAtTime(0.35, ctx.currentTime + 0.12);
+      gain.gain.setValueAtTime(0, ctx.currentTime + 0.2);
+      gain.gain.setValueAtTime(0.35, ctx.currentTime + 0.24);
+      gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.4);
+      osc.start(ctx.currentTime);
+      osc.stop(ctx.currentTime + 0.4);
+    } catch {}
+  }, []);
+
+  useEffect(() => {
+    const checkAlarm = () => {
+      const now = Date.now();
+      const hasLateOrder = orders.some(o => {
+        if (o.status !== 'preparing' && o.status !== 'pending') return false;
+        const created = new Date(o.created_at.endsWith('Z') || o.created_at.includes('+') ? o.created_at : o.created_at + 'Z');
+        return (now - created.getTime()) / 1000 >= 1800; // 30 min
+      });
+      setAlarmActive(hasLateOrder);
+    };
+
+    checkAlarm();
+    const check = setInterval(checkAlarm, 5000);
+    return () => clearInterval(check);
+  }, [orders]);
+
+  useEffect(() => {
+    if (alarmActive) {
+      playAlarmBeep();
+      alarmIntervalRef.current = setInterval(playAlarmBeep, 8000);
+    } else if (alarmIntervalRef.current) {
+      clearInterval(alarmIntervalRef.current);
+      alarmIntervalRef.current = null;
+    }
+    return () => {
+      if (alarmIntervalRef.current) clearInterval(alarmIntervalRef.current);
+    };
+  }, [alarmActive, playAlarmBeep]);
+}
 
 // Kitchen order card component - optimized for large display
 function KitchenOrderCard({ order }: { order: OrderWithItems }) {
@@ -70,6 +132,8 @@ function KitchenOrderCard({ order }: { order: OrderWithItems }) {
 export default function KitchenDashboard() {
   const { orders, loading, realtimeConnected, refetch } = useSupabaseOrders();
   
+  // Activate kitchen alarm for orders > 30 min
+  useKitchenAlarm(orders);
   // Filter preparing and pending orders, sort by oldest first
   const activeOrders = orders
     .filter(o => o.status === 'preparing' || o.status === 'pending')

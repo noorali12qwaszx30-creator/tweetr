@@ -49,11 +49,13 @@ export function OrderTimer({ startTime, className = '', compact = false }: Order
   if (compact) {
     return (
       <span className={`
-        text-[11px] font-mono font-bold px-1.5 py-0.5 rounded
-        ${isLate ? 'bg-destructive text-destructive-foreground animate-pulse' : ''}
+        text-[11px] font-mono font-bold px-1.5 py-0.5 rounded transition-all duration-300
+        ${isLate ? 'bg-destructive text-destructive-foreground animate-pulse scale-110 shadow-lg shadow-destructive/50 ring-2 ring-destructive' : ''}
         ${isWarning ? 'bg-warning text-warning-foreground animate-pulse' : ''}
         ${!isLate && !isWarning ? 'bg-background/50 text-foreground' : ''}
-      `}>
+      `}
+        style={isLate ? { animationDuration: '0.5s' } : isWarning ? { animationDuration: '1s' } : undefined}
+      >
         {elapsed}
       </span>
     );
