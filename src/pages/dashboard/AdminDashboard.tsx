@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { AIAssistantChat } from '@/components/admin/AIAssistantChat';
 import { useRole } from '@/contexts/RoleContext';
 import { useAuth } from '@/contexts/AuthContext';
 import { useSupabaseOrders, OrderWithItems } from '@/hooks/useSupabaseOrders';
@@ -24,7 +25,7 @@ import { toast } from 'sonner';
 import { formatNumberWithCommas, formatTimeEnglish, toEnglishNumbers } from '@/lib/formatNumber';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { ROLE_LABELS } from '@/types';
-import { Settings, Users, BarChart3, RefreshCcw, ShieldCheck, XCircle, CheckCircle, ClipboardList, TrendingUp, DollarSign, Timer, Zap, AlertTriangle, Home, Package, Loader2, UtensilsCrossed, Truck, Trash2, Eye, Activity, Clock, GitBranch } from 'lucide-react';
+import { Settings, Users, BarChart3, RefreshCcw, ShieldCheck, XCircle, CheckCircle, ClipboardList, TrendingUp, DollarSign, Timer, Zap, AlertTriangle, Home, Package, Loader2, UtensilsCrossed, Truck, Trash2, Eye, Activity, Clock, GitBranch, Bot } from 'lucide-react';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 import { supabase } from '@/integrations/supabase/client';
 
@@ -59,6 +60,7 @@ export default function AdminDashboard() {
   const [monitoringSubTab, setMonitoringSubTab] = useState<MonitoringSubTab>('pulse');
   const [selectedOrder, setSelectedOrder] = useState<OrderWithItems | null>(null);
   const [isDeletingOrders, setIsDeletingOrders] = useState(false);
+  const [aiChatOpen, setAiChatOpen] = useState(false);
 
   // Statistics calculations
   const totalOrders = orders.length;
@@ -580,5 +582,16 @@ export default function AdminDashboard() {
             <Button className="w-full mt-4" onClick={() => setSelectedOrder(null)}>إغلاق</Button>
           </div>
         </div>}
+
+        {/* AI Assistant Floating Button */}
+        <button
+          onClick={() => setAiChatOpen(true)}
+          className="fixed bottom-20 left-4 z-50 w-14 h-14 rounded-full bg-primary text-primary-foreground shadow-lg hover:shadow-xl transition-all hover:scale-105 flex items-center justify-center animate-pulse"
+          style={{ animationDuration: '3s' }}
+        >
+          <Bot className="w-6 h-6" />
+        </button>
+
+        <AIAssistantChat open={aiChatOpen} onOpenChange={setAiChatOpen} />
     </div>;
 }
