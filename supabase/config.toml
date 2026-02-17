@@ -14,3 +14,6 @@ verify_jwt = false
 
 [functions.update-order]
 verify_jwt = false
+
+[functions.ai-assistant]
+verify_jwt = false
