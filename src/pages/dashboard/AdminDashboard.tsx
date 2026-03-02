@@ -120,25 +120,52 @@ export default function AdminDashboard() {
   const handleDeleteAllOrders = async () => {
     setIsDeletingOrders(true);
     try {
-      // First delete all order_items
-      const { error: itemsError } = await supabase.from('order_items').delete().neq('id', '00000000-0000-0000-0000-000000000000');
+      const dummyId = '00000000-0000-0000-0000-000000000000';
+
+      // 1. Delete all order_items
+      const { error: itemsError } = await supabase.from('order_items').delete().neq('id', dummyId);
       if (itemsError) throw itemsError;
-      
-      // Then delete all orders
-      const { error: ordersError } = await supabase.from('orders').delete().neq('id', '00000000-0000-0000-0000-000000000000');
+
+      // 2. Delete all orders
+      const { error: ordersError } = await supabase.from('orders').delete().neq('id', dummyId);
       if (ordersError) throw ordersError;
-      
-      // Reset order counter to 1
+
+      // 3. Delete all customers
+      const { error: customersError } = await supabase.from('customers').delete().neq('id', dummyId);
+      if (customersError) console.error('Error deleting customers:', customersError);
+
+      // 4. Delete menu item statistics
+      const { error: statsError } = await supabase.from('menu_item_statistics').delete().neq('id', dummyId);
+      if (statsError) console.error('Error deleting menu_item_statistics:', statsError);
+
+      // 5. Delete menu item area stats
+      const { error: areaStatsError } = await supabase.from('menu_item_area_stats').delete().neq('id', dummyId);
+      if (areaStatsError) console.error('Error deleting menu_item_area_stats:', areaStatsError);
+
+      // 6. Delete daily statistics
+      const { error: dailyError } = await supabase.from('daily_statistics').delete().neq('id', dummyId);
+      if (dailyError) console.error('Error deleting daily_statistics:', dailyError);
+
+      // 7. Delete AI analysis snapshots & insights
+      const { error: insightsError } = await supabase.from('ai_insights').delete().neq('id', dummyId);
+      if (insightsError) console.error('Error deleting ai_insights:', insightsError);
+
+      const { error: snapshotsError } = await supabase.from('ai_analysis_snapshots').delete().neq('id', dummyId);
+      if (snapshotsError) console.error('Error deleting ai_analysis_snapshots:', snapshotsError);
+
+      // 8. Reset delivery area order counts to 0
+      const { error: areaResetError } = await supabase.from('delivery_areas').update({ order_count: 0 }).neq('id', dummyId);
+      if (areaResetError) console.error('Error resetting delivery area counts:', areaResetError);
+
+      // 9. Reset order counter to 1
       const { error: resetError } = await supabase.rpc('reset_order_sequence');
-      if (resetError) {
-        console.error('Error resetting order counter:', resetError);
-      }
-      
-      toast.success('تم حذف جميع الطلبات وإعادة تعيين العداد بنجاح');
+      if (resetError) console.error('Error resetting order counter:', resetError);
+
+      toast.success('تم حذف جميع البيانات وإعادة تعيين النظام بنجاح');
       refetch();
     } catch (error: any) {
-      console.error('Error deleting orders:', error);
-      toast.error('حدث خطأ أثناء حذف الطلبات');
+      console.error('Error deleting all data:', error);
+      toast.error('حدث خطأ أثناء حذف البيانات');
     } finally {
       setIsDeletingOrders(false);
     }
