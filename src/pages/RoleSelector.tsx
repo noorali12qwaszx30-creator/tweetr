@@ -298,8 +298,8 @@ export default function RoleSelector() {
           {/* Welcome Title */}
           <h1 className="text-3xl sm:text-4xl md:text-6xl font-black text-foreground mb-4 leading-tight px-2">
             أهلاً بكم في{' '}
-            <span className="text-transparent bg-clip-text bg-gradient-to-l from-primary via-red-500 to-primary">
-              جومانجي
+            <span className="text-transparent bg-clip-text bg-gradient-to-l from-primary via-accent to-primary">
+              تويتر
             </span>
           </h1>
           <p className="text-base sm:text-lg md:text-xl text-muted-foreground max-w-lg mx-auto px-4">
@@ -340,7 +340,7 @@ export default function RoleSelector() {
           }}
         >
           <p className="text-sm text-muted-foreground">
-            © {new Date().getFullYear()} جومانجي - جميع الحقوق محفوظة
+            © {new Date().getFullYear()} تويتر - جميع الحقوق محفوظة
           </p>
         </div>
       </div>
