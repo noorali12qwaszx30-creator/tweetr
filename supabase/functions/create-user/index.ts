@@ -6,7 +6,6 @@ serve(async (req) => {
   const origin = req.headers.get('Origin');
   const corsHeaders = getCorsHeaders(origin);
 
-  // Handle CORS preflight requests
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
   }
@@ -15,7 +14,6 @@ serve(async (req) => {
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
     const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 
-    // Create admin client with service role key
     const supabaseAdmin = createClient(supabaseUrl, supabaseServiceKey, {
       auth: {
         autoRefreshToken: false,
@@ -23,7 +21,6 @@ serve(async (req) => {
       },
     });
 
-    // Verify the calling user is an admin
     const authHeader = req.headers.get("Authorization")!;
     const token = authHeader.replace("Bearer ", "");
     
@@ -36,7 +33,6 @@ serve(async (req) => {
       );
     }
 
-    // Check if calling user is admin
     const { data: roleData, error: roleError } = await supabaseAdmin
       .from("user_roles")
       .select("role")
@@ -59,7 +55,6 @@ serve(async (req) => {
       );
     }
 
-    // Auto-generate email from username
     const email = `${username.toLowerCase().trim()}@restaurant.local`;
 
     // Check if username already exists in profiles
@@ -76,7 +71,7 @@ serve(async (req) => {
       );
     }
 
-    // Create user using admin API (doesn't affect current session)
+    // Create user
     const { data: newUser, error: createError } = await supabaseAdmin.auth.admin.createUser({
       email,
       password,
@@ -101,21 +96,49 @@ serve(async (req) => {
       );
     }
 
-    // Wait a moment for the trigger to create the profile
-    await new Promise(resolve => setTimeout(resolve, 500));
+    // Wait for trigger to potentially create the profile
+    await new Promise(resolve => setTimeout(resolve, 1000));
 
-    // Update profile with additional data
-    const { error: profileError } = await supabaseAdmin
+    // Check if profile was created by trigger
+    const { data: existingNewProfile } = await supabaseAdmin
       .from("profiles")
-      .update({
-        username,
-        full_name: full_name || null,
-        phone: phone || null,
-      })
-      .eq("user_id", newUser.user.id);
+      .select("id")
+      .eq("user_id", newUser.user.id)
+      .maybeSingle();
 
-    if (profileError) {
-      console.error("Profile update error:", profileError);
+    if (existingNewProfile) {
+      // Profile exists from trigger, update it
+      const { error: profileError } = await supabaseAdmin
+        .from("profiles")
+        .update({
+          username,
+          full_name: full_name || null,
+          phone: phone || null,
+        })
+        .eq("user_id", newUser.user.id);
+
+      if (profileError) {
+        console.error("Profile update error:", profileError);
+      }
+    } else {
+      // Profile not created by trigger, insert it manually
+      const { error: profileError } = await supabaseAdmin
+        .from("profiles")
+        .insert({
+          user_id: newUser.user.id,
+          username,
+          full_name: full_name || null,
+          phone: phone || null,
+        });
+
+      if (profileError) {
+        console.error("Profile insert error:", profileError);
+        // Try to clean up the auth user if profile creation fails
+        return new Response(
+          JSON.stringify({ error: "Failed to create user profile" }),
+          { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
     }
 
     // Insert role
@@ -133,9 +156,6 @@ serve(async (req) => {
         { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
-
-    // Note: Password is securely hashed by Supabase Auth
-    // We no longer store plain text passwords for security reasons
 
     return new Response(
       JSON.stringify({ 
