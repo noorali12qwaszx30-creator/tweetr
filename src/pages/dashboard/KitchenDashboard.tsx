@@ -93,7 +93,7 @@ function KitchenOrderCard({ order }: { order: OrderWithItems }) {
             {order.type === 'delivery' ? 'توصيل' : 'سفري'}
           </span>
         </div>
-        <OrderTimer startTime={order.created_at} compact />
+        <OrderTimer startTime={order.created_at} />
       </div>
       
       {/* Items list */}

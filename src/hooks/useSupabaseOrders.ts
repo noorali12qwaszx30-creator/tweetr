@@ -180,6 +180,9 @@ export function useSupabaseOrders(options: UseSupabaseOrdersOptions = {}) {
     if (oldOrder.status !== newOrder.status) {
       const key = `update-${newOrder.id}-${newOrder.status}`;
       switch (newOrder.status) {
+        case 'preparing':
+          showNotification(key, 'info', `الطلب #${newOrder.order_number} قيد التجهيز`, 'orderAssigned');
+          break;
         case 'ready':
           showNotification(key, 'info', `الطلب #${newOrder.order_number} جاهز!`, 'orderReady');
           break;
