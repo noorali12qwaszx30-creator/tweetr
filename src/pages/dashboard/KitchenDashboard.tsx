@@ -99,13 +99,13 @@ function KitchenOrderCard({ order }: { order: OrderWithItems }) {
       {/* Items list */}
       <ul className="space-y-0.5 flex-1 p-2 overflow-auto">
         {order.items.map(item => (
-          <li key={item.id} className="text-xs">
+          <li key={item.id} className="text-sm">
             <div className="flex items-start gap-1">
-              <span className="font-black text-primary min-w-[1.5rem]">
-                {toEnglishNumbers(item.quantity.toString())}×
-              </span>
               <div className="flex-1">
-                <span className="font-bold text-foreground">{item.menu_item_name}</span>
+                <span className="font-bold text-foreground text-base">{item.menu_item_name}</span>
+                <span className="font-black text-primary mr-1">
+                  ×{toEnglishNumbers(item.quantity.toString())}
+                </span>
                 {item.notes && (
                   <p className="text-warning text-[10px] mt-0.5 font-medium">
                     ⚠️ {item.notes}
