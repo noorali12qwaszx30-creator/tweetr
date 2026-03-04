@@ -13,6 +13,8 @@ import {
   User,
   Lock,
   AlertCircle,
+  Eye,
+  EyeOff,
   Phone,
   Sparkles,
   UtensilsCrossed,
@@ -111,6 +113,7 @@ export default function RoleSelector() {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [mounted, setMounted] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
 
   // Auto-redirect if already authenticated with a valid role
   useEffect(() => {
@@ -210,13 +213,20 @@ export default function RoleSelector() {
                 <div className="relative group">
                   <Lock className="absolute right-4 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground group-focus-within:text-primary transition-colors" />
                   <Input
-                    type="password"
+                    type={showPassword ? "text" : "password"}
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
                     placeholder="أدخل الرمز السري"
-                    className="pr-12 h-14 text-lg bg-background/50 border-border/50 rounded-xl focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all"
+                    className="pr-12 pl-12 h-14 text-lg bg-background/50 border-border/50 rounded-xl focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all"
                     disabled={isLoading}
                   />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword(!showPassword)}
+                    className="absolute left-4 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
+                  >
+                    {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+                  </button>
                 </div>
               </div>
 
