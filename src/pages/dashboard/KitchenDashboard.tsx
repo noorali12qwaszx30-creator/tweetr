@@ -177,7 +177,7 @@ export default function KitchenDashboard() {
       </header>
 
       {/* Main content */}
-      <main className="container p-3">
+      <main className="container p-3 pb-36">
         {loading ? (
           <div className="flex items-center justify-center h-[60vh]">
             <div className="text-center">
