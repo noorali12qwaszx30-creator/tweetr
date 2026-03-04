@@ -249,7 +249,7 @@ export default function AdminDashboard() {
       </header>
 
       {/* Main Content */}
-      <main className="container py-4 pb-24">
+      <main className="container py-4 pb-36">
         
         {/* HOME TAB - Dashboard Overview */}
         {activeTab === 'home' && <div className="space-y-4">
