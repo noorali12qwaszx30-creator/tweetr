@@ -44,6 +44,19 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from '@/components/ui/popover';
+import {
+  Command,
+  CommandEmpty,
+  CommandGroup,
+  CommandInput,
+  CommandItem,
+  CommandList,
+} from '@/components/ui/command';
+import {
   DndContext,
   closestCenter,
   KeyboardSensor,
@@ -79,6 +92,7 @@ export default function CashierDashboard() {
   const [customerPhone, setCustomerPhone] = useState('');
   const [customerAddress, setCustomerAddress] = useState('');
   const [selectedAreaId, setSelectedAreaId] = useState<string>('');
+  const [areaPopoverOpen, setAreaPopoverOpen] = useState(false);
   const [orderNotes, setOrderNotes] = useState('');
   const [cancellingOrder, setCancellingOrder] = useState<OrderWithItems | null>(null);
   const [selectedOrderDetails, setSelectedOrderDetails] = useState<OrderWithItems | null>(null);
@@ -366,38 +380,56 @@ export default function CashierDashboard() {
                   />
                 </div>
                 <div className="col-span-2">
-                  <Select
-                    value={selectedAreaId}
-                    onValueChange={(value) => {
-                      setSelectedAreaId(value);
-                      const area = activeAreas.find(a => a.id === value);
-                      setCustomerAddress(area?.name || '');
-                    }}
-                  >
-                    <SelectTrigger className="h-9 text-sm">
-                      <div className="flex items-center gap-2">
-                        <MapPin className="w-3 h-3 text-muted-foreground" />
-                        <SelectValue placeholder="اختر المنطقة" />
-                      </div>
-                    </SelectTrigger>
-                    <SelectContent>
-                      {areasLoading ? (
-                        <div className="flex items-center justify-center py-2">
-                          <Loader2 className="w-4 h-4 animate-spin" />
+                  <Popover open={areaPopoverOpen} onOpenChange={setAreaPopoverOpen}>
+                    <PopoverTrigger asChild>
+                      <Button
+                        variant="outline"
+                        role="combobox"
+                        aria-expanded={areaPopoverOpen}
+                        className="w-full justify-between h-9 text-sm font-normal"
+                      >
+                        <div className="flex items-center gap-2 truncate">
+                          <MapPin className="w-3 h-3 text-muted-foreground shrink-0" />
+                          <span className="truncate">
+                            {selectedAreaId
+                              ? activeAreas.find(a => a.id === selectedAreaId)?.name || 'اختر المنطقة'
+                              : 'اختر المنطقة'}
+                          </span>
                         </div>
-                      ) : activeAreas.length === 0 ? (
-                        <div className="text-center py-2 text-sm text-muted-foreground">
-                          لا توجد مناطق محددة
-                        </div>
-                      ) : (
-                        activeAreas.map(area => (
-                          <SelectItem key={area.id} value={area.id}>
-                            {area.name}
-                          </SelectItem>
-                        ))
-                      )}
-                    </SelectContent>
-                  </Select>
+                        <ChevronDown className="w-3 h-3 shrink-0 opacity-50" />
+                      </Button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-[--radix-popover-trigger-width] p-0" align="start">
+                      <Command dir="rtl">
+                        <CommandInput placeholder="ابحث عن منطقة..." />
+                        <CommandList>
+                          <CommandEmpty>لا توجد نتائج</CommandEmpty>
+                          <CommandGroup>
+                            {areasLoading ? (
+                              <div className="flex items-center justify-center py-2">
+                                <Loader2 className="w-4 h-4 animate-spin" />
+                              </div>
+                            ) : (
+                              activeAreas.map(area => (
+                                <CommandItem
+                                  key={area.id}
+                                  value={area.name}
+                                  onSelect={() => {
+                                    setSelectedAreaId(area.id);
+                                    setCustomerAddress(area.name);
+                                    setAreaPopoverOpen(false);
+                                  }}
+                                  className={selectedAreaId === area.id ? 'bg-accent' : ''}
+                                >
+                                  {area.name}
+                                </CommandItem>
+                              ))
+                            )}
+                          </CommandGroup>
+                        </CommandList>
+                      </Command>
+                    </PopoverContent>
+                  </Popover>
                 </div>
               </div>
             </div>
