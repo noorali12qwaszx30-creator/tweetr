@@ -140,7 +140,7 @@ export default function KitchenDashboard() {
     .sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime());
 
   return (
-    <div className="min-h-screen bg-background" dir="rtl">
+    <div className="flex flex-col h-dvh bg-background" dir="rtl">
       {/* Header */}
       <header className="bg-card border-b-2 border-border shadow-lg sticky top-0 z-50">
         <div className="container flex items-center justify-between h-20 px-6">
@@ -177,7 +177,7 @@ export default function KitchenDashboard() {
       </header>
 
       {/* Main content */}
-      <main className="container p-3 pb-36">
+      <main className="container p-3 flex-1 overflow-auto">
         {loading ? (
           <div className="flex items-center justify-center h-[60vh]">
             <div className="text-center">

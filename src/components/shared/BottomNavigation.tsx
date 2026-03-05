@@ -16,7 +16,7 @@ interface BottomNavigationProps {
 
 export function BottomNavigation({ tabs, activeTab, onTabChange }: BottomNavigationProps) {
   return (
-    <nav className="fixed bottom-0 left-0 right-0 bg-card border-t border-border shadow-elevated pb-safe z-50">
+    <nav className="bg-card border-t border-border shadow-elevated pb-safe z-50 shrink-0">
       <div className="container flex">
         {tabs.map(tab => (
           <button

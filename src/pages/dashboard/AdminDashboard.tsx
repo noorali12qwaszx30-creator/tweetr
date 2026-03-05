@@ -232,7 +232,7 @@ export default function AdminDashboard() {
         <Loader2 className="w-8 h-8 animate-spin text-primary" />
       </div>;
   }
-  return <div className="min-h-screen bg-background">
+  return <div className="flex flex-col h-dvh bg-background">
       {/* Header */}
       <header className="bg-card border-b border-border shadow-soft sticky top-0 z-50">
         <div className="container flex items-center justify-between h-14">
@@ -249,7 +249,7 @@ export default function AdminDashboard() {
       </header>
 
       {/* Main Content */}
-      <main className="container py-4 pb-36">
+      <main className="container py-4 flex-1 overflow-auto">
         
         {/* HOME TAB - Dashboard Overview */}
         {activeTab === 'home' && <div className="space-y-4">
@@ -560,7 +560,7 @@ export default function AdminDashboard() {
       </main>
 
       {/* BOTTOM NAVIGATION - 5 Main Tabs Only */}
-      <nav className="fixed bottom-0 left-0 right-0 bg-card border-t border-border shadow-elevated safe-area-pb">
+      <nav className="bg-card border-t border-border shadow-elevated safe-area-pb shrink-0">
         <div className="container">
           <div className="flex justify-around items-center">
             {mainTabs.map(tab => <button key={tab.id} onClick={() => setActiveTab(tab.id)} className={`flex-1 py-3 flex flex-col items-center gap-1 transition-all ${activeTab === tab.id ? 'text-primary' : 'text-muted-foreground hover:text-foreground'}`}>

@@ -100,7 +100,7 @@ export default function FieldDashboard() {
   }
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="flex flex-col h-dvh bg-background">
       <DashboardHeader 
         title="الميدان" 
         subtitle={user?.fullName || user?.username || ''} 
@@ -111,7 +111,7 @@ export default function FieldDashboard() {
       />
 
       {/* Main Content */}
-      <main className="container py-3 sm:py-4 pb-36">
+      <main className="container py-3 sm:py-4 flex-1 overflow-auto">
         {activeTab === 'orders' && (
           <div className="space-y-3 sm:space-y-4">
             <h2 className="text-lg sm:text-xl font-bold">الطلبات الواردة ({incomingOrders.length})</h2>
@@ -287,7 +287,7 @@ export default function FieldDashboard() {
       </main>
 
       {/* Bottom Navigation */}
-      <nav className="fixed bottom-0 left-0 right-0 bg-card border-t border-border shadow-elevated pb-safe">
+      <nav className="bg-card border-t border-border shadow-elevated pb-safe shrink-0">
         <div className="container flex">
           {tabs.map(tab => (
             <button
