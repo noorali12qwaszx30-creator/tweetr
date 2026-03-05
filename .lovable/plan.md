@@ -2,16 +2,24 @@
 
 ## المشكلة
 
-الشريط السفلي ثابت (`fixed bottom-0`) ويغطي المحتوى. بعض الأقسام تحتوي على `pb-36` كافٍ لكن:
-- **المطبخ**: `p-3` فقط بدون padding سفلي
-- **المدير**: `pb-24` غير كافٍ
+رغم إضافة `pb-36` لجميع الأقسام، المشكلة مستمرة لأن الشريط السفلي (`fixed bottom-0`) يطفو فوق المحتوى بغض النظر عن الـ padding. الحل الجذري هو تغيير التخطيط الهيكلي.
 
-## الحل
+## الحل - تغيير هيكل التخطيط
 
-إضافة `pb-36` لجميع الأقسام التي تفتقر إليه:
+بدلاً من استخدام `fixed` للشريط السفلي، سنستخدم تخطيط Flexbox حيث:
+- الصفحة تكون `flex flex-col h-dvh` (تملأ كامل الشاشة)
+- المحتوى الرئيسي يكون `flex-1 overflow-auto` (يتمدد ويسمح بالتمرير)
+- الشريط السفلي يكون في نهاية الـ flex (بدون `fixed`)
 
-1. **`KitchenDashboard.tsx`**: تغيير `className="container p-3"` إلى `className="container p-3 pb-36"`
-2. **`AdminDashboard.tsx`**: تغيير `pb-24` إلى `pb-36`
+### التعديلات:
 
-الأقسام الأخرى (Cashier, Field, Delivery, Takeaway) تحتوي بالفعل على `pb-36`.
+1. **`BottomNavigation.tsx`**: إزالة `fixed bottom-0 left-0 right-0` وجعله عنصر عادي في نهاية الصفحة (يبقى `z-50` و`bg-card` و`border-t`)
+
+2. **جميع الأقسام الستة** (`CashierDashboard`, `FieldDashboard`, `DeliveryDashboard`, `TakeawayDashboard`, `AdminDashboard`, `KitchenDashboard`):
+   - لف المحتوى بـ `div className="flex flex-col h-dvh"`
+   - جعل `<main>` يحتوي على `flex-1 overflow-auto`
+   - إزالة `pb-36` (لم نعد نحتاجه)
+   - نقل `<BottomNavigation>` ليكون آخر عنصر داخل الـ flex container
+
+هذا الحل يضمن أن المحتوى ينتهي قبل الشريط السفلي تماماً بدون أي تداخل.
 
