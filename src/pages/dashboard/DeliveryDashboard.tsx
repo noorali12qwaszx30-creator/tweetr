@@ -43,10 +43,11 @@ import {
   Settings,
   Bell,
   BellOff,
-  AlertTriangle
+  AlertTriangle,
+  History
 } from 'lucide-react';
 
-type TabType = 'orders' | 'delivering' | 'stats' | 'settings';
+type TabType = 'orders' | 'delivering' | 'history' | 'stats' | 'settings';
 
 export default function DeliveryDashboard() {
   const { role } = useRole();
@@ -192,6 +193,7 @@ export default function DeliveryDashboard() {
   const tabs: { id: TabType; label: string; icon: React.ReactNode; count?: number }[] = [
     { id: 'orders', label: 'الطلبات', icon: <ClipboardList className="w-5 h-5" />, count: pendingAcceptanceOrders.length },
     { id: 'delivering', label: 'التوصيل', icon: <Truck className="w-5 h-5" />, count: deliveringOrders.length },
+    { id: 'history', label: 'السجل', icon: <History className="w-5 h-5" />, count: deliveredOrders.length + cancelledByDelivery.length },
     { id: 'stats', label: 'الإحصائيات', icon: <BarChart3 className="w-5 h-5" /> },
     { id: 'settings', label: 'الإعدادات', icon: <Settings className="w-5 h-5" /> },
   ];
@@ -299,6 +301,31 @@ export default function DeliveryDashboard() {
                     }
                   />
                 ))}
+              </div>
+            )}
+          </div>
+        )}
+
+        {activeTab === 'history' && (
+          <div className="space-y-4">
+            <h2 className="text-lg sm:text-xl font-bold">سجل الطلبات ({toEnglishNumbers(deliveredOrders.length + cancelledByDelivery.length)})</h2>
+            
+            {deliveredOrders.length === 0 && cancelledByDelivery.length === 0 ? (
+              <div className="text-center py-8 sm:py-12 text-muted-foreground">
+                <History className="w-10 h-10 sm:w-12 sm:h-12 mx-auto mb-4 opacity-50" />
+                <p>لا توجد طلبات سابقة</p>
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3 sm:gap-4">
+                {[...deliveredOrders, ...cancelledByDelivery]
+                  .sort((a, b) => new Date(b.updated_at).getTime() - new Date(a.updated_at).getTime())
+                  .map(order => (
+                    <OrderCard
+                      key={order.id}
+                      order={order}
+                      showActions={false}
+                    />
+                  ))}
               </div>
             )}
           </div>
