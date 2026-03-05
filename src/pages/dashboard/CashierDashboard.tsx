@@ -785,7 +785,7 @@ export default function CashierDashboard() {
       </main>
 
       {/* Bottom Navigation */}
-      <nav className="fixed bottom-0 left-0 right-0 bg-card border-t border-border shadow-elevated pb-safe">
+      <nav className="bg-card border-t border-border shadow-elevated pb-safe shrink-0">
         <div className="container flex">
           <button
             onClick={() => setActiveTab('menu')}
