@@ -319,7 +319,7 @@ export default function CashierDashboard() {
   }
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="flex flex-col h-dvh bg-background">
       <DashboardHeader 
         title="كاشير" 
         subtitle={user?.fullName || user?.username || ''} 
@@ -330,7 +330,7 @@ export default function CashierDashboard() {
       />
 
       {/* Main Content */}
-      <main className="container py-3 pb-36 space-y-4">
+      <main className="container py-3 space-y-4 flex-1 overflow-auto">
         {/* Editing Mode Banner */}
         {editingOrder && (
           <div className="bg-warning/20 border border-warning/50 rounded-xl p-3 flex items-center justify-between">

@@ -165,7 +165,7 @@ export default function TakeawayDashboard() {
   }
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="flex flex-col h-dvh bg-background">
       <DashboardHeader 
         title="السفري" 
         subtitle={user?.fullName || user?.username || ''} 
@@ -175,7 +175,7 @@ export default function TakeawayDashboard() {
         showConnectionIndicator={true}
       />
 
-      <main className="container py-3 pb-36 space-y-4">
+      <main className="container py-3 space-y-4 flex-1 overflow-auto">
         {activeTab === 'menu' && (
           <>
             <CartSummary
