@@ -8,65 +8,119 @@ import { LogoutConfirmButton } from '@/components/LogoutConfirmButton';
 import { ConnectionIndicator } from '@/components/shared/ConnectionIndicator';
 import { toEnglishNumbers } from '@/lib/formatNumber';
 
-// Kitchen alarm hook - plays urgent alarm when any order exceeds 30 minutes
+// Kitchen alarm hook - each late order (>30 min) gets its own persistent alarm
 function useKitchenAlarm(orders: OrderWithItems[]) {
-  const alarmIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const audioCtxRef = useRef<AudioContext | null>(null);
-  const [alarmActive, setAlarmActive] = useState(false);
+  const activeAlarmsRef = useRef<Map<string, ReturnType<typeof setInterval>>>(new Map());
+  const lateOrderIdsRef = useRef<Set<string>>(new Set());
 
-  const playAlarmBeep = useCallback(() => {
-    try {
-      if (!audioCtxRef.current) {
-        audioCtxRef.current = new (window.AudioContext || (window as any).webkitAudioContext)();
-      }
-      const ctx = audioCtxRef.current;
-      const osc = ctx.createOscillator();
-      const gain = ctx.createGain();
-      osc.connect(gain);
-      gain.connect(ctx.destination);
-      osc.type = 'square';
-      osc.frequency.setValueAtTime(900, ctx.currentTime);
-      osc.frequency.setValueAtTime(600, ctx.currentTime + 0.1);
-      osc.frequency.setValueAtTime(900, ctx.currentTime + 0.2);
-      gain.gain.setValueAtTime(0.35, ctx.currentTime);
-      gain.gain.setValueAtTime(0, ctx.currentTime + 0.08);
-      gain.gain.setValueAtTime(0.35, ctx.currentTime + 0.12);
-      gain.gain.setValueAtTime(0, ctx.currentTime + 0.2);
-      gain.gain.setValueAtTime(0.35, ctx.currentTime + 0.24);
-      gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.4);
-      osc.start(ctx.currentTime);
-      osc.stop(ctx.currentTime + 0.4);
-    } catch {}
+  const getAudioCtx = useCallback(() => {
+    if (!audioCtxRef.current) {
+      audioCtxRef.current = new (window.AudioContext || (window as any).webkitAudioContext)();
+    }
+    return audioCtxRef.current;
   }, []);
 
+  // Loud, annoying siren-like alarm per order - varies pitch by order index
+  const playOrderAlarm = useCallback((orderIndex: number) => {
+    try {
+      const ctx = getAudioCtx();
+      const now = ctx.currentTime;
+      // Vary base frequency per order so multiple alarms sound distinct
+      const baseFreq = 700 + (orderIndex % 5) * 150;
+
+      // Create a harsh siren sweep
+      const osc1 = ctx.createOscillator();
+      const osc2 = ctx.createOscillator();
+      const gain = ctx.createGain();
+      const distortion = ctx.createWaveShaper();
+
+      // Distortion curve for harsh sound
+      const curve = new Float32Array(256);
+      for (let i = 0; i < 256; i++) {
+        const x = (i * 2) / 256 - 1;
+        curve[i] = (Math.PI + 50) * x / (Math.PI + 50 * Math.abs(x));
+      }
+      distortion.curve = curve;
+
+      osc1.connect(distortion);
+      osc2.connect(distortion);
+      distortion.connect(gain);
+      gain.connect(ctx.destination);
+
+      osc1.type = 'square';
+      osc2.type = 'sawtooth';
+
+      // Siren sweep up and down
+      osc1.frequency.setValueAtTime(baseFreq, now);
+      osc1.frequency.linearRampToValueAtTime(baseFreq + 400, now + 0.3);
+      osc1.frequency.linearRampToValueAtTime(baseFreq, now + 0.6);
+      osc1.frequency.linearRampToValueAtTime(baseFreq + 400, now + 0.9);
+      osc1.frequency.linearRampToValueAtTime(baseFreq, now + 1.2);
+
+      osc2.frequency.setValueAtTime(baseFreq + 50, now);
+      osc2.frequency.linearRampToValueAtTime(baseFreq + 450, now + 0.3);
+      osc2.frequency.linearRampToValueAtTime(baseFreq + 50, now + 0.6);
+
+      // Pulsing volume for urgency
+      gain.gain.setValueAtTime(0.4, now);
+      gain.gain.setValueAtTime(0.05, now + 0.15);
+      gain.gain.setValueAtTime(0.4, now + 0.3);
+      gain.gain.setValueAtTime(0.05, now + 0.45);
+      gain.gain.setValueAtTime(0.4, now + 0.6);
+      gain.gain.setValueAtTime(0.05, now + 0.75);
+      gain.gain.setValueAtTime(0.4, now + 0.9);
+      gain.gain.exponentialRampToValueAtTime(0.01, now + 1.2);
+
+      osc1.start(now);
+      osc2.start(now);
+      osc1.stop(now + 1.2);
+      osc2.stop(now + 1.2);
+    } catch {}
+  }, [getAudioCtx]);
+
   useEffect(() => {
-    const checkAlarm = () => {
+    const checkAlarms = () => {
       const now = Date.now();
-      const hasLateOrder = orders.some(o => {
-        if (o.status !== 'preparing' && o.status !== 'pending') return false;
+      const currentLateIds = new Set<string>();
+
+      orders.forEach((o, idx) => {
+        if (o.status !== 'preparing' && o.status !== 'pending') return;
         const created = new Date(o.created_at.endsWith('Z') || o.created_at.includes('+') ? o.created_at : o.created_at + 'Z');
-        return (now - created.getTime()) / 1000 >= 1800; // 30 min
+        const isLate = (now - created.getTime()) / 1000 >= 1800;
+        if (isLate) currentLateIds.add(o.id);
       });
-      setAlarmActive(hasLateOrder);
+
+      // Start alarms for newly late orders
+      currentLateIds.forEach(id => {
+        if (!lateOrderIdsRef.current.has(id)) {
+          const orderIdx = orders.findIndex(o => o.id === id);
+          playOrderAlarm(orderIdx);
+          const interval = setInterval(() => playOrderAlarm(orderIdx), 3000);
+          activeAlarmsRef.current.set(id, interval);
+        }
+      });
+
+      // Stop alarms for orders no longer late (completed/removed)
+      lateOrderIdsRef.current.forEach(id => {
+        if (!currentLateIds.has(id)) {
+          const interval = activeAlarmsRef.current.get(id);
+          if (interval) clearInterval(interval);
+          activeAlarmsRef.current.delete(id);
+        }
+      });
+
+      lateOrderIdsRef.current = currentLateIds;
     };
 
-    checkAlarm();
-    const check = setInterval(checkAlarm, 5000);
-    return () => clearInterval(check);
-  }, [orders]);
-
-  useEffect(() => {
-    if (alarmActive) {
-      playAlarmBeep();
-      alarmIntervalRef.current = setInterval(playAlarmBeep, 8000);
-    } else if (alarmIntervalRef.current) {
-      clearInterval(alarmIntervalRef.current);
-      alarmIntervalRef.current = null;
-    }
+    checkAlarms();
+    const check = setInterval(checkAlarms, 5000);
     return () => {
-      if (alarmIntervalRef.current) clearInterval(alarmIntervalRef.current);
+      clearInterval(check);
+      activeAlarmsRef.current.forEach(interval => clearInterval(interval));
+      activeAlarmsRef.current.clear();
     };
-  }, [alarmActive, playAlarmBeep]);
+  }, [orders, playOrderAlarm]);
 }
 
 // Kitchen order card component - optimized for large display
