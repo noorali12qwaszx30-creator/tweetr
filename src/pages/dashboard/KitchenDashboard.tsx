@@ -7,6 +7,7 @@ import { OrderTimer } from '@/components/OrderTimer';
 import { LogoutConfirmButton } from '@/components/LogoutConfirmButton';
 import { ConnectionIndicator } from '@/components/shared/ConnectionIndicator';
 import { toEnglishNumbers } from '@/lib/formatNumber';
+import { supabase } from '@/integrations/supabase/client';
 
 // Kitchen alarm hook - each late order (>30 min) gets its own persistent alarm
 function useKitchenAlarm(orders: OrderWithItems[]) {
