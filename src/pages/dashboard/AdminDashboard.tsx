@@ -1,5 +1,6 @@
 import { useState, useCallback, useRef, useEffect } from 'react';
 import { AIAssistantChat } from '@/components/admin/AIAssistantChat';
+import { KitchenAlarmToggle } from '@/components/admin/KitchenAlarmToggle';
 import { useRole } from '@/contexts/RoleContext';
 import { useAuth } from '@/contexts/AuthContext';
 import { useSupabaseOrders, OrderWithItems } from '@/hooks/useSupabaseOrders';
