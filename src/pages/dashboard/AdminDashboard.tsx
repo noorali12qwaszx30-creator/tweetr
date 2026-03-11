@@ -499,6 +499,9 @@ export default function AdminDashboard() {
               </TabsList>
 
               <TabsContent value="general" className="space-y-4 mt-4">
+                {/* Kitchen Alarm Toggle Button */}
+                <KitchenAlarmToggle />
+
                 <Button variant="outline" size="lg" className="w-full justify-start h-auto py-4">
                   <Settings className="w-5 h-5 ml-3" />
                   <div className="text-right">

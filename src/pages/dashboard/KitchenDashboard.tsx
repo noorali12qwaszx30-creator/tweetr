@@ -9,11 +9,12 @@ import { ConnectionIndicator } from '@/components/shared/ConnectionIndicator';
 import { toEnglishNumbers } from '@/lib/formatNumber';
 import { supabase } from '@/integrations/supabase/client';
 
-// Kitchen alarm hook - each late order (>30 min) gets its own persistent alarm
+// Kitchen alarm hook - each late order (>30 min) + manual admin trigger
 function useKitchenAlarm(orders: OrderWithItems[]) {
   const audioCtxRef = useRef<AudioContext | null>(null);
   const activeAlarmsRef = useRef<Map<string, ReturnType<typeof setInterval>>>(new Map());
   const lateOrderIdsRef = useRef<Set<string>>(new Set());
+  const manualAlarmRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   const getAudioCtx = useCallback(() => {
     if (!audioCtxRef.current) {
@@ -22,70 +23,112 @@ function useKitchenAlarm(orders: OrderWithItems[]) {
     return audioCtxRef.current;
   }, []);
 
-  // Loud, annoying siren-like alarm per order - varies pitch by order index
+  // Maximum loudness siren - varies pitch by order index
   const playOrderAlarm = useCallback((orderIndex: number) => {
     try {
       const ctx = getAudioCtx();
       const now = ctx.currentTime;
-      // Vary base frequency per order so multiple alarms sound distinct
-      const baseFreq = 700 + (orderIndex % 5) * 150;
+      const baseFreq = 600 + (orderIndex % 5) * 200;
 
-      // Create a harsh siren sweep
       const osc1 = ctx.createOscillator();
       const osc2 = ctx.createOscillator();
+      const osc3 = ctx.createOscillator();
       const gain = ctx.createGain();
       const distortion = ctx.createWaveShaper();
 
-      // Distortion curve for harsh sound
       const curve = new Float32Array(256);
       for (let i = 0; i < 256; i++) {
         const x = (i * 2) / 256 - 1;
-        curve[i] = (Math.PI + 50) * x / (Math.PI + 50 * Math.abs(x));
+        curve[i] = (Math.PI + 100) * x / (Math.PI + 100 * Math.abs(x));
       }
       distortion.curve = curve;
 
       osc1.connect(distortion);
       osc2.connect(distortion);
+      osc3.connect(distortion);
       distortion.connect(gain);
       gain.connect(ctx.destination);
 
       osc1.type = 'square';
       osc2.type = 'sawtooth';
+      osc3.type = 'triangle';
 
-      // Siren sweep up and down
+      // Rapid siren sweep
       osc1.frequency.setValueAtTime(baseFreq, now);
-      osc1.frequency.linearRampToValueAtTime(baseFreq + 400, now + 0.3);
+      osc1.frequency.linearRampToValueAtTime(baseFreq + 600, now + 0.15);
+      osc1.frequency.linearRampToValueAtTime(baseFreq, now + 0.3);
+      osc1.frequency.linearRampToValueAtTime(baseFreq + 600, now + 0.45);
       osc1.frequency.linearRampToValueAtTime(baseFreq, now + 0.6);
-      osc1.frequency.linearRampToValueAtTime(baseFreq + 400, now + 0.9);
-      osc1.frequency.linearRampToValueAtTime(baseFreq, now + 1.2);
+      osc1.frequency.linearRampToValueAtTime(baseFreq + 600, now + 0.75);
+      osc1.frequency.linearRampToValueAtTime(baseFreq, now + 0.9);
 
-      osc2.frequency.setValueAtTime(baseFreq + 50, now);
-      osc2.frequency.linearRampToValueAtTime(baseFreq + 450, now + 0.3);
-      osc2.frequency.linearRampToValueAtTime(baseFreq + 50, now + 0.6);
+      osc2.frequency.setValueAtTime(baseFreq + 100, now);
+      osc2.frequency.linearRampToValueAtTime(baseFreq + 700, now + 0.2);
+      osc2.frequency.linearRampToValueAtTime(baseFreq + 100, now + 0.4);
+      osc2.frequency.linearRampToValueAtTime(baseFreq + 700, now + 0.6);
 
-      // Pulsing volume for urgency
-      gain.gain.setValueAtTime(0.4, now);
-      gain.gain.setValueAtTime(0.05, now + 0.15);
-      gain.gain.setValueAtTime(0.4, now + 0.3);
-      gain.gain.setValueAtTime(0.05, now + 0.45);
-      gain.gain.setValueAtTime(0.4, now + 0.6);
-      gain.gain.setValueAtTime(0.05, now + 0.75);
-      gain.gain.setValueAtTime(0.4, now + 0.9);
-      gain.gain.exponentialRampToValueAtTime(0.01, now + 1.2);
+      osc3.frequency.setValueAtTime(baseFreq * 2, now);
+      osc3.frequency.linearRampToValueAtTime(baseFreq * 3, now + 0.3);
+      osc3.frequency.linearRampToValueAtTime(baseFreq * 2, now + 0.6);
+
+      // Max volume pulsing
+      gain.gain.setValueAtTime(0.6, now);
+      gain.gain.setValueAtTime(0.1, now + 0.1);
+      gain.gain.setValueAtTime(0.6, now + 0.2);
+      gain.gain.setValueAtTime(0.1, now + 0.3);
+      gain.gain.setValueAtTime(0.6, now + 0.4);
+      gain.gain.setValueAtTime(0.1, now + 0.5);
+      gain.gain.setValueAtTime(0.6, now + 0.6);
+      gain.gain.setValueAtTime(0.1, now + 0.7);
+      gain.gain.setValueAtTime(0.6, now + 0.8);
+      gain.gain.exponentialRampToValueAtTime(0.01, now + 0.95);
 
       osc1.start(now);
       osc2.start(now);
-      osc1.stop(now + 1.2);
-      osc2.stop(now + 1.2);
+      osc3.start(now);
+      osc1.stop(now + 0.95);
+      osc2.stop(now + 0.95);
+      osc3.stop(now + 0.95);
     } catch {}
   }, [getAudioCtx]);
 
+  // Listen for manual admin alarm trigger via Supabase broadcast
+  useEffect(() => {
+    const channel = supabase.channel('kitchen-alarm-control')
+      .on('broadcast', { event: 'alarm-toggle' }, (payload) => {
+        const active = payload.payload?.active;
+        if (active) {
+          // Start manual alarm - repeats every 1 second
+          if (!manualAlarmRef.current) {
+            playOrderAlarm(99); // distinct pitch
+            manualAlarmRef.current = setInterval(() => playOrderAlarm(99), 1000);
+          }
+        } else {
+          // Stop manual alarm
+          if (manualAlarmRef.current) {
+            clearInterval(manualAlarmRef.current);
+            manualAlarmRef.current = null;
+          }
+        }
+      })
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+      if (manualAlarmRef.current) {
+        clearInterval(manualAlarmRef.current);
+        manualAlarmRef.current = null;
+      }
+    };
+  }, [playOrderAlarm]);
+
+  // Late orders alarm - repeats every 1 second per late order
   useEffect(() => {
     const checkAlarms = () => {
       const now = Date.now();
       const currentLateIds = new Set<string>();
 
-      orders.forEach((o, idx) => {
+      orders.forEach((o) => {
         if (o.status !== 'preparing' && o.status !== 'pending') return;
         const created = new Date(o.created_at.endsWith('Z') || o.created_at.includes('+') ? o.created_at : o.created_at + 'Z');
         const isLate = (now - created.getTime()) / 1000 >= 1800;
@@ -97,12 +140,12 @@ function useKitchenAlarm(orders: OrderWithItems[]) {
         if (!lateOrderIdsRef.current.has(id)) {
           const orderIdx = orders.findIndex(o => o.id === id);
           playOrderAlarm(orderIdx);
-          const interval = setInterval(() => playOrderAlarm(orderIdx), 3000);
+          const interval = setInterval(() => playOrderAlarm(orderIdx), 1000);
           activeAlarmsRef.current.set(id, interval);
         }
       });
 
-      // Stop alarms for orders no longer late (completed/removed)
+      // Stop alarms for orders no longer late
       lateOrderIdsRef.current.forEach(id => {
         if (!currentLateIds.has(id)) {
           const interval = activeAlarmsRef.current.get(id);
