@@ -1,5 +1,6 @@
-import { useState } from 'react';
+import { useState, useCallback, useRef, useEffect } from 'react';
 import { AIAssistantChat } from '@/components/admin/AIAssistantChat';
+import { KitchenAlarmToggle } from '@/components/admin/KitchenAlarmToggle';
 import { useRole } from '@/contexts/RoleContext';
 import { useAuth } from '@/contexts/AuthContext';
 import { useSupabaseOrders, OrderWithItems } from '@/hooks/useSupabaseOrders';
@@ -25,7 +26,7 @@ import { toast } from 'sonner';
 import { formatNumberWithCommas, formatTimeEnglish, toEnglishNumbers } from '@/lib/formatNumber';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { ROLE_LABELS } from '@/types';
-import { Settings, Users, BarChart3, RefreshCcw, ShieldCheck, XCircle, CheckCircle, ClipboardList, TrendingUp, DollarSign, Timer, Zap, AlertTriangle, Home, Package, Loader2, UtensilsCrossed, Truck, Trash2, Eye, Activity, Clock, GitBranch, Bot } from 'lucide-react';
+import { Settings, Users, BarChart3, RefreshCcw, ShieldCheck, XCircle, CheckCircle, ClipboardList, TrendingUp, DollarSign, Timer, Zap, AlertTriangle, Home, Package, Loader2, UtensilsCrossed, Truck, Trash2, Eye, Activity, Clock, GitBranch, Bot, Siren } from 'lucide-react';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 import { supabase } from '@/integrations/supabase/client';
 
@@ -499,6 +500,9 @@ export default function AdminDashboard() {
               </TabsList>
 
               <TabsContent value="general" className="space-y-4 mt-4">
+                {/* Kitchen Alarm Toggle Button */}
+                <KitchenAlarmToggle />
+
                 <Button variant="outline" size="lg" className="w-full justify-start h-auto py-4">
                   <Settings className="w-5 h-5 ml-3" />
                   <div className="text-right">
