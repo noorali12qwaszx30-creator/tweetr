@@ -81,9 +81,9 @@ export function useSupabaseOrders(options: UseSupabaseOrdersOptions = {}) {
   const shownNotificationsRef = useRef(new Set<string>());
   const channelRef = useRef<ReturnType<typeof supabase.channel> | null>(null);
   const itemsChannelRef = useRef<ReturnType<typeof supabase.channel> | null>(null);
-  const pollingIntervalRef = useRef<NodeJS.Timeout | null>(null);
-  const silentRefreshIntervalRef = useRef<NodeJS.Timeout | null>(null);
-  const reconnectTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const pollingIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const silentRefreshIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const reconnectTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // Update ref when filter changes
   useEffect(() => {
