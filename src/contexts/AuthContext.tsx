@@ -2,6 +2,7 @@ import React, { createContext, useContext, useState, useEffect, ReactNode } from
 import { User, Session } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
 import { UserRole } from '@/types';
+import { preloadMenuItems } from '@/hooks/useMenuItems';
 
 interface AuthUser {
   id: string;
@@ -72,6 +73,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
               role: profile.role,
             });
             setLoading(false);
+            // Preload menu items in background after auth
+            preloadMenuItems();
           }, 0);
         } else {
           setUser(null);
