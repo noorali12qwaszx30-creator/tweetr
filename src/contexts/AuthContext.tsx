@@ -73,6 +73,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
               role: profile.role,
             });
             setLoading(false);
+            // Preload menu items in background after auth
+            preloadMenuItems();
           }, 0);
         } else {
           setUser(null);
