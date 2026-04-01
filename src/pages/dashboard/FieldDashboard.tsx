@@ -160,10 +160,16 @@ export default function FieldDashboard() {
                       key={order.id}
                       order={order}
                       actions={
-                        <div className="w-full p-2 bg-warning/10 border border-warning/30 rounded-lg text-center">
-                          <p className="text-sm text-warning">
-                            بانتظار قبول {order.delivery_person_name}
-                          </p>
+                        <div className="w-full space-y-2">
+                          <div className="p-2 bg-warning/10 border border-warning/30 rounded-lg text-center">
+                            <p className="text-sm text-warning">
+                              بانتظار قبول {order.delivery_person_name}
+                            </p>
+                          </div>
+                          <Button variant="outline" size="sm" className="w-full" onClick={() => handleOpenSelector(order)}>
+                            <Users className="w-3 h-3 ml-1" />
+                            تغيير موظف التوصيل
+                          </Button>
                         </div>
                       }
                     />
@@ -215,14 +221,23 @@ export default function FieldDashboard() {
             ) : (
               <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
                 {deliveringOrders.map(order => (
-                  <OrderCard key={order.id} order={order} showActions={false} />
-                ))}
-              </div>
-            )}
-          </div>
-        )}
+                  <OrderCard
+                    key={order.id}
+                    order={order}
+                    actions={
+                      <Button variant="outline" size="sm" className="w-full" onClick={() => handleOpenSelector(order)}>
+                        <Users className="w-3 h-3 ml-1" />
+                        تغيير موظف التوصيل
+                      </Button>
+                    }
+                  />
+                 ))}
+               </div>
+             )}
+           </div>
+         )}
 
-        {activeTab === 'delivered' && (
+         {activeTab === 'delivered' && (
           <div className="space-y-4">
             <h2 className="text-xl font-bold flex items-center gap-2">
               <CheckCircle className="w-5 h-5 text-success" />
