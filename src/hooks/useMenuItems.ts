@@ -12,9 +12,57 @@ export interface MenuItem {
   display_order: number;
 }
 
-// Simple cache for menu items to avoid loading delay on navigation
+const STORAGE_KEY = 'cached_menu_items';
+const STORAGE_TS_KEY = 'cached_menu_items_ts';
+
+// Load from localStorage on module init
+function loadFromStorage(): { items: MenuItem[] | null; categories: string[] | null } {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if (!raw) return { items: null, categories: null };
+    const items: MenuItem[] = JSON.parse(raw);
+    const categories = [...new Set(items.map(i => i.category))];
+    return { items, categories };
+  } catch {
+    return { items: null, categories: null };
+  }
+}
+
+function saveToStorage(items: MenuItem[]) {
+  try {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(items));
+    localStorage.setItem(STORAGE_TS_KEY, Date.now().toString());
+  } catch {
+    // Storage full or unavailable
+  }
+}
+
+// Module-level memory cache (survives navigation, lost on refresh)
 let cachedMenuItems: MenuItem[] | null = null;
 let cachedCategories: string[] | null = null;
+
+// Initialize memory cache from localStorage
+const stored = loadFromStorage();
+if (stored.items) {
+  cachedMenuItems = stored.items;
+  cachedCategories = stored.categories;
+}
+
+// Preload function - call early (e.g. after login) to warm cache
+export async function preloadMenuItems() {
+  const { data, error } = await supabase
+    .from('menu_items')
+    .select('*')
+    .order('category')
+    .order('display_order');
+
+  if (!error && data) {
+    const items = data as MenuItem[];
+    cachedMenuItems = items;
+    cachedCategories = [...new Set(items.map(i => i.category))];
+    saveToStorage(items);
+  }
+}
 
 export function useMenuItems() {
   const [menuItems, setMenuItems] = useState<MenuItem[]>(cachedMenuItems || []);
@@ -22,7 +70,6 @@ export function useMenuItems() {
   const [categories, setCategories] = useState<string[]>(cachedCategories || []);
 
   const fetchMenuItems = useCallback(async () => {
-    // Only show loading if we don't have cached data
     if (!cachedMenuItems) {
       setLoading(true);
     }
@@ -45,9 +92,9 @@ export function useMenuItems() {
     const items = data as MenuItem[];
     const uniqueCategories = [...new Set(data.map(item => item.category))];
     
-    // Update cache
     cachedMenuItems = items;
     cachedCategories = uniqueCategories;
+    saveToStorage(items);
     
     setMenuItems(items);
     setCategories(uniqueCategories);
@@ -57,7 +104,6 @@ export function useMenuItems() {
   useEffect(() => {
     fetchMenuItems();
     
-    // Subscribe to realtime changes for instant updates
     const channel = supabase
       .channel('menu-items-realtime')
       .on(
@@ -75,7 +121,6 @@ export function useMenuItems() {
   }, [fetchMenuItems]);
 
   const addMenuItem = async (item: Omit<MenuItem, 'id' | 'is_available' | 'display_order'>) => {
-    // Optimistic update
     const tempId = `temp-${Date.now()}`;
     const newItem: MenuItem = {
       id: tempId,
@@ -85,7 +130,6 @@ export function useMenuItems() {
     };
     setMenuItems(prev => [...prev, newItem]);
 
-    // Get the max display_order for this category
     const { data: maxOrderData } = await supabase
       .from('menu_items')
       .select('display_order')
@@ -111,20 +155,19 @@ export function useMenuItems() {
     if (error) {
       console.error('Error adding menu item:', error);
       toast.error('حدث خطأ في إضافة الصنف');
-      // Revert optimistic update
       setMenuItems(prev => prev.filter(i => i.id !== tempId));
       return null;
     }
 
     toast.success('تم إضافة الصنف');
-    // Replace temp item with real item
+    const updated = menuItems.map(i => i.id === tempId ? data : i);
     setMenuItems(prev => prev.map(i => i.id === tempId ? data : i));
-    cachedMenuItems = menuItems.map(i => i.id === tempId ? data : i);
+    cachedMenuItems = updated;
+    saveToStorage(updated);
     return data;
   };
 
   const updateMenuItem = async (id: string, updates: Partial<MenuItem>) => {
-    // Optimistic update
     const previousItems = [...menuItems];
     setMenuItems(prev => prev.map(item => 
       item.id === id ? { ...item, ...updates } : item
@@ -138,18 +181,18 @@ export function useMenuItems() {
     if (error) {
       console.error('Error updating menu item:', error);
       toast.error('حدث خطأ في تحديث الصنف');
-      // Revert
       setMenuItems(previousItems);
       return false;
     }
 
     toast.success('تم تحديث الصنف');
-    cachedMenuItems = menuItems.map(item => item.id === id ? { ...item, ...updates } : item);
+    const updated = menuItems.map(item => item.id === id ? { ...item, ...updates } : item);
+    cachedMenuItems = updated;
+    saveToStorage(updated);
     return true;
   };
 
   const deleteMenuItem = async (id: string) => {
-    // Optimistic update
     const previousItems = [...menuItems];
     setMenuItems(prev => prev.filter(item => item.id !== id));
 
@@ -161,13 +204,14 @@ export function useMenuItems() {
     if (error) {
       console.error('Error deleting menu item:', error);
       toast.error('حدث خطأ في حذف الصنف');
-      // Revert
       setMenuItems(previousItems);
       return false;
     }
 
     toast.success('تم حذف الصنف');
-    cachedMenuItems = menuItems.filter(item => item.id !== id);
+    const updated = menuItems.filter(item => item.id !== id);
+    cachedMenuItems = updated;
+    saveToStorage(updated);
     return true;
   };
 
@@ -181,15 +225,14 @@ export function useMenuItems() {
     menuItems.filter(item => item.category === category && item.is_available);
 
   const updateDisplayOrder = async (items: MenuItem[]) => {
-    // Optimistic update
     const updatedItems = menuItems.map(item => {
       const updated = items.find(i => i.id === item.id);
       return updated ? { ...item, display_order: updated.display_order } : item;
     });
     setMenuItems(updatedItems);
     cachedMenuItems = updatedItems;
+    saveToStorage(updatedItems);
 
-    // Update display_order for multiple items in parallel
     const updates = items.map(item => 
       supabase
         .from('menu_items')
