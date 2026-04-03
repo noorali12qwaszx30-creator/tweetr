@@ -576,6 +576,7 @@ export function useSupabaseOrders(options: UseSupabaseOrdersOptions = {}) {
     customer_address?: string;
     delivery_area_id?: string;
     notes?: string;
+    order_source?: string;
     items?: { menu_item_id?: string; menu_item_name: string; menu_item_price: number; quantity: number; notes?: string }[];
   }) => {
     try {
