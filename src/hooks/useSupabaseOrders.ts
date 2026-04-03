@@ -360,6 +360,7 @@ export function useSupabaseOrders(options: UseSupabaseOrdersOptions = {}) {
     notes?: string;
     cashier_id?: string;
     cashier_name?: string;
+    order_source?: string;
     items: { menu_item_id?: string; menu_item_name: string; menu_item_price: number; quantity: number; notes?: string }[];
   }) => {
     try {
