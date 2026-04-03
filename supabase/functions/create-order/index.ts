@@ -20,6 +20,7 @@ interface OrderRequest {
   cashier_id?: string;
   cashier_name?: string;
   items: OrderItem[];
+  order_source?: string;
 }
 
 // Sanitize text input: strip HTML tags and trim
