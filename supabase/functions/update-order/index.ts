@@ -109,6 +109,7 @@ Deno.serve(async (req) => {
     if (customer_address !== undefined) orderUpdate.customer_address = customer_address ? sanitizeText(customer_address, 500) : null;
     if (delivery_area_id) orderUpdate.delivery_area_id = delivery_area_id;
     if (notes !== undefined) orderUpdate.notes = notes ? sanitizeText(notes, 500) : null;
+    if (orderData.order_source !== undefined) orderUpdate.order_source = orderData.order_source ? sanitizeText(orderData.order_source, 50) : null;
 
     // Get delivery fee if delivery_area_id changed or exists
     let deliveryFee = existingOrder.delivery_fee || 0;
