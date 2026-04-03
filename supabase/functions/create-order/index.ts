@@ -283,6 +283,7 @@ serve(async (req) => {
         delivery_fee: deliveryFee,
         cashier_id: user.id, // Always use the authenticated user's ID
         cashier_name: orderData.cashier_name ? sanitizeText(orderData.cashier_name, 100) : null,
+        order_source: orderData.order_source ? sanitizeText(orderData.order_source, 50) : null,
         status: 'pending',
       })
       .select()
