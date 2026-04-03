@@ -203,6 +203,7 @@ export default function CashierDashboard() {
       customer_address: customerAddress,
       delivery_area_id: selectedAreaId,
       notes: orderNotes || undefined,
+      order_source: orderSource || undefined,
       items: cart.map(item => ({
         menu_item_id: item.menuItem.id,
         menu_item_name: item.menuItem.name,
