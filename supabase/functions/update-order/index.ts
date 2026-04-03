@@ -21,6 +21,7 @@ interface UpdateOrderRequest {
   delivery_area_id?: string;
   notes?: string;
   items?: OrderItem[];
+  order_source?: string;
 }
 
 Deno.serve(async (req) => {
