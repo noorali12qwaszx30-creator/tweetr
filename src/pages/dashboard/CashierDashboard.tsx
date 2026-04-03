@@ -435,6 +435,20 @@ export default function CashierDashboard() {
                     </PopoverContent>
                   </Popover>
                 </div>
+                <div className="col-span-2">
+                  <Select value={orderSource} onValueChange={setOrderSource}>
+                    <SelectTrigger className="h-9 text-sm">
+                      <SelectValue placeholder="مصدر الطلب (اختياري)" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="instagram">انستقرام</SelectItem>
+                      <SelectItem value="telegram">تلقرام</SelectItem>
+                      <SelectItem value="phone">الخط</SelectItem>
+                      <SelectItem value="whatsapp">واتساب</SelectItem>
+                      <SelectItem value="local">محلي</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
               </div>
             </div>
 
