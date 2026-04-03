@@ -94,6 +94,7 @@ export default function CashierDashboard() {
   const [selectedAreaId, setSelectedAreaId] = useState<string>('');
   const [areaPopoverOpen, setAreaPopoverOpen] = useState(false);
   const [orderNotes, setOrderNotes] = useState('');
+  const [orderSource, setOrderSource] = useState<string>('');
   const [cancellingOrder, setCancellingOrder] = useState<OrderWithItems | null>(null);
   const [selectedOrderDetails, setSelectedOrderDetails] = useState<OrderWithItems | null>(null);
   const [editingOrder, setEditingOrder] = useState<OrderWithItems | null>(null);
