@@ -162,6 +162,7 @@ export default function CashierDashboard() {
     setCustomerAddress('');
     setSelectedAreaId('');
     setOrderNotes('');
+    setOrderSource('');
   };
 
   const totalPrice = cart.reduce((sum, item) => sum + item.menuItem.price * item.quantity, 0);
