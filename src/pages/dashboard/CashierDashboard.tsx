@@ -274,6 +274,7 @@ export default function CashierDashboard() {
     setCustomerAddress(order.customer_address || '');
     setSelectedAreaId(order.delivery_area_id || '');
     setOrderNotes(order.notes || '');
+    setOrderSource(order.order_source || '');
     setEditingOrder(order);
     setActiveTab('menu');
     toast.info(`جاري تعديل الطلب #${order.order_number}`);
