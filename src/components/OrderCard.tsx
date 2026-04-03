@@ -75,6 +75,11 @@ export function OrderCard({
               بلاغ
             </span>
           )}
+          {order.order_source && (
+            <span className="px-2 py-0.5 rounded-full text-[10px] sm:text-xs font-medium bg-accent text-accent-foreground">
+              {order.order_source === 'instagram' ? 'انستقرام' : order.order_source === 'telegram' ? 'تلكرام' : order.order_source === 'phone' ? 'هاتف' : order.order_source === 'whatsapp' ? 'واتساب' : order.order_source === 'local' ? 'محلي' : order.order_source}
+            </span>
+          )}
         </div>
         {order.status !== 'cancelled' && order.status !== 'delivered' && (
           <OrderTimer startTime={order.created_at} />
