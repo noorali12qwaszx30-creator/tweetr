@@ -532,6 +532,7 @@ export type Database = {
           issue_reported_by: string | null
           notes: string | null
           order_number: number
+          order_source: string | null
           pending_delivery_acceptance: boolean | null
           status: Database["public"]["Enums"]["order_status"]
           total_price: number
@@ -563,6 +564,7 @@ export type Database = {
           issue_reported_by?: string | null
           notes?: string | null
           order_number?: number
+          order_source?: string | null
           pending_delivery_acceptance?: boolean | null
           status?: Database["public"]["Enums"]["order_status"]
           total_price?: number
@@ -594,6 +596,7 @@ export type Database = {
           issue_reported_by?: string | null
           notes?: string | null
           order_number?: number
+          order_source?: string | null
           pending_delivery_acceptance?: boolean | null
           status?: Database["public"]["Enums"]["order_status"]
           total_price?: number

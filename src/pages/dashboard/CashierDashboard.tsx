@@ -94,6 +94,7 @@ export default function CashierDashboard() {
   const [selectedAreaId, setSelectedAreaId] = useState<string>('');
   const [areaPopoverOpen, setAreaPopoverOpen] = useState(false);
   const [orderNotes, setOrderNotes] = useState('');
+  const [orderSource, setOrderSource] = useState<string>('');
   const [cancellingOrder, setCancellingOrder] = useState<OrderWithItems | null>(null);
   const [selectedOrderDetails, setSelectedOrderDetails] = useState<OrderWithItems | null>(null);
   const [editingOrder, setEditingOrder] = useState<OrderWithItems | null>(null);
@@ -161,6 +162,7 @@ export default function CashierDashboard() {
     setCustomerAddress('');
     setSelectedAreaId('');
     setOrderNotes('');
+    setOrderSource('');
   };
 
   const totalPrice = cart.reduce((sum, item) => sum + item.menuItem.price * item.quantity, 0);
@@ -201,6 +203,7 @@ export default function CashierDashboard() {
       customer_address: customerAddress,
       delivery_area_id: selectedAreaId,
       notes: orderNotes || undefined,
+      order_source: orderSource || undefined,
       items: cart.map(item => ({
         menu_item_id: item.menuItem.id,
         menu_item_name: item.menuItem.name,
@@ -271,6 +274,7 @@ export default function CashierDashboard() {
     setCustomerAddress(order.customer_address || '');
     setSelectedAreaId(order.delivery_area_id || '');
     setOrderNotes(order.notes || '');
+    setOrderSource(order.order_source || '');
     setEditingOrder(order);
     setActiveTab('menu');
     toast.info(`جاري تعديل الطلب #${order.order_number}`);
@@ -430,6 +434,20 @@ export default function CashierDashboard() {
                       </Command>
                     </PopoverContent>
                   </Popover>
+                </div>
+                <div className="col-span-2">
+                  <Select value={orderSource} onValueChange={setOrderSource}>
+                    <SelectTrigger className="h-9 text-sm">
+                      <SelectValue placeholder="مصدر الطلب (اختياري)" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="instagram">انستقرام</SelectItem>
+                      <SelectItem value="telegram">تلقرام</SelectItem>
+                      <SelectItem value="phone">الخط</SelectItem>
+                      <SelectItem value="whatsapp">واتساب</SelectItem>
+                      <SelectItem value="local">محلي</SelectItem>
+                    </SelectContent>
+                  </Select>
                 </div>
               </div>
             </div>

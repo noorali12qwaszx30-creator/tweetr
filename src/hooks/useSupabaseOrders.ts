@@ -42,6 +42,7 @@ export interface DbOrder {
   issue_reason?: string | null;
   issue_reported_at?: string | null;
   issue_reported_by?: string | null;
+  order_source?: string | null;
 }
 
 export interface DbOrderItem {
@@ -359,6 +360,7 @@ export function useSupabaseOrders(options: UseSupabaseOrdersOptions = {}) {
     notes?: string;
     cashier_id?: string;
     cashier_name?: string;
+    order_source?: string;
     items: { menu_item_id?: string; menu_item_name: string; menu_item_price: number; quantity: number; notes?: string }[];
   }) => {
     try {
@@ -574,6 +576,7 @@ export function useSupabaseOrders(options: UseSupabaseOrdersOptions = {}) {
     customer_address?: string;
     delivery_area_id?: string;
     notes?: string;
+    order_source?: string;
     items?: { menu_item_id?: string; menu_item_name: string; menu_item_price: number; quantity: number; notes?: string }[];
   }) => {
     try {
