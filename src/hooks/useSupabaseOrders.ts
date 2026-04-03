@@ -42,6 +42,7 @@ export interface DbOrder {
   issue_reason?: string | null;
   issue_reported_at?: string | null;
   issue_reported_by?: string | null;
+  order_source?: string | null;
 }
 
 export interface DbOrderItem {
