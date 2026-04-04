@@ -12,6 +12,7 @@ import { OrderCard } from '@/components/OrderCard';
 import { CancelOrderDialog } from '@/components/CancelOrderDialog';
 import { OrderDetailsDialog } from '@/components/OrderDetailsDialog';
 import { LogoutConfirmButton } from '@/components/LogoutConfirmButton';
+import { SmartOrderSearch } from '@/components/SmartOrderSearch';
 import { toast } from 'sonner';
 import { ROLE_LABELS } from '@/types';
 import { toEnglishNumbers, formatNumberWithCommas, formatDateEnglish, formatTimeEnglish } from '@/lib/formatNumber';
@@ -34,7 +35,8 @@ import {
   Loader2,
   ChevronDown,
   Pencil,
-  AlertTriangle
+  AlertTriangle,
+  Search
 } from 'lucide-react';
 import {
   Select,
@@ -72,7 +74,7 @@ import {
   verticalListSortingStrategy,
 } from '@dnd-kit/sortable';
 
-type TabType = 'menu' | 'orders' | 'reports' | 'settings';
+type TabType = 'menu' | 'orders' | 'search' | 'reports' | 'settings';
 
 interface CartItem {
   menuItem: DbMenuItem;
@@ -589,6 +591,14 @@ export default function CashierDashboard() {
           </div>
         )}
 
+        {activeTab === 'search' && (
+          <SmartOrderSearch
+            orders={orders}
+            onEditOrder={handleEditOrder}
+            onCancelOrder={(order) => setCancellingOrder(order)}
+          />
+        )}
+
         {activeTab === 'reports' && (
           <div className="space-y-4">
             <div className="flex items-center justify-between">
@@ -827,6 +837,15 @@ export default function CashierDashboard() {
                 {activeOrders.length}
               </span>
             )}
+          </button>
+          <button
+            onClick={() => setActiveTab('search')}
+            className={`flex-1 py-3 flex flex-col items-center gap-1 transition-colors ${
+              activeTab === 'search' ? 'text-primary' : 'text-muted-foreground'
+            }`}
+          >
+            <Search className="w-5 h-5" />
+            <span className="text-xs font-medium">بحث</span>
           </button>
           <button
             onClick={() => setActiveTab('reports')}
