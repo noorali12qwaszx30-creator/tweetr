@@ -590,7 +590,14 @@ export default function CashierDashboard() {
           </div>
         )}
 
-        {activeTab === 'reports' && (
+        {activeTab === 'search' && (
+          <SmartOrderSearch
+            orders={orders}
+            onEditOrder={handleEditOrder}
+            onCancelOrder={(order) => setCancellingOrder(order)}
+          />
+        )}
+
           <div className="space-y-4">
             <div className="flex items-center justify-between">
               <h2 className="text-lg font-bold flex items-center gap-2">
