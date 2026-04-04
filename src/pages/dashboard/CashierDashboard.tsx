@@ -12,6 +12,7 @@ import { OrderCard } from '@/components/OrderCard';
 import { CancelOrderDialog } from '@/components/CancelOrderDialog';
 import { OrderDetailsDialog } from '@/components/OrderDetailsDialog';
 import { LogoutConfirmButton } from '@/components/LogoutConfirmButton';
+import { SmartOrderSearch } from '@/components/SmartOrderSearch';
 import { toast } from 'sonner';
 import { ROLE_LABELS } from '@/types';
 import { toEnglishNumbers, formatNumberWithCommas, formatDateEnglish, formatTimeEnglish } from '@/lib/formatNumber';
