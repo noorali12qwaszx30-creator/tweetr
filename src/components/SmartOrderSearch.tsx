@@ -225,12 +225,6 @@ export function SmartOrderSearch({ orders, onEditOrder, onCancelOrder }: SmartOr
   const showQuickAccess = !query.trim() && statusFilter === 'all' && timeFilter === 'all';
 
   const handleOrderClick = (order: OrderWithItems) => {
-    if (order.status === 'cancelled' || order.status === 'delivered') {
-      // Show alert toast for completed/cancelled
-      const statusText = order.status === 'cancelled' ? 'ملغي' : 'مكتمل';
-      const toastFn = order.status === 'cancelled' ? toast.warning : toast.info;
-      // Still open details
-    }
     setSelectedOrder(order);
   };
 
