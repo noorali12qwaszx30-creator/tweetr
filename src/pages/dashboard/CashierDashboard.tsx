@@ -838,6 +838,15 @@ export default function CashierDashboard() {
             )}
           </button>
           <button
+            onClick={() => setActiveTab('search')}
+            className={`flex-1 py-3 flex flex-col items-center gap-1 transition-colors ${
+              activeTab === 'search' ? 'text-primary' : 'text-muted-foreground'
+            }`}
+          >
+            <Search className="w-5 h-5" />
+            <span className="text-xs font-medium">بحث</span>
+          </button>
+          <button
             onClick={() => setActiveTab('reports')}
             className={`flex-1 py-3 flex flex-col items-center gap-1 transition-colors relative ${
               activeTab === 'reports' ? 'text-destructive' : 'text-muted-foreground'
