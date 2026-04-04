@@ -73,7 +73,7 @@ import {
   verticalListSortingStrategy,
 } from '@dnd-kit/sortable';
 
-type TabType = 'menu' | 'orders' | 'reports' | 'settings';
+type TabType = 'menu' | 'orders' | 'search' | 'reports' | 'settings';
 
 interface CartItem {
   menuItem: DbMenuItem;
