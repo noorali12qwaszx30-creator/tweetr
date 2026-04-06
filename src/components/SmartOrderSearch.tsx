@@ -20,6 +20,7 @@ import {
   ChefHat,
   Timer,
   Package,
+  Pencil,
 } from 'lucide-react';
 
 // --- Fuzzy matching helpers ---
@@ -434,6 +435,28 @@ export function SmartOrderSearch({ orders, onEditOrder, onCancelOrder }: SmartOr
                       showActions={false}
                     />
                   </div>
+                  {order.status !== 'delivered' && order.status !== 'cancelled' && (
+                    <div className="flex gap-2 mt-2 px-1">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="flex-1 text-xs"
+                        onClick={(e) => { e.stopPropagation(); onEditOrder(order); }}
+                      >
+                        <Pencil className="w-3 h-3 ml-1" />
+                        تعديل
+                      </Button>
+                      <Button
+                        variant="destructive"
+                        size="sm"
+                        className="flex-1 text-xs"
+                        onClick={(e) => { e.stopPropagation(); onCancelOrder(order); }}
+                      >
+                        <XCircle className="w-3 h-3 ml-1" />
+                        إلغاء
+                      </Button>
+                    </div>
+                  )}
                 </div>
               ))}
             </div>
