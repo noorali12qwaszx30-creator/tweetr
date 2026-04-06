@@ -8,6 +8,7 @@ import { RoleProvider } from "@/contexts/RoleContext";
 import { CancellationReasonsProvider } from "@/contexts/CancellationReasonsContext";
 import { IssueReasonsProvider } from "@/contexts/IssueReasonsContext";
 import { ActivityLogProvider } from "@/contexts/ActivityLogContext";
+import { ErrorBoundary } from "@/components/ErrorBoundary";
 import RoleSelector from "./pages/RoleSelector";
 import Dashboard from "./pages/Dashboard";
 import NotFound from "./pages/NotFound";
@@ -23,13 +24,15 @@ const App = () => (
             <IssueReasonsProvider>
               <ActivityLogProvider>
                 <TooltipProvider>
-                  <Toaster />
-                  <Sonner />
-                  <Routes>
-                    <Route path="/" element={<RoleSelector />} />
-                    <Route path="/dashboard" element={<Dashboard />} />
-                    <Route path="*" element={<NotFound />} />
-                  </Routes>
+                  <ErrorBoundary fallbackTitle="حدث خطأ في التطبيق">
+                    <Toaster />
+                    <Sonner />
+                    <Routes>
+                      <Route path="/" element={<RoleSelector />} />
+                      <Route path="/dashboard" element={<Dashboard />} />
+                      <Route path="*" element={<NotFound />} />
+                    </Routes>
+                  </ErrorBoundary>
                 </TooltipProvider>
               </ActivityLogProvider>
             </IssueReasonsProvider>

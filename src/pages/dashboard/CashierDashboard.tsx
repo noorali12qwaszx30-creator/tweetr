@@ -1,9 +1,10 @@
 import { useState, useMemo } from 'react';
 import { useRole } from '@/contexts/RoleContext';
 import { useAuth } from '@/contexts/AuthContext';
-import { useSupabaseOrders, DbMenuItem, OrderWithItems } from '@/hooks/useSupabaseOrders';
+import { useSupabaseOrders, OrderWithItems } from '@/hooks/useSupabaseOrders';
 import { useMenuItems, MenuItem } from '@/hooks/useMenuItems';
 import { useDeliveryAreas } from '@/hooks/useDeliveryAreas';
+import { useCart } from '@/hooks/useCart';
 import { DashboardHeader } from '@/components/shared/DashboardHeader';
 import { SortableMenuItem } from '@/components/shared/SortableMenuItem';
 import { Button } from '@/components/ui/button';
@@ -76,20 +77,14 @@ import {
 
 type TabType = 'menu' | 'orders' | 'search' | 'reports' | 'settings';
 
-interface CartItem {
-  menuItem: DbMenuItem;
-  quantity: number;
-  notes?: string;
-}
-
 export default function CashierDashboard() {
   const { role } = useRole();
   const { user } = useAuth();
   const { orders, addOrder, updateOrder, updateOrderStatus, cancelOrder, resolveIssue, loading, realtimeConnected } = useSupabaseOrders({ orderTypeFilter: 'delivery' });
   const { menuItems, categories, loading: menuLoading, updateDisplayOrder } = useMenuItems();
   const { activeAreas, loading: areasLoading } = useDeliveryAreas();
+  const { cart, animatingItemId, addToCart, updateQuantity, removeFromCart, clearCart, setCartItems, totalPrice, getItemQuantity } = useCart();
   const [activeTab, setActiveTab] = useState<TabType>('menu');
-  const [cart, setCart] = useState<CartItem[]>([]);
   const [customerName, setCustomerName] = useState('');
   const [customerPhone, setCustomerPhone] = useState('');
   const [customerAddress, setCustomerAddress] = useState('');
@@ -101,7 +96,6 @@ export default function CashierDashboard() {
   const [selectedOrderDetails, setSelectedOrderDetails] = useState<OrderWithItems | null>(null);
   const [editingOrder, setEditingOrder] = useState<OrderWithItems | null>(null);
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
-  const [animatingItemId, setAnimatingItemId] = useState<string | null>(null);
 
   const sensors = useSensors(
     useSensor(PointerSensor, {
@@ -124,41 +118,8 @@ export default function CashierDashboard() {
 
   const sortedItems = [...filteredItems].sort((a, b) => (a.display_order || 0) - (b.display_order || 0));
 
-  const addToCart = (item: MenuItem) => {
-    setAnimatingItemId(item.id);
-    setTimeout(() => setAnimatingItemId(null), 300);
-    
-    setCart(prev => {
-      const existing = prev.find(i => i.menuItem.id === item.id);
-      if (existing) {
-        return prev.map(i => 
-          i.menuItem.id === item.id 
-            ? { ...i, quantity: i.quantity + 1 }
-            : i
-        );
-      }
-      return [...prev, { menuItem: item, quantity: 1 }];
-    });
-  };
-
-  const updateQuantity = (itemId: string, delta: number) => {
-    setCart(prev => {
-      return prev.map(i => {
-        if (i.menuItem.id === itemId) {
-          const newQty = i.quantity + delta;
-          return newQty > 0 ? { ...i, quantity: newQty } : i;
-        }
-        return i;
-      }).filter(i => i.quantity > 0);
-    });
-  };
-
-  const removeFromCart = (itemId: string) => {
-    setCart(prev => prev.filter(i => i.menuItem.id !== itemId));
-  };
-
-  const clearCart = () => {
-    setCart([]);
+  const clearForm = () => {
+    clearCart();
     setCustomerName('');
     setCustomerPhone('');
     setCustomerAddress('');
@@ -167,10 +128,7 @@ export default function CashierDashboard() {
     setOrderSource('');
   };
 
-  const totalPrice = cart.reduce((sum, item) => sum + item.menuItem.price * item.quantity, 0);
-
   const submitOrder = async () => {
-    // Detailed validation with specific error messages
     const errors: string[] = [];
     
     if (cart.length === 0) {
@@ -178,27 +136,20 @@ export default function CashierDashboard() {
       return;
     }
 
-    if (!customerName.trim()) {
-      errors.push('اسم الزبون');
-    }
-    
+    if (!customerName.trim()) errors.push('اسم الزبون');
     if (!customerPhone.trim()) {
       errors.push('رقم الهاتف');
     } else if (customerPhone.length !== 11) {
       toast.error('رقم الهاتف يجب أن يكون 11 رقم');
       return;
     }
-    
-    if (!selectedAreaId) {
-      errors.push('منطقة التوصيل');
-    }
+    if (!selectedAreaId) errors.push('منطقة التوصيل');
 
     if (errors.length > 0) {
       toast.error(`يرجى إدخال: ${errors.join('، ')}`);
       return;
     }
 
-    // Store data for background submission
     const orderData = {
       customer_name: customerName.trim(),
       customer_phone: customerPhone,
@@ -219,16 +170,11 @@ export default function CashierDashboard() {
     const editingOrderId = editingOrder?.id;
     const roleName = role ? ROLE_LABELS[role] : 'كاشير';
 
-    // Clear form immediately for new order entry
-    clearCart();
-    if (isEditing) {
-      setEditingOrder(null);
-    }
+    clearForm();
+    if (isEditing) setEditingOrder(null);
 
-    // Show brief toast and start background submission
     toast.info(isEditing ? 'جاري حفظ التعديلات...' : 'جاري إرسال الطلب...', { duration: 1500 });
 
-    // Background submission - don't await
     (async () => {
       try {
         let result;
@@ -255,8 +201,7 @@ export default function CashierDashboard() {
   };
 
   const handleEditOrder = (order: OrderWithItems) => {
-    // Populate cart with order items for editing
-    setCart(order.items.map(item => ({
+    setCartItems(order.items.map(item => ({
       menuItem: {
         id: item.menu_item_id || '',
         name: item.menu_item_name,
@@ -283,7 +228,7 @@ export default function CashierDashboard() {
   };
 
   const cancelEdit = () => {
-    clearCart();
+    clearForm();
     setEditingOrder(null);
     toast.info('تم إلغاء التعديل');
   };
@@ -295,17 +240,11 @@ export default function CashierDashboard() {
 
   const handleDragEnd = async (event: DragEndEvent) => {
     const { active, over } = event;
-
     if (over && active.id !== over.id) {
       const oldIndex = sortedItems.findIndex((item) => item.id === active.id);
       const newIndex = sortedItems.findIndex((item) => item.id === over.id);
-
       const newItems = arrayMove(sortedItems, oldIndex, newIndex);
-      const updatedItems = newItems.map((item, index) => ({
-        ...item,
-        display_order: index,
-      }));
-
+      const updatedItems = newItems.map((item, index) => ({ ...item, display_order: index }));
       await updateDisplayOrder(updatedItems);
     }
   };
@@ -316,6 +255,7 @@ export default function CashierDashboard() {
   const handleResolveIssue = async (orderId: string) => {
     await resolveIssue(orderId);
   };
+
   if (loading || menuLoading) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
@@ -335,7 +275,6 @@ export default function CashierDashboard() {
         showConnectionIndicator={true}
       />
 
-      {/* Main Content */}
       <main className="container py-3 space-y-4 flex-1 overflow-auto">
         {/* Editing Mode Banner */}
         {editingOrder && (
@@ -494,7 +433,7 @@ export default function CashierDashboard() {
                   />
                 </div>
                 <div className="flex gap-2 mt-2">
-                  <Button variant="destructive" size="sm" className="flex-1" onClick={editingOrder ? cancelEdit : clearCart}>
+                  <Button variant="destructive" size="sm" className="flex-1" onClick={editingOrder ? cancelEdit : clearForm}>
                     <Trash2 className="w-3 h-3 ml-1" />
                     {editingOrder ? 'إلغاء التعديل' : 'مسح'}
                   </Button>
@@ -529,22 +468,19 @@ export default function CashierDashboard() {
               ))}
             </div>
 
-            {/* Menu Items - Strip Layout */}
+            {/* Menu Items */}
             <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
               <SortableContext items={sortedItems.map(i => i.id)} strategy={verticalListSortingStrategy}>
                 <div className="space-y-2">
-                  {sortedItems.map(item => {
-                    const cartItem = cart.find(c => c.menuItem.id === item.id);
-                    return (
-                      <SortableMenuItem 
-                        key={item.id} 
-                        item={item} 
-                        quantity={cartItem?.quantity || 0}
-                        isAnimating={animatingItemId === item.id}
-                        onSelect={addToCart} 
-                      />
-                    );
-                  })}
+                  {sortedItems.map(item => (
+                    <SortableMenuItem 
+                      key={item.id} 
+                      item={item} 
+                      quantity={getItemQuantity(item.id)}
+                      isAnimating={animatingItemId === item.id}
+                      onSelect={addToCart} 
+                    />
+                  ))}
                 </div>
               </SortableContext>
             </DndContext>
@@ -617,7 +553,6 @@ export default function CashierDashboard() {
               <div className="grid gap-3">
                 {ordersWithIssues.map(order => (
                   <div key={order.id} className="bg-card border-2 border-destructive/50 rounded-xl p-4 shadow-soft">
-                    {/* Issue Banner */}
                     <div className="mb-3 p-3 bg-destructive/20 border border-destructive/40 rounded-lg">
                       <div className="flex items-center justify-between flex-wrap gap-2">
                         <div className="flex items-center gap-2 text-destructive font-bold">
@@ -635,7 +570,6 @@ export default function CashierDashboard() {
                       </div>
                     </div>
 
-                    {/* Order Info */}
                     <div className="flex items-center justify-between mb-3 flex-wrap gap-2">
                       <div className="flex items-center gap-3">
                         <span className="text-2xl font-bold text-primary px-2 py-0.5 border-2 border-primary/30 rounded-lg bg-primary/5">
@@ -653,7 +587,6 @@ export default function CashierDashboard() {
                       )}
                     </div>
 
-                    {/* Items Summary */}
                     <div className="mb-3 p-2 bg-muted/50 rounded-lg">
                       <p className="text-sm text-muted-foreground mb-1">الأصناف:</p>
                       <div className="flex flex-wrap gap-2">
@@ -665,28 +598,15 @@ export default function CashierDashboard() {
                       </div>
                     </div>
 
-                    {/* Actions */}
                     <div className="flex gap-2 flex-wrap">
-                      <Button 
-                        variant="success" 
-                        size="sm" 
-                        onClick={() => handleResolveIssue(order.id)}
-                      >
+                      <Button variant="success" size="sm" onClick={() => handleResolveIssue(order.id)}>
                         <CheckCircle className="w-3 h-3 ml-1" />
                         تم الحل
                       </Button>
-                      <Button 
-                        variant="outline" 
-                        size="sm" 
-                        onClick={() => setSelectedOrderDetails(order)}
-                      >
+                      <Button variant="outline" size="sm" onClick={() => setSelectedOrderDetails(order)}>
                         عرض التفاصيل
                       </Button>
-                      <Button 
-                        variant="outline" 
-                        size="sm" 
-                        onClick={() => handleEditOrder(order)}
-                      >
+                      <Button variant="outline" size="sm" onClick={() => handleEditOrder(order)}>
                         <Pencil className="w-3 h-3 ml-1" />
                         تعديل الطلب
                       </Button>

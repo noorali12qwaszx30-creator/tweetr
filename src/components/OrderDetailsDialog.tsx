@@ -20,6 +20,7 @@ import {
 } from 'lucide-react';
 import { OrderWithItems } from '@/hooks/useSupabaseOrders';
 import { toEnglishNumbers, formatNumberWithCommas, formatDateEnglish, formatTimeEnglish } from '@/lib/formatNumber';
+import { ORDER_SOURCE_LABELS } from '@/types';
 
 interface OrderDetailsDialogProps {
   order: OrderWithItems | null;
@@ -144,7 +145,7 @@ export function OrderDetailsDialog({ order, open, onOpenChange }: OrderDetailsDi
                 <p className="flex items-center gap-2">
                   <Package className="w-3 h-3 text-muted-foreground" />
                   <span className="text-muted-foreground">مصدر الطلب:</span>
-                  <span className="font-medium">{order.order_source === 'instagram' ? 'انستقرام' : order.order_source === 'telegram' ? 'تلكرام' : order.order_source === 'phone' ? 'هاتف' : order.order_source === 'whatsapp' ? 'واتساب' : order.order_source === 'local' ? 'محلي' : order.order_source}</span>
+                  <span className="font-medium">{ORDER_SOURCE_LABELS[order.order_source] || order.order_source}</span>
                 </p>
               )}
               <p className="flex items-center gap-2">

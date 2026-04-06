@@ -73,3 +73,11 @@ export const ORDER_STATUS_COLORS: Record<OrderStatus, string> = {
   delivered: 'bg-muted text-muted-foreground border-border',
   cancelled: 'bg-destructive/10 text-destructive border-destructive/30',
 };
+
+export const ORDER_SOURCE_LABELS: Record<string, string> = {
+  instagram: 'انستقرام',
+  telegram: 'تلكرام',
+  phone: 'هاتف',
+  whatsapp: 'واتساب',
+  local: 'محلي',
+};
