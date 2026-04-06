@@ -2,7 +2,7 @@ import { OrderTimer } from './OrderTimer';
 import { MessageSquare, Truck, Pencil, AlertTriangle } from 'lucide-react';
 import { OrderWithItems, DbOrderItem } from '@/hooks/useSupabaseOrders';
 import { toEnglishNumbers, formatNumberWithCommas } from '@/lib/formatNumber';
-import { ORDER_STATUS_LABELS, ORDER_STATUS_COLORS } from '@/types';
+import { ORDER_STATUS_LABELS, ORDER_STATUS_COLORS, ORDER_SOURCE_LABELS } from '@/types';
 
 interface OrderCardProps {
   order: OrderWithItems;
@@ -77,7 +77,7 @@ export function OrderCard({
           )}
           {order.order_source && (
             <span className="px-2 py-0.5 rounded-full text-[10px] sm:text-xs font-medium bg-accent text-accent-foreground">
-              {order.order_source === 'instagram' ? 'انستقرام' : order.order_source === 'telegram' ? 'تلكرام' : order.order_source === 'phone' ? 'هاتف' : order.order_source === 'whatsapp' ? 'واتساب' : order.order_source === 'local' ? 'محلي' : order.order_source}
+              {ORDER_SOURCE_LABELS[order.order_source] || order.order_source}
             </span>
           )}
         </div>
