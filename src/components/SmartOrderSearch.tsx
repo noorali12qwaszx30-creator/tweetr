@@ -20,6 +20,7 @@ import {
   ChefHat,
   Timer,
   Package,
+  Pencil,
 } from 'lucide-react';
 
 // --- Fuzzy matching helpers ---
