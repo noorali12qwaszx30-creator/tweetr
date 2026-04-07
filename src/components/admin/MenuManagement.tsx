@@ -21,7 +21,7 @@ import {
 import {
   DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { SortableMenuItem } from '@/components/shared/SortableMenuItem';
+import { ListSortableMenuItem } from './menu/ListSortableMenuItem';
 import { CategoryManagementModal } from './menu/CategoryManagementModal';
 import { GridMenuItem } from './menu/GridMenuItem';
 import { ItemModal } from './menu/ItemModal';
