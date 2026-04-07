@@ -237,7 +237,7 @@ export function MenuManagement() {
                   <p className="text-sm">أضف صنفاً جديداً للبدء</p>
                 </div>
               ) : filteredItems.map((item) => (
-                <SortableMenuItem key={item.id} item={item} onToggleAvailability={handleToggleAvailability} onUpdateField={handleUpdateField} onImageClick={setImageUpdateItem} onDelete={setDeleteItem} />
+                <ListSortableMenuItem key={item.id} item={item} onToggleAvailability={handleToggleAvailability} onUpdateField={handleUpdateField} onImageClick={setImageUpdateItem} onDelete={setDeleteItem} />
               ))}
             </div>
           </SortableContext>
