@@ -115,7 +115,7 @@ Deno.serve(async (req) => {
     let deliveryFee = existingOrder.delivery_fee || 0;
     const areaIdToUse = delivery_area_id || existingOrder.delivery_area_id;
     
-    if (areaIdToUse && existingOrder.type === 'delivery') {
+    if (areaIdToUse && (existingOrder.type === 'delivery')) {
       const { data: deliveryArea } = await supabaseAdmin
         .from('delivery_areas')
         .select('delivery_fee')
