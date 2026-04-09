@@ -20,7 +20,8 @@ import {
   XCircle,
   Settings,
   Clock,
-  Loader2
+  Loader2,
+  HandMetal
 } from 'lucide-react';
 
 type TabType = 'orders' | 'ready' | 'delivering' | 'delivered' | 'cancelled' | 'admin';
@@ -28,7 +29,7 @@ type TabType = 'orders' | 'ready' | 'delivering' | 'delivered' | 'cancelled' | '
 export default function FieldDashboard() {
   const { role } = useRole();
   const { user } = useAuth();
-  const { orders, updateOrderStatus, assignDelivery, cancelOrder, loading, realtimeConnected } = useSupabaseOrders({ orderTypeFilter: 'delivery' });
+  const { orders, updateOrderStatus, assignDelivery, cancelOrder, loading, realtimeConnected } = useSupabaseOrders({ orderTypeFilter: 'all' });
   const [activeTab, setActiveTab] = useState<TabType>('orders');
   const [selectorOpen, setSelectorOpen] = useState(false);
   const [selectedOrder, setSelectedOrder] = useState<OrderWithItems | null>(null);
@@ -37,18 +38,23 @@ export default function FieldDashboard() {
   const [detailsDialogOpen, setDetailsDialogOpen] = useState(false);
   const [selectedOrderDetails, setSelectedOrderDetails] = useState<OrderWithItems | null>(null);
 
-  // Filter only delivery orders - takeaway orders are handled separately in TakeawayDashboard
-  const deliveryOrders = orders.filter(o => o.type === 'delivery');
+  // Filter delivery and pickup orders - takeaway orders are handled separately
+  const fieldOrders = orders.filter(o => o.type === 'delivery' || o.type === 'pickup');
   
-  const pendingOrders = deliveryOrders.filter(o => o.status === 'pending');
-  const preparingOrders = deliveryOrders.filter(o => o.status === 'preparing');
-  const readyOrders = deliveryOrders.filter(o => o.status === 'ready' && !o.pending_delivery_acceptance);
-  const pendingAcceptanceOrders = deliveryOrders.filter(o => o.status === 'ready' && o.pending_delivery_acceptance);
-  const deliveringOrders = deliveryOrders.filter(o => o.status === 'delivering');
-  const cancelledOrders = deliveryOrders.filter(o => o.status === 'cancelled');
-  const deliveredOrders = deliveryOrders.filter(o => o.status === 'delivered');
+  const pendingOrders = fieldOrders.filter(o => o.status === 'pending');
+  const preparingOrders = fieldOrders.filter(o => o.status === 'preparing');
+  const readyOrders = fieldOrders.filter(o => o.status === 'ready' && !o.pending_delivery_acceptance);
+  const pendingAcceptanceOrders = fieldOrders.filter(o => o.status === 'ready' && o.pending_delivery_acceptance);
+  const deliveringOrders = fieldOrders.filter(o => o.status === 'delivering');
+  const cancelledOrders = fieldOrders.filter(o => o.status === 'cancelled');
+  const deliveredOrders = fieldOrders.filter(o => o.status === 'delivered');
 
   const incomingOrders = [...pendingOrders, ...preparingOrders];
+
+  const handleDirectDeliver = async (orderId: string) => {
+    await updateOrderStatus(orderId, 'delivered');
+    toast.success('تم تسليم الطلب بنجاح');
+  };
 
   const handleOpenSelector = (order: OrderWithItems) => {
     setSelectedOrder(order);
@@ -192,16 +198,29 @@ export default function FieldDashboard() {
                     key={order.id}
                     order={order}
                     actions={
-                      <>
-                        <Button variant="default" size="sm" onClick={() => handleOpenSelector(order)}>
-                          <Truck className="w-3 h-3 ml-1" />
-                          تعيين موظف توصيل
-                        </Button>
-                        <Button variant="destructive" size="sm" onClick={() => handleOpenCancelDialog(order)}>
-                          <XCircle className="w-3 h-3 ml-1" />
-                          إلغاء
-                        </Button>
-                      </>
+                      order.type === 'pickup' ? (
+                        <>
+                          <Button variant="success" size="sm" onClick={() => handleDirectDeliver(order.id)}>
+                            <HandMetal className="w-3 h-3 ml-1" />
+                            تم التسليم
+                          </Button>
+                          <Button variant="destructive" size="sm" onClick={() => handleOpenCancelDialog(order)}>
+                            <XCircle className="w-3 h-3 ml-1" />
+                            إلغاء
+                          </Button>
+                        </>
+                      ) : (
+                        <>
+                          <Button variant="default" size="sm" onClick={() => handleOpenSelector(order)}>
+                            <Truck className="w-3 h-3 ml-1" />
+                            تعيين موظف توصيل
+                          </Button>
+                          <Button variant="destructive" size="sm" onClick={() => handleOpenCancelDialog(order)}>
+                            <XCircle className="w-3 h-3 ml-1" />
+                            إلغاء
+                          </Button>
+                        </>
+                      )
                     }
                   />
                 ))}

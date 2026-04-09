@@ -26,6 +26,7 @@ import {
   Minus, 
   ClipboardList,
   Menu as MenuIcon,
+  Truck,
   User,
   Phone,
   Settings,
@@ -80,7 +81,7 @@ type TabType = 'menu' | 'orders' | 'search' | 'reports' | 'settings';
 export default function CashierDashboard() {
   const { role } = useRole();
   const { user } = useAuth();
-  const { orders, addOrder, updateOrder, updateOrderStatus, cancelOrder, resolveIssue, loading, realtimeConnected } = useSupabaseOrders({ orderTypeFilter: 'delivery' });
+  const { orders, addOrder, updateOrder, updateOrderStatus, cancelOrder, resolveIssue, loading, realtimeConnected } = useSupabaseOrders({ orderTypeFilter: 'all' });
   const { menuItems, categories, loading: menuLoading, updateDisplayOrder } = useMenuItems();
   const { activeAreas, loading: areasLoading } = useDeliveryAreas();
   const { cart, animatingItemId, addToCart, updateQuantity, removeFromCart, clearCart, setCartItems, totalPrice, getItemQuantity } = useCart();
@@ -92,6 +93,7 @@ export default function CashierDashboard() {
   const [areaPopoverOpen, setAreaPopoverOpen] = useState(false);
   const [orderNotes, setOrderNotes] = useState('');
   const [orderSource, setOrderSource] = useState<string>('');
+  const [orderType, setOrderType] = useState<'delivery' | 'pickup'>('delivery');
   const [cancellingOrder, setCancellingOrder] = useState<OrderWithItems | null>(null);
   const [selectedOrderDetails, setSelectedOrderDetails] = useState<OrderWithItems | null>(null);
   const [editingOrder, setEditingOrder] = useState<OrderWithItems | null>(null);
@@ -126,6 +128,7 @@ export default function CashierDashboard() {
     setSelectedAreaId('');
     setOrderNotes('');
     setOrderSource('');
+    setOrderType('delivery');
   };
 
   const submitOrder = async () => {
@@ -137,13 +140,16 @@ export default function CashierDashboard() {
     }
 
     if (!customerName.trim()) errors.push('اسم الزبون');
-    if (!customerPhone.trim()) {
-      errors.push('رقم الهاتف');
-    } else if (customerPhone.length !== 11) {
-      toast.error('رقم الهاتف يجب أن يكون 11 رقم');
-      return;
+    
+    if (orderType === 'delivery') {
+      if (!customerPhone.trim()) {
+        errors.push('رقم الهاتف');
+      } else if (customerPhone.length !== 11) {
+        toast.error('رقم الهاتف يجب أن يكون 11 رقم');
+        return;
+      }
+      if (!selectedAreaId) errors.push('منطقة التوصيل');
     }
-    if (!selectedAreaId) errors.push('منطقة التوصيل');
 
     if (errors.length > 0) {
       toast.error(`يرجى إدخال: ${errors.join('، ')}`);
@@ -152,9 +158,9 @@ export default function CashierDashboard() {
 
     const orderData = {
       customer_name: customerName.trim(),
-      customer_phone: customerPhone,
-      customer_address: customerAddress,
-      delivery_area_id: selectedAreaId,
+      customer_phone: customerPhone || '',
+      customer_address: orderType === 'delivery' ? customerAddress : undefined,
+      delivery_area_id: orderType === 'delivery' ? selectedAreaId : undefined,
       notes: orderNotes || undefined,
       order_source: orderSource || undefined,
       items: cart.map(item => ({
@@ -183,7 +189,7 @@ export default function CashierDashboard() {
         } else {
           result = await addOrder({
             ...orderData,
-            type: 'delivery',
+            type: orderType,
             cashier_name: roleName,
           });
         }
@@ -299,6 +305,29 @@ export default function CashierDashboard() {
                 <User className="w-4 h-4 text-primary" />
                 بيانات الزبون
               </h2>
+              
+              {/* Order Type Toggle */}
+              <div className="flex gap-2 mb-3">
+                <Button
+                  variant={orderType === 'delivery' ? 'default' : 'outline'}
+                  size="sm"
+                  className="flex-1 h-9 text-sm"
+                  onClick={() => setOrderType('delivery')}
+                >
+                  <Truck className="w-3 h-3 ml-1" />
+                  توصيل
+                </Button>
+                <Button
+                  variant={orderType === 'pickup' ? 'default' : 'outline'}
+                  size="sm"
+                  className={`flex-1 h-9 text-sm ${orderType === 'pickup' ? 'bg-[hsl(var(--secondary))] hover:bg-[hsl(var(--secondary))]/90' : ''}`}
+                  onClick={() => setOrderType('pickup')}
+                >
+                  <User className="w-3 h-3 ml-1" />
+                  استلام
+                </Button>
+              </div>
+
               <div className="grid grid-cols-2 gap-2">
                 <div className="relative">
                   <User className="absolute right-2 top-1/2 -translate-y-1/2 w-3 h-3 text-muted-foreground" />
@@ -312,7 +341,7 @@ export default function CashierDashboard() {
                 <div className="relative">
                   <Phone className="absolute right-2 top-1/2 -translate-y-1/2 w-3 h-3 text-muted-foreground" />
                   <Input
-                    placeholder="رقم الهاتف (11 رقم)"
+                    placeholder={orderType === 'delivery' ? 'رقم الهاتف (11 رقم)' : 'رقم الهاتف (اختياري)'}
                     value={customerPhone}
                     onChange={(e) => {
                       const value = e.target.value.replace(/\D/g, '').slice(0, 11);
@@ -324,58 +353,60 @@ export default function CashierDashboard() {
                     className="pr-7 h-9 text-sm"
                   />
                 </div>
-                <div className="col-span-2">
-                  <Popover open={areaPopoverOpen} onOpenChange={setAreaPopoverOpen}>
-                    <PopoverTrigger asChild>
-                      <Button
-                        variant="outline"
-                        role="combobox"
-                        aria-expanded={areaPopoverOpen}
-                        className="w-full justify-between h-9 text-sm font-normal"
-                      >
-                        <div className="flex items-center gap-2 truncate">
-                          <MapPin className="w-3 h-3 text-muted-foreground shrink-0" />
-                          <span className="truncate">
-                            {selectedAreaId
-                              ? activeAreas.find(a => a.id === selectedAreaId)?.name || 'اختر المنطقة'
-                              : 'اختر المنطقة'}
-                          </span>
-                        </div>
-                        <ChevronDown className="w-3 h-3 shrink-0 opacity-50" />
-                      </Button>
-                    </PopoverTrigger>
-                    <PopoverContent className="w-[--radix-popover-trigger-width] p-0" align="start">
-                      <Command dir="rtl">
-                        <CommandInput placeholder="ابحث عن منطقة..." />
-                        <CommandList>
-                          <CommandEmpty>لا توجد نتائج</CommandEmpty>
-                          <CommandGroup>
-                            {areasLoading ? (
-                              <div className="flex items-center justify-center py-2">
-                                <Loader2 className="w-4 h-4 animate-spin" />
-                              </div>
-                            ) : (
-                              activeAreas.map(area => (
-                                <CommandItem
-                                  key={area.id}
-                                  value={area.name}
-                                  onSelect={() => {
-                                    setSelectedAreaId(area.id);
-                                    setCustomerAddress(area.name);
-                                    setAreaPopoverOpen(false);
-                                  }}
-                                  className={selectedAreaId === area.id ? 'bg-accent' : ''}
-                                >
-                                  {area.name}
-                                </CommandItem>
-                              ))
-                            )}
-                          </CommandGroup>
-                        </CommandList>
-                      </Command>
-                    </PopoverContent>
-                  </Popover>
-                </div>
+                {orderType === 'delivery' && (
+                  <div className="col-span-2">
+                    <Popover open={areaPopoverOpen} onOpenChange={setAreaPopoverOpen}>
+                      <PopoverTrigger asChild>
+                        <Button
+                          variant="outline"
+                          role="combobox"
+                          aria-expanded={areaPopoverOpen}
+                          className="w-full justify-between h-9 text-sm font-normal"
+                        >
+                          <div className="flex items-center gap-2 truncate">
+                            <MapPin className="w-3 h-3 text-muted-foreground shrink-0" />
+                            <span className="truncate">
+                              {selectedAreaId
+                                ? activeAreas.find(a => a.id === selectedAreaId)?.name || 'اختر المنطقة'
+                                : 'اختر المنطقة'}
+                            </span>
+                          </div>
+                          <ChevronDown className="w-3 h-3 shrink-0 opacity-50" />
+                        </Button>
+                      </PopoverTrigger>
+                      <PopoverContent className="w-[--radix-popover-trigger-width] p-0" align="start">
+                        <Command dir="rtl">
+                          <CommandInput placeholder="ابحث عن منطقة..." />
+                          <CommandList>
+                            <CommandEmpty>لا توجد نتائج</CommandEmpty>
+                            <CommandGroup>
+                              {areasLoading ? (
+                                <div className="flex items-center justify-center py-2">
+                                  <Loader2 className="w-4 h-4 animate-spin" />
+                                </div>
+                              ) : (
+                                activeAreas.map(area => (
+                                  <CommandItem
+                                    key={area.id}
+                                    value={area.name}
+                                    onSelect={() => {
+                                      setSelectedAreaId(area.id);
+                                      setCustomerAddress(area.name);
+                                      setAreaPopoverOpen(false);
+                                    }}
+                                    className={selectedAreaId === area.id ? 'bg-accent' : ''}
+                                  >
+                                    {area.name}
+                                  </CommandItem>
+                                ))
+                              )}
+                            </CommandGroup>
+                          </CommandList>
+                        </Command>
+                      </PopoverContent>
+                    </Popover>
+                  </div>
+                )}
                 <div className="col-span-2">
                   <Select value={orderSource} onValueChange={setOrderSource}>
                     <SelectTrigger className="h-9 text-sm">

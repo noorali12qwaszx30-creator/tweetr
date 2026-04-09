@@ -16,7 +16,7 @@ export function useOrderMutations({ setOrders, fetchOrders, playNotificationSoun
     customer_phone: string;
     customer_address?: string;
     delivery_area_id?: string;
-    type: 'delivery' | 'takeaway';
+    type: 'delivery' | 'takeaway' | 'pickup';
     notes?: string;
     cashier_id?: string;
     cashier_name?: string;

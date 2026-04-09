@@ -29,7 +29,9 @@ export function OrderCard({
     <div
       className={`
         bg-card rounded-xl border shadow-soft transition-all duration-200
-        ${order.type === 'takeaway' ? 'border-warning/50 bg-warning/5' : 'border-border'}
+        ${order.type === 'takeaway' ? 'border-warning/50 bg-warning/5' : ''}
+        ${order.type === 'pickup' ? 'border-secondary/50 bg-secondary/5' : ''}
+        ${order.type === 'delivery' ? 'border-border' : ''}
         ${hasNotes ? 'order-has-notes' : ''}
         ${order.is_edited ? 'ring-2 ring-warning/50' : ''}
         ${order.has_issue ? 'ring-2 ring-destructive/50 border-destructive/50' : ''}
@@ -61,6 +63,11 @@ export function OrderCard({
           {order.type === 'takeaway' && (
             <span className="px-2 py-0.5 rounded-full text-[10px] sm:text-xs font-medium bg-warning/20 text-warning">
               سفري
+            </span>
+          )}
+          {order.type === 'pickup' && (
+            <span className="px-2 py-0.5 rounded-full text-[10px] sm:text-xs font-medium bg-secondary/20 text-secondary">
+              استلام
             </span>
           )}
           {order.is_edited && (
