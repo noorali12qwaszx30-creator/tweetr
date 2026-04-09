@@ -710,7 +710,7 @@ export type Database = {
         | "delivering"
         | "delivered"
         | "cancelled"
-      order_type: "delivery" | "takeaway"
+      order_type: "delivery" | "takeaway" | "pickup"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -854,7 +854,7 @@ export const Constants = {
         "delivered",
         "cancelled",
       ],
-      order_type: ["delivery", "takeaway"],
+      order_type: ["delivery", "takeaway", "pickup"],
     },
   },
 } as const
