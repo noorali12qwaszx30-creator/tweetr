@@ -80,7 +80,7 @@ type TabType = 'menu' | 'orders' | 'search' | 'reports' | 'settings';
 export default function CashierDashboard() {
   const { role } = useRole();
   const { user } = useAuth();
-  const { orders, addOrder, updateOrder, updateOrderStatus, cancelOrder, resolveIssue, loading, realtimeConnected } = useSupabaseOrders({ orderTypeFilter: 'delivery' });
+  const { orders, addOrder, updateOrder, updateOrderStatus, cancelOrder, resolveIssue, loading, realtimeConnected } = useSupabaseOrders({ orderTypeFilter: 'all' });
   const { menuItems, categories, loading: menuLoading, updateDisplayOrder } = useMenuItems();
   const { activeAreas, loading: areasLoading } = useDeliveryAreas();
   const { cart, animatingItemId, addToCart, updateQuantity, removeFromCart, clearCart, setCartItems, totalPrice, getItemQuantity } = useCart();
@@ -126,6 +126,7 @@ export default function CashierDashboard() {
     setSelectedAreaId('');
     setOrderNotes('');
     setOrderSource('');
+    setOrderType('delivery');
   };
 
   const submitOrder = async () => {
@@ -137,13 +138,16 @@ export default function CashierDashboard() {
     }
 
     if (!customerName.trim()) errors.push('اسم الزبون');
-    if (!customerPhone.trim()) {
-      errors.push('رقم الهاتف');
-    } else if (customerPhone.length !== 11) {
-      toast.error('رقم الهاتف يجب أن يكون 11 رقم');
-      return;
+    
+    if (orderType === 'delivery') {
+      if (!customerPhone.trim()) {
+        errors.push('رقم الهاتف');
+      } else if (customerPhone.length !== 11) {
+        toast.error('رقم الهاتف يجب أن يكون 11 رقم');
+        return;
+      }
+      if (!selectedAreaId) errors.push('منطقة التوصيل');
     }
-    if (!selectedAreaId) errors.push('منطقة التوصيل');
 
     if (errors.length > 0) {
       toast.error(`يرجى إدخال: ${errors.join('، ')}`);
@@ -152,9 +156,9 @@ export default function CashierDashboard() {
 
     const orderData = {
       customer_name: customerName.trim(),
-      customer_phone: customerPhone,
-      customer_address: customerAddress,
-      delivery_area_id: selectedAreaId,
+      customer_phone: customerPhone || '',
+      customer_address: orderType === 'delivery' ? customerAddress : undefined,
+      delivery_area_id: orderType === 'delivery' ? selectedAreaId : undefined,
       notes: orderNotes || undefined,
       order_source: orderSource || undefined,
       items: cart.map(item => ({
@@ -183,7 +187,7 @@ export default function CashierDashboard() {
         } else {
           result = await addOrder({
             ...orderData,
-            type: 'delivery',
+            type: orderType,
             cashier_name: roleName,
           });
         }
