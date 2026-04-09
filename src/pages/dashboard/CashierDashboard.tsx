@@ -26,6 +26,7 @@ import {
   Minus, 
   ClipboardList,
   Menu as MenuIcon,
+  Truck,
   User,
   Phone,
   Settings,
