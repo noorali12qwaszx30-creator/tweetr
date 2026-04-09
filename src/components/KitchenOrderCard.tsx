@@ -12,12 +12,16 @@ export function KitchenOrderCard({ order }: KitchenOrderCardProps) {
     <Card className={`border-2 hover:border-primary/30 transition-colors h-full flex flex-col overflow-hidden ${
       order.type === 'delivery' 
         ? 'bg-info/5 border-info/40' 
+        : order.type === 'pickup'
+        ? 'bg-secondary/5 border-secondary/40'
         : 'bg-success/5 border-success/40'
     }`}>
       {/* Unified top bar */}
       <div className={`flex items-center justify-between px-2 py-1.5 shrink-0 ${
         order.type === 'delivery' 
           ? 'bg-info/40 border-b-2 border-info' 
+          : order.type === 'pickup'
+          ? 'bg-secondary/40 border-b-2 border-secondary'
           : 'bg-success/40 border-b-2 border-success'
       }`}>
         <div className="flex items-center gap-1 min-w-0">
@@ -25,9 +29,9 @@ export function KitchenOrderCard({ order }: KitchenOrderCardProps) {
             #{toEnglishNumbers(order.order_number.toString())}
           </span>
           <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded whitespace-nowrap ${
-            order.type === 'delivery' ? 'bg-info/30 text-info' : 'bg-success/30 text-success'
+            order.type === 'delivery' ? 'bg-info/30 text-info' : order.type === 'pickup' ? 'bg-secondary/30 text-secondary' : 'bg-success/30 text-success'
           }`}>
-            {order.type === 'delivery' ? 'توصيل' : 'سفري'}
+            {order.type === 'delivery' ? 'توصيل' : order.type === 'pickup' ? 'استلام' : 'سفري'}
           </span>
         </div>
         <OrderTimer startTime={order.created_at} />
