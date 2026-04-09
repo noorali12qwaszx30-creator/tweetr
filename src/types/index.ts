@@ -27,7 +27,7 @@ export interface Customer {
 }
 
 export type OrderStatus = 'pending' | 'preparing' | 'ready' | 'delivering' | 'delivered' | 'cancelled';
-export type OrderType = 'delivery' | 'takeaway';
+export type OrderType = 'delivery' | 'takeaway' | 'pickup';
 
 export interface Order {
   id: string;

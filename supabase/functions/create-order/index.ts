@@ -15,7 +15,7 @@ interface OrderRequest {
   customer_phone: string;
   customer_address?: string;
   delivery_area_id?: string;
-  type: 'delivery' | 'takeaway';
+  type: 'delivery' | 'takeaway' | 'pickup';
   notes?: string;
   cashier_id?: string;
   cashier_name?: string;
@@ -79,6 +79,7 @@ serve(async (req) => {
     }
 
     // Phone validation only for delivery orders - must be exactly 11 digits
+    // Pickup and takeaway orders don't require strict phone validation
     if (orderData.type === 'delivery') {
       const phoneDigits = orderData.customer_phone?.replace(/\D/g, '') || '';
       if (phoneDigits.length !== 11) {
@@ -96,7 +97,7 @@ serve(async (req) => {
       );
     }
 
-    if (!['delivery', 'takeaway'].includes(orderData.type)) {
+    if (!['delivery', 'takeaway', 'pickup'].includes(orderData.type)) {
       return new Response(
         JSON.stringify({ error: 'نوع الطلب غير صالح' }),
         { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
