@@ -9,7 +9,7 @@ import { IssueReasonsManager } from '@/components/IssueReasonsManager';
 import { LogoutConfirmButton } from '@/components/LogoutConfirmButton';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Settings, Trash2, Loader2, ImageIcon } from 'lucide-react';
+import { Settings, Trash2, Loader2, ImageIcon, ImageOff } from 'lucide-react';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 
 interface AdminSettingsTabProps {
@@ -20,6 +20,7 @@ interface AdminSettingsTabProps {
 
 export function AdminSettingsTab({ ordersCount, onDeleteAllOrders, isDeletingOrders }: AdminSettingsTabProps) {
   const [migratingImages, setMigratingImages] = useState(false);
+  const [clearingImages, setClearingImages] = useState(false);
 
   const handleMigrateImages = async () => {
     setMigratingImages(true);
@@ -39,6 +40,26 @@ export function AdminSettingsTab({ ordersCount, onDeleteAllOrders, isDeletingOrd
       toast.error(msg);
     } finally {
       setMigratingImages(false);
+    }
+  };
+
+  const handleClearImages = async () => {
+    setClearingImages(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('clear-menu-images');
+      if (error) throw error;
+      const summary = data as { deletedFiles: number; totalFound: number };
+      toast.success(`تم حذف ${summary.deletedFiles} صورة وإفراغ عمود الصور بالكامل`);
+      // Clear local cache so UI reloads without images
+      try {
+        localStorage.removeItem('cached_menu_items_v2');
+        localStorage.removeItem('cached_menu_items');
+      } catch {}
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : 'فشل حذف الصور';
+      toast.error(msg);
+    } finally {
+      setClearingImages(false);
     }
   };
 
@@ -108,6 +129,36 @@ export function AdminSettingsTab({ ordersCount, onDeleteAllOrders, isDeletingOrd
                 <AlertDialogAction onClick={onDeleteAllOrders} className="bg-destructive text-destructive-foreground hover:bg-destructive/90" disabled={isDeletingOrders}>
                   {isDeletingOrders ? <Loader2 className="w-4 h-4 animate-spin ml-2" /> : <Trash2 className="w-4 h-4 ml-2" />}
                   حذف الكل
+                </AlertDialogAction>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
+
+          <AlertDialog>
+            <AlertDialogTrigger asChild>
+              <Button variant="outline" size="lg" className="w-full justify-start h-auto py-4 border-2 border-destructive bg-destructive/10 hover:bg-destructive/20 text-destructive hover:text-destructive" disabled={clearingImages}>
+                {clearingImages ? <Loader2 className="w-6 h-6 ml-3 animate-spin" /> : <ImageOff className="w-6 h-6 ml-3" />}
+                <div className="text-right">
+                  <p className="font-bold text-lg">حذف جميع صور القائمة</p>
+                  <p className="text-sm opacity-80">إفراغ عمود الصور وحذف ملفات التخزين</p>
+                </div>
+              </Button>
+            </AlertDialogTrigger>
+            <AlertDialogContent>
+              <AlertDialogHeader>
+                <AlertDialogTitle className="flex items-center gap-2">
+                  <ImageOff className="w-5 h-5 text-destructive" />
+                  حذف جميع الصور
+                </AlertDialogTitle>
+                <AlertDialogDescription>
+                  سيتم حذف جميع صور أصناف القائمة من التخزين السحابي وإفراغ عمود الصور في قاعدة البيانات. هذا الإجراء لا يمكن التراجع عنه!
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+              <AlertDialogFooter className="flex-row-reverse gap-2">
+                <AlertDialogCancel>إلغاء</AlertDialogCancel>
+                <AlertDialogAction onClick={handleClearImages} className="bg-destructive text-destructive-foreground hover:bg-destructive/90" disabled={clearingImages}>
+                  {clearingImages ? <Loader2 className="w-4 h-4 animate-spin ml-2" /> : <ImageOff className="w-4 h-4 ml-2" />}
+                  حذف الصور
                 </AlertDialogAction>
               </AlertDialogFooter>
             </AlertDialogContent>
