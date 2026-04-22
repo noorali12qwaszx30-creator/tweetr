@@ -3,6 +3,7 @@ import { MenuItem } from '@/hooks/useMenuItems';
 import { toast } from 'sonner';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Image as ImageIcon, Loader2 } from 'lucide-react';
+import { uploadMenuImage, deleteMenuImageIfManaged } from '@/lib/uploadMenuImage';
 
 interface ImageUpdateModalProps {
   item: MenuItem | null;
@@ -24,10 +25,17 @@ export function ImageUpdateModal({ item, isOpen, onClose, onUpdate }: ImageUpdat
     if (!file || !item) return;
     setUploading(true);
     try {
-      const reader = new FileReader();
-      reader.onloadend = async () => { await onUpdate(item.id, reader.result as string); setUploading(false); onClose(); };
-      reader.readAsDataURL(file);
-    } catch { toast.error('فشل تحديث الصورة'); setUploading(false); }
+      const url = await uploadMenuImage(file, item.id);
+      // Best-effort cleanup of the previous image if it lives in our bucket
+      await deleteMenuImageIfManaged(item.image);
+      await onUpdate(item.id, url);
+      setUploading(false);
+      onClose();
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : 'فشل تحديث الصورة';
+      toast.error(msg);
+      setUploading(false);
+    }
   };
 
   return (
