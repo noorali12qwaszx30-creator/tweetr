@@ -12,8 +12,19 @@ export interface MenuItem {
   display_order: number;
 }
 
-const STORAGE_KEY = 'cached_menu_items';
-const STORAGE_TS_KEY = 'cached_menu_items_ts';
+const STORAGE_KEY = 'cached_menu_items_v2';
+const STORAGE_TS_KEY = 'cached_menu_items_v2_ts';
+const LEGACY_STORAGE_KEY = 'cached_menu_items';
+const LEGACY_STORAGE_TS_KEY = 'cached_menu_items_ts';
+const SELECT_COLS = 'id, name, price, image, category, is_available, display_order';
+
+// Clear bloated legacy cache (which may contain large base64 images)
+try {
+  localStorage.removeItem(LEGACY_STORAGE_KEY);
+  localStorage.removeItem(LEGACY_STORAGE_TS_KEY);
+} catch {
+  // ignore
+}
 
 // Load from localStorage on module init
 function loadFromStorage(): { items: MenuItem[] | null; categories: string[] | null } {
@@ -52,7 +63,7 @@ if (stored.items) {
 export async function preloadMenuItems() {
   const { data, error } = await supabase
     .from('menu_items')
-    .select('*')
+    .select(SELECT_COLS)
     .order('category')
     .order('display_order');
 
@@ -76,7 +87,7 @@ export function useMenuItems() {
     
     const { data, error } = await supabase
       .from('menu_items')
-      .select('*')
+      .select(SELECT_COLS)
       .order('category')
       .order('display_order');
 
