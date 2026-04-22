@@ -64,6 +64,26 @@ export function AdminSettingsTab({ ordersCount, onDeleteAllOrders, isDeletingOrd
             </div>
           </Button>
 
+          <Button
+            variant="outline"
+            size="lg"
+            className="w-full justify-start h-auto py-4"
+            onClick={handleMigrateImages}
+            disabled={migratingImages}
+          >
+            {migratingImages ? (
+              <Loader2 className="w-5 h-5 ml-3 animate-spin" />
+            ) : (
+              <ImageIcon className="w-5 h-5 ml-3" />
+            )}
+            <div className="text-right">
+              <p className="font-semibold">نقل صور القائمة إلى التخزين السحابي</p>
+              <p className="text-sm text-muted-foreground">
+                {migratingImages ? 'جاري النقل...' : 'لإصلاح بطء تحميل القائمة (تشغيل مرة واحدة)'}
+              </p>
+            </div>
+          </Button>
+
           <AlertDialog>
             <AlertDialogTrigger asChild>
               <Button variant="outline" size="lg" className="w-full justify-start h-auto py-4 border-2 border-destructive bg-destructive/10 hover:bg-destructive/20 text-destructive hover:text-destructive">
