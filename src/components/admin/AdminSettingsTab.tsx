@@ -9,7 +9,7 @@ import { IssueReasonsManager } from '@/components/IssueReasonsManager';
 import { LogoutConfirmButton } from '@/components/LogoutConfirmButton';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Settings, Trash2, Loader2, ImageIcon } from 'lucide-react';
+import { Settings, Trash2, Loader2, ImageIcon, ImageOff } from 'lucide-react';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 
 interface AdminSettingsTabProps {
@@ -20,6 +20,7 @@ interface AdminSettingsTabProps {
 
 export function AdminSettingsTab({ ordersCount, onDeleteAllOrders, isDeletingOrders }: AdminSettingsTabProps) {
   const [migratingImages, setMigratingImages] = useState(false);
+  const [clearingImages, setClearingImages] = useState(false);
 
   const handleMigrateImages = async () => {
     setMigratingImages(true);
@@ -39,6 +40,26 @@ export function AdminSettingsTab({ ordersCount, onDeleteAllOrders, isDeletingOrd
       toast.error(msg);
     } finally {
       setMigratingImages(false);
+    }
+  };
+
+  const handleClearImages = async () => {
+    setClearingImages(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('clear-menu-images');
+      if (error) throw error;
+      const summary = data as { deletedFiles: number; totalFound: number };
+      toast.success(`تم حذف ${summary.deletedFiles} صورة وإفراغ عمود الصور بالكامل`);
+      // Clear local cache so UI reloads without images
+      try {
+        localStorage.removeItem('cached_menu_items_v2');
+        localStorage.removeItem('cached_menu_items');
+      } catch {}
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : 'فشل حذف الصور';
+      toast.error(msg);
+    } finally {
+      setClearingImages(false);
     }
   };
 
