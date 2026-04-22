@@ -6,6 +6,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Plus, Edit3, Image as ImageIcon, Loader2 } from 'lucide-react';
+import { uploadMenuImage } from '@/lib/uploadMenuImage';
 
 interface ItemModalProps {
   isOpen: boolean;
@@ -48,10 +49,14 @@ export function ItemModal({ isOpen, onClose, onSave, categories, selectedCategor
     if (!file) return;
     setUploading(true);
     try {
-      const reader = new FileReader();
-      reader.onloadend = () => { setImage(reader.result as string); setUploading(false); };
-      reader.readAsDataURL(file);
-    } catch { toast.error('فشل رفع الصورة'); setUploading(false); }
+      const url = await uploadMenuImage(file, editItem?.id);
+      setImage(url);
+      setUploading(false);
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : 'فشل رفع الصورة';
+      toast.error(msg);
+      setUploading(false);
+    }
   };
 
   const handleSubmit = async () => {
