@@ -1,4 +1,6 @@
 import { useState } from 'react';
+import { supabase } from '@/integrations/supabase/client';
+import { toast } from 'sonner';
 import { KitchenAlarmToggle } from './KitchenAlarmToggle';
 import { UserManagement } from './UserManagement';
 import { DeliveryAreasManager } from './DeliveryAreasManager';
@@ -7,7 +9,7 @@ import { IssueReasonsManager } from '@/components/IssueReasonsManager';
 import { LogoutConfirmButton } from '@/components/LogoutConfirmButton';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Settings, Trash2, Loader2 } from 'lucide-react';
+import { Settings, Trash2, Loader2, ImageIcon } from 'lucide-react';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 
 interface AdminSettingsTabProps {
@@ -17,6 +19,29 @@ interface AdminSettingsTabProps {
 }
 
 export function AdminSettingsTab({ ordersCount, onDeleteAllOrders, isDeletingOrders }: AdminSettingsTabProps) {
+  const [migratingImages, setMigratingImages] = useState(false);
+
+  const handleMigrateImages = async () => {
+    setMigratingImages(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('migrate-menu-images');
+      if (error) throw error;
+      const summary = data as { total: number; migrated: number; failed: number };
+      if (summary.failed > 0) {
+        toast.warning(`تم نقل ${summary.migrated} صورة، فشل ${summary.failed}`);
+      } else if (summary.total === 0) {
+        toast.info('لا توجد صور تحتاج إلى نقل');
+      } else {
+        toast.success(`تم نقل ${summary.migrated} صورة بنجاح إلى التخزين السحابي`);
+      }
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : 'فشل نقل الصور';
+      toast.error(msg);
+    } finally {
+      setMigratingImages(false);
+    }
+  };
+
   return (
     <div className="space-y-4">
       <Tabs defaultValue="general">
