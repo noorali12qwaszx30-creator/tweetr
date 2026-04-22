@@ -134,6 +134,36 @@ export function AdminSettingsTab({ ordersCount, onDeleteAllOrders, isDeletingOrd
             </AlertDialogContent>
           </AlertDialog>
 
+          <AlertDialog>
+            <AlertDialogTrigger asChild>
+              <Button variant="outline" size="lg" className="w-full justify-start h-auto py-4 border-2 border-destructive bg-destructive/10 hover:bg-destructive/20 text-destructive hover:text-destructive" disabled={clearingImages}>
+                {clearingImages ? <Loader2 className="w-6 h-6 ml-3 animate-spin" /> : <ImageOff className="w-6 h-6 ml-3" />}
+                <div className="text-right">
+                  <p className="font-bold text-lg">حذف جميع صور القائمة</p>
+                  <p className="text-sm opacity-80">إفراغ عمود الصور وحذف ملفات التخزين</p>
+                </div>
+              </Button>
+            </AlertDialogTrigger>
+            <AlertDialogContent>
+              <AlertDialogHeader>
+                <AlertDialogTitle className="flex items-center gap-2">
+                  <ImageOff className="w-5 h-5 text-destructive" />
+                  حذف جميع الصور
+                </AlertDialogTitle>
+                <AlertDialogDescription>
+                  سيتم حذف جميع صور أصناف القائمة من التخزين السحابي وإفراغ عمود الصور في قاعدة البيانات. هذا الإجراء لا يمكن التراجع عنه!
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+              <AlertDialogFooter className="flex-row-reverse gap-2">
+                <AlertDialogCancel>إلغاء</AlertDialogCancel>
+                <AlertDialogAction onClick={handleClearImages} className="bg-destructive text-destructive-foreground hover:bg-destructive/90" disabled={clearingImages}>
+                  {clearingImages ? <Loader2 className="w-4 h-4 animate-spin ml-2" /> : <ImageOff className="w-4 h-4 ml-2" />}
+                  حذف الصور
+                </AlertDialogAction>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
+
           <LogoutConfirmButton />
         </TabsContent>
 
