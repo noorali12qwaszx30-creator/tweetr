@@ -68,7 +68,12 @@ export default function DeliveryDashboard() {
   const { permission, isSupported, requestPermission, showNotification } = useNotificationPermission();
   const { areas } = useDeliveryAreas();
   const { archivedOrders } = useDriverArchivedOrders(user?.id);
+  const { posts: hubPosts } = useDriverHubPosts(null);
   const [activeTab, setActiveTab] = useState<TabType>('orders');
+  const [hubLastSeen, setHubLastSeen] = useState<number>(() => {
+    const stored = typeof window !== 'undefined' ? localStorage.getItem('driverHubLastSeen') : null;
+    return stored ? Number(stored) : Date.now();
+  });
   const [returnDialogOpen, setReturnDialogOpen] = useState(false);
   const [orderToReturn, setOrderToReturn] = useState<string | null>(null);
   const [selectedReturnReason, setSelectedReturnReason] = useState<string>('');
