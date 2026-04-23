@@ -20,6 +20,7 @@ import { DriverStatsTab } from '@/components/delivery/DriverStatsTab';
 import { DriverHubTab } from '@/components/delivery/driver-hub/DriverHubTab';
 import { useDeliveryAreas } from '@/hooks/useDeliveryAreas';
 import { useDriverArchivedOrders } from '@/hooks/useDriverArchivedOrders';
+import { useDriverHubPosts } from '@/hooks/useDriverHubPosts';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -67,7 +68,12 @@ export default function DeliveryDashboard() {
   const { permission, isSupported, requestPermission, showNotification } = useNotificationPermission();
   const { areas } = useDeliveryAreas();
   const { archivedOrders } = useDriverArchivedOrders(user?.id);
+  const { posts: hubPosts } = useDriverHubPosts(null);
   const [activeTab, setActiveTab] = useState<TabType>('orders');
+  const [hubLastSeen, setHubLastSeen] = useState<number>(() => {
+    const stored = typeof window !== 'undefined' ? localStorage.getItem('driverHubLastSeen') : null;
+    return stored ? Number(stored) : Date.now();
+  });
   const [returnDialogOpen, setReturnDialogOpen] = useState(false);
   const [orderToReturn, setOrderToReturn] = useState<string | null>(null);
   const [selectedReturnReason, setSelectedReturnReason] = useState<string>('');
@@ -220,12 +226,32 @@ export default function DeliveryDashboard() {
   const totalDelivered = deliveredOrders.length;
   const totalEarnings = deliveredOrders.reduce((sum, order) => sum + (order.delivery_fee || 0), 0);
 
+  // Count hub posts created after last visit (exclude own posts)
+  const unreadHubCount = hubPosts.filter(
+    (p) =>
+      p.user_id !== currentUserId &&
+      new Date(p.created_at).getTime() > hubLastSeen
+  ).length;
+
+  // Mark hub as seen whenever the user opens that tab
+  useEffect(() => {
+    if (activeTab === 'hub') {
+      const now = Date.now();
+      setHubLastSeen(now);
+      try {
+        localStorage.setItem('driverHubLastSeen', String(now));
+      } catch {
+        // ignore storage errors
+      }
+    }
+  }, [activeTab]);
+
   const tabs: { id: TabType; label: string; icon: React.ReactNode; count?: number; isPrimary?: boolean }[] = [
     { id: 'orders', label: 'الطلبات المحولة', icon: <ClipboardList className="w-5 h-5" />, count: pendingAcceptanceOrders.length, isPrimary: true },
     { id: 'delivering', label: 'التوصيل', icon: <Truck className="w-5 h-5" />, count: deliveringOrders.length },
-    { id: 'history', label: 'السجل', icon: <History className="w-5 h-5" />, count: deliveredOrders.length + cancelledByDelivery.length },
+    { id: 'history', label: 'السجل', icon: <History className="w-5 h-5" /> },
     { id: 'stats', label: 'الإحصائيات', icon: <BarChart3 className="w-5 h-5" /> },
-    { id: 'hub', label: 'الشبكة', icon: <Network className="w-5 h-5" /> },
+    { id: 'hub', label: 'الشبكة', icon: <Network className="w-5 h-5" />, count: unreadHubCount },
     { id: 'settings', label: 'الإعدادات', icon: <Settings className="w-5 h-5" /> },
   ];
 
