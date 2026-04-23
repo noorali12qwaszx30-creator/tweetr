@@ -13,6 +13,8 @@ import { BottomNavigation } from '@/components/shared/BottomNavigation';
 import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
 import { ROLE_LABELS } from '@/types';
+import { DriverHubTab } from '@/components/delivery/driver-hub/DriverHubTab';
+import { DriverStatusMonitor } from '@/components/field/DriverStatusMonitor';
 import {
   Users,
   ClipboardList,
@@ -22,10 +24,12 @@ import {
   Settings,
   Clock,
   Loader2,
-  HandMetal
+  HandMetal,
+  Network,
+  UserCheck
 } from 'lucide-react';
 
-type TabType = 'orders' | 'ready' | 'delivering' | 'delivered' | 'cancelled' | 'admin';
+type TabType = 'orders' | 'ready' | 'delivering' | 'drivers' | 'hub' | 'delivered' | 'cancelled' | 'admin';
 
 export default function FieldDashboard() {
   const { role } = useRole();
@@ -93,6 +97,8 @@ export default function FieldDashboard() {
     { id: 'orders', label: 'الطلبات', icon: <ClipboardList className="w-5 h-5" />, count: incomingOrders.length, isPrimary: true },
     { id: 'ready', label: 'الجاهز', icon: <CheckCircle className="w-5 h-5" />, count: readyOrders.length },
     { id: 'delivering', label: 'قيد التوصيل', icon: <Truck className="w-5 h-5" />, count: deliveringOrders.length },
+    { id: 'drivers', label: 'السائقون', icon: <UserCheck className="w-5 h-5" /> },
+    { id: 'hub', label: 'الشبكة', icon: <Network className="w-5 h-5" /> },
     { id: 'delivered', label: 'المكتمل', icon: <CheckCircle className="w-5 h-5" /> },
     { id: 'cancelled', label: 'الملغي', icon: <XCircle className="w-5 h-5" /> },
     { id: 'admin', label: 'الإدارة', icon: <Settings className="w-5 h-5" /> },
@@ -255,6 +261,20 @@ export default function FieldDashboard() {
                </div>
              )}
            </div>
+         )}
+
+         {activeTab === 'drivers' && (
+           <div className="space-y-4">
+             <h2 className="text-xl font-bold flex items-center gap-2">
+               <UserCheck className="w-5 h-5 text-primary" />
+               حالة السائقين المباشرة
+             </h2>
+             <DriverStatusMonitor />
+           </div>
+         )}
+
+         {activeTab === 'hub' && (
+           <DriverHubTab />
          )}
 
          {activeTab === 'delivered' && (
