@@ -23,6 +23,16 @@ interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
+function getTokenIssuedAtMs(accessToken: string | undefined): number {
+  if (!accessToken) return 0;
+  try {
+    const payload = JSON.parse(atob(accessToken.split('.')[1]));
+    return typeof payload.iat === 'number' ? payload.iat * 1000 : 0;
+  } catch {
+    return 0;
+  }
+}
+
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<AuthUser | null>(null);
   const [session, setSession] = useState<Session | null>(null);
@@ -62,6 +72,19 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         setSession(session);
         
         if (session?.user) {
+          // Check if session was forcibly revoked by admin
+          const revokedAt = (session.user.app_metadata as any)?.session_revoked_at;
+          if (revokedAt) {
+            const revokedMs = new Date(revokedAt).getTime();
+            const issuedMs = getTokenIssuedAtMs(session.access_token);
+            if (issuedMs && issuedMs < revokedMs) {
+              supabase.auth.signOut();
+              setUser(null);
+              setSession(null);
+              setLoading(false);
+              return;
+            }
+          }
           // Defer Supabase calls with setTimeout to avoid deadlock
           setTimeout(async () => {
             const profile = await fetchUserProfile(session.user.id);
@@ -105,6 +128,23 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     return () => subscription.unsubscribe();
   }, []);
+
+  // Periodic check for forced logout by admin
+  useEffect(() => {
+    if (!session) return;
+    const interval = setInterval(async () => {
+      const { data: { user: fresh } } = await supabase.auth.getUser();
+      if (!fresh) return;
+      const revokedAt = (fresh.app_metadata as any)?.session_revoked_at;
+      if (!revokedAt) return;
+      const revokedMs = new Date(revokedAt).getTime();
+      const issuedMs = getTokenIssuedAtMs(session.access_token);
+      if (issuedMs && issuedMs < revokedMs) {
+        await supabase.auth.signOut();
+      }
+    }, 30000);
+    return () => clearInterval(interval);
+  }, [session]);
 
   const login = async (username: string, password: string, selectedRole?: UserRole): Promise<{ error: string | null }> => {
     try {

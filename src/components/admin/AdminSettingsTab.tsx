@@ -9,7 +9,7 @@ import { IssueReasonsManager } from '@/components/IssueReasonsManager';
 import { LogoutConfirmButton } from '@/components/LogoutConfirmButton';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Settings, Trash2, Loader2, ImageIcon, ImageOff, RotateCcw } from 'lucide-react';
+import { Settings, Trash2, Loader2, ImageIcon, ImageOff, RotateCcw, LogOut } from 'lucide-react';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 
 interface AdminSettingsTabProps {
@@ -22,6 +22,33 @@ export function AdminSettingsTab({ ordersCount, onDeleteAllOrders, isDeletingOrd
   const [migratingImages, setMigratingImages] = useState(false);
   const [clearingImages, setClearingImages] = useState(false);
   const [resettingDay, setResettingDay] = useState(false);
+  const [forcingLogoutAll, setForcingLogoutAll] = useState(false);
+
+  const handleForceLogoutAll = async () => {
+    setForcingLogoutAll(true);
+    try {
+      const { data: profiles, error: listErr } = await supabase
+        .from('profiles')
+        .select('user_id');
+      if (listErr) throw listErr;
+      const { data: { user: me } } = await supabase.auth.getUser();
+      let success = 0;
+      let failed = 0;
+      for (const p of (profiles ?? [])) {
+        if (me && p.user_id === me.id) continue; // don't logout self
+        const { error } = await supabase.functions.invoke('admin-force-logout', {
+          body: { user_id: p.user_id },
+        });
+        if (error) failed++; else success++;
+      }
+      if (failed > 0) toast.warning(`تم طرد ${success} مستخدم، فشل ${failed}`);
+      else toast.success(`تم تسجيل خروج ${success} مستخدم من جميع أجهزتهم ✓`);
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'فشل الطرد');
+    } finally {
+      setForcingLogoutAll(false);
+    }
+  };
 
   const handleDailyReset = async () => {
     setResettingDay(true);
@@ -216,6 +243,36 @@ export function AdminSettingsTab({ ordersCount, onDeleteAllOrders, isDeletingOrd
           </AlertDialog>
 
           <LogoutConfirmButton />
+
+          <AlertDialog>
+            <AlertDialogTrigger asChild>
+              <Button variant="outline" size="lg" className="w-full justify-start h-auto py-4 border-2 border-warning bg-warning/10 hover:bg-warning/20" disabled={forcingLogoutAll}>
+                {forcingLogoutAll ? <Loader2 className="w-6 h-6 ml-3 animate-spin" /> : <LogOut className="w-6 h-6 ml-3" />}
+                <div className="text-right">
+                  <p className="font-bold text-lg">تسجيل خروج جميع المستخدمين</p>
+                  <p className="text-sm opacity-80">طرد فوري من جميع الأجهزة (ما عداك)</p>
+                </div>
+              </Button>
+            </AlertDialogTrigger>
+            <AlertDialogContent>
+              <AlertDialogHeader>
+                <AlertDialogTitle className="flex items-center gap-2">
+                  <LogOut className="w-5 h-5 text-warning" />
+                  طرد جميع المستخدمين؟
+                </AlertDialogTitle>
+                <AlertDialogDescription>
+                  سيتم تسجيل خروج كل المستخدمين من جميع الأجهزة فوراً، وسيُطلب منهم إعادة تسجيل الدخول. حسابك أنت لن يتأثر.
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+              <AlertDialogFooter className="flex-row-reverse gap-2">
+                <AlertDialogCancel>إلغاء</AlertDialogCancel>
+                <AlertDialogAction onClick={handleForceLogoutAll} disabled={forcingLogoutAll}>
+                  {forcingLogoutAll ? <Loader2 className="w-4 h-4 animate-spin ml-2" /> : <LogOut className="w-4 h-4 ml-2" />}
+                  نعم، طرد الكل
+                </AlertDialogAction>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
         </TabsContent>
 
         <TabsContent value="users" className="mt-4">
