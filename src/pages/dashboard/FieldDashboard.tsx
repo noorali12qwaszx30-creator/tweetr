@@ -263,6 +263,20 @@ export default function FieldDashboard() {
            </div>
          )}
 
+         {activeTab === 'drivers' && (
+           <div className="space-y-4">
+             <h2 className="text-xl font-bold flex items-center gap-2">
+               <UserCheck className="w-5 h-5 text-primary" />
+               حالة السائقين المباشرة
+             </h2>
+             <DriverStatusMonitor />
+           </div>
+         )}
+
+         {activeTab === 'hub' && (
+           <DriverHubTab />
+         )}
+
          {activeTab === 'delivered' && (
           <div className="space-y-4">
             <h2 className="text-xl font-bold flex items-center gap-2">
