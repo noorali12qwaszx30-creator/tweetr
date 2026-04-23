@@ -320,28 +320,11 @@ export default function FieldDashboard() {
         )}
       </main>
 
-      {/* Bottom Navigation */}
-      <nav className="bg-card border-t border-border shadow-elevated pb-safe shrink-0">
-        <div className="container flex">
-          {tabs.map(tab => (
-            <button
-              key={tab.id}
-              onClick={() => setActiveTab(tab.id)}
-              className={`flex-1 py-3 flex flex-col items-center gap-1 transition-colors relative ${
-                activeTab === tab.id ? 'text-primary' : 'text-muted-foreground'
-              }`}
-            >
-              {tab.icon}
-              <span className="text-xs font-medium">{tab.label}</span>
-              {tab.count !== undefined && tab.count > 0 && (
-                <span className="absolute top-1 right-1/2 translate-x-4 w-5 h-5 bg-destructive text-destructive-foreground rounded-full text-xs flex items-center justify-center">
-                  {tab.count}
-                </span>
-              )}
-            </button>
-          ))}
-        </div>
-      </nav>
+      <BottomNavigation
+        tabs={tabs}
+        activeTab={activeTab}
+        onTabChange={(id) => setActiveTab(id as TabType)}
+      />
       {/* Delivery Person Selector */}
       <DeliveryPersonSelector
         open={selectorOpen}
