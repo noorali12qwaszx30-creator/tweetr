@@ -987,6 +987,8 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      admin_trigger_daily_reset: { Args: never; Returns: Json }
+      daily_reset_orders: { Args: never; Returns: Json }
       get_driver_total_points: { Args: { _user_id: string }; Returns: number }
       get_top_selling_items_today: {
         Args: { _limit?: number }
