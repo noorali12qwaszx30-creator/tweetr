@@ -12,6 +12,8 @@ import {
   Trophy,
   Activity,
   Target,
+  Wallet,
+  Building2,
 } from 'lucide-react';
 
 interface Props {
@@ -86,6 +88,18 @@ export function DriverStatsTab({ deliveredOrders, cancelledOrders }: Props) {
     const weekEarnings = weekDelivered.reduce((s, o) => s + (o.delivery_fee || 0), 0);
     const monthEarnings = monthDelivered.reduce((s, o) => s + (o.delivery_fee || 0), 0);
 
+    // مستحقات المطعم = إجمالي الطلب - أجور التوصيل (المبلغ الذي يجب على السائق تسليمه للمطعم)
+    const restaurantDue = (orders: OrderWithItems[]) =>
+      orders.reduce((s, o) => s + Math.max((o.total_price || 0) - (o.delivery_fee || 0), 0), 0);
+
+    const todayRestaurantDue = restaurantDue(todayDelivered);
+    const yesterdayRestaurantDue = restaurantDue(yesterdayDelivered);
+    const weekRestaurantDue = restaurantDue(weekDelivered);
+    const monthRestaurantDue = restaurantDue(monthDelivered);
+    const totalRestaurantDue = restaurantDue(deliveredOrders);
+
+    const todayCollected = todayDelivered.reduce((s, o) => s + (o.total_price || 0), 0);
+
     const todayAvgTime = avgDeliveryMinutes(todayDelivered);
     const yesterdayAvgTime = avgDeliveryMinutes(yesterdayDelivered);
     const overallAvgTime = avgDeliveryMinutes(deliveredOrders);
@@ -104,6 +118,12 @@ export function DriverStatsTab({ deliveredOrders, cancelledOrders }: Props) {
       yesterdayEarnings,
       weekEarnings,
       monthEarnings,
+      todayRestaurantDue,
+      yesterdayRestaurantDue,
+      weekRestaurantDue,
+      monthRestaurantDue,
+      totalRestaurantDue,
+      todayCollected,
       todayAvgTime,
       yesterdayAvgTime,
       overallAvgTime,
@@ -173,6 +193,52 @@ export function DriverStatsTab({ deliveredOrders, cancelledOrders }: Props) {
             <p className="text-xs text-muted-foreground">نسبة النجاح</p>
             <p className="text-2xl font-bold text-warning">{toEnglishNumbers(stats.successRate)}<span className="text-sm">%</span></p>
             <p className="text-[10px] text-muted-foreground mt-0.5">إلغاءات: {toEnglishNumbers(stats.todayCancelled.length)}</p>
+          </div>
+        </div>
+      </div>
+
+      {/* مستحقات المطعم - بطاقة مميزة */}
+      <div className="bg-gradient-to-br from-destructive/15 via-destructive/10 to-warning/10 border-2 border-destructive/30 rounded-2xl p-4 shadow-elevated">
+        <div className="flex items-start justify-between mb-3">
+          <div className="flex items-center gap-2">
+            <div className="w-10 h-10 rounded-xl bg-destructive/20 flex items-center justify-center">
+              <Building2 className="w-5 h-5 text-destructive" />
+            </div>
+            <div>
+              <h3 className="font-bold text-sm">مستحقات المطعم</h3>
+              <p className="text-[10px] text-muted-foreground">المبلغ الذي يجب تسليمه للمطعم</p>
+            </div>
+          </div>
+          <Wallet className="w-4 h-4 text-muted-foreground" />
+        </div>
+
+        <div className="bg-card/60 backdrop-blur rounded-xl p-3 mb-2">
+          <p className="text-[10px] text-muted-foreground mb-0.5">مستحقات اليوم</p>
+          <p className="text-3xl font-bold text-destructive leading-tight">
+            {formatNumberWithCommas(stats.todayRestaurantDue)} <span className="text-base font-semibold">د.ع</span>
+          </p>
+          <div className="flex items-center justify-between mt-1.5 text-[10px]">
+            <span className="text-muted-foreground">
+              المحصّل اليوم: <span className="font-bold text-foreground">{formatNumberWithCommas(stats.todayCollected)}</span> د.ع
+            </span>
+            <span className="text-muted-foreground">
+              أمس: <span className="font-bold text-foreground">{formatNumberWithCommas(stats.yesterdayRestaurantDue)}</span>
+            </span>
+          </div>
+        </div>
+
+        <div className="grid grid-cols-3 gap-2 text-center">
+          <div className="bg-card/40 rounded-lg p-2">
+            <p className="text-[9px] text-muted-foreground">الأسبوع</p>
+            <p className="text-xs font-bold text-destructive">{formatNumberWithCommas(stats.weekRestaurantDue)}</p>
+          </div>
+          <div className="bg-card/40 rounded-lg p-2">
+            <p className="text-[9px] text-muted-foreground">الشهر</p>
+            <p className="text-xs font-bold text-destructive">{formatNumberWithCommas(stats.monthRestaurantDue)}</p>
+          </div>
+          <div className="bg-card/40 rounded-lg p-2">
+            <p className="text-[9px] text-muted-foreground">الإجمالي</p>
+            <p className="text-xs font-bold text-destructive">{formatNumberWithCommas(stats.totalRestaurantDue)}</p>
           </div>
         </div>
       </div>
