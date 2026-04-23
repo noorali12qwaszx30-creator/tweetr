@@ -82,6 +82,11 @@ export default function DeliveryDashboard() {
   const [issueDialogOpen, setIssueDialogOpen] = useState(false);
   const [orderToReport, setOrderToReport] = useState<string | null>(null);
   const [selectedIssueReason, setSelectedIssueReason] = useState<string>('');
+
+  // Confirmation dialogs to prevent accidental taps
+  const [acceptConfirmId, setAcceptConfirmId] = useState<string | null>(null);
+  const [rejectConfirmId, setRejectConfirmId] = useState<string | null>(null);
+  const [deliveredConfirmId, setDeliveredConfirmId] = useState<string | null>(null);
   
   // Track previous pending orders count to detect new assignments
   const prevPendingCountRef = useRef<number>(0);
@@ -297,11 +302,11 @@ export default function DeliveryDashboard() {
                     order={order}
                     actions={
                       <>
-                        <Button variant="success" size="sm" onClick={() => handleAcceptOrder(order.id)}>
+                        <Button variant="success" size="sm" onClick={() => setAcceptConfirmId(order.id)}>
                           <CheckCircle className="w-3 h-3 ml-1" />
                           قبول الطلب
                         </Button>
-                        <Button variant="destructive" size="sm" onClick={() => handleRejectOrder(order.id)}>
+                        <Button variant="destructive" size="sm" onClick={() => setRejectConfirmId(order.id)}>
                           <XCircle className="w-3 h-3 ml-1" />
                           رفض الطلب
                         </Button>
@@ -344,7 +349,7 @@ export default function DeliveryDashboard() {
                               واتساب
                             </a>
                           </Button>
-                          <Button variant="default" size="sm" onClick={() => handleDelivered(order.id)}>
+                          <Button variant="default" size="sm" onClick={() => setDeliveredConfirmId(order.id)}>
                             <CheckCircle className="w-3 h-3 ml-1" />
                             تم التوصيل
                           </Button>
@@ -556,6 +561,93 @@ export default function DeliveryDashboard() {
               disabled={!selectedIssueReason}
             >
               تأكيد التبليغ
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Accept Order Confirmation */}
+      <AlertDialog open={!!acceptConfirmId} onOpenChange={(open) => !open && setAcceptConfirmId(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle className="flex items-center gap-2 text-success">
+              <CheckCircle className="w-5 h-5" />
+              تأكيد قبول الطلب
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              هل أنت متأكد من قبول هذا الطلب؟ سيتم نقله إلى قائمة "قيد التوصيل" وتصبح مسؤولاً عن إيصاله للزبون.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter className="gap-2">
+            <AlertDialogCancel>تراجع</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={async () => {
+                if (acceptConfirmId) {
+                  await handleAcceptOrder(acceptConfirmId);
+                  setAcceptConfirmId(null);
+                }
+              }}
+              className="bg-success hover:bg-success/90 text-success-foreground"
+            >
+              نعم، اقبل الطلب
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Reject Order Confirmation */}
+      <AlertDialog open={!!rejectConfirmId} onOpenChange={(open) => !open && setRejectConfirmId(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle className="flex items-center gap-2 text-destructive">
+              <XCircle className="w-5 h-5" />
+              تأكيد رفض الطلب
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              هل أنت متأكد من رفض هذا الطلب؟ سيتم إعادته إلى قسم الميدان لإعادة توزيعه على سائق آخر.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter className="gap-2">
+            <AlertDialogCancel>تراجع</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={async () => {
+                if (rejectConfirmId) {
+                  await handleRejectOrder(rejectConfirmId);
+                  setRejectConfirmId(null);
+                }
+              }}
+              className="bg-destructive hover:bg-destructive/90 text-destructive-foreground"
+            >
+              نعم، ارفض الطلب
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Delivered Confirmation */}
+      <AlertDialog open={!!deliveredConfirmId} onOpenChange={(open) => !open && setDeliveredConfirmId(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle className="flex items-center gap-2 text-success">
+              <CheckCircle className="w-5 h-5" />
+              تأكيد تسليم الطلب
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              هل تأكدت من تسليم الطلب للزبون واستلام المبلغ؟ لا يمكن التراجع عن هذه الخطوة.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter className="gap-2">
+            <AlertDialogCancel>لا، لم يُسلَّم بعد</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={async () => {
+                if (deliveredConfirmId) {
+                  await handleDelivered(deliveredConfirmId);
+                  setDeliveredConfirmId(null);
+                }
+              }}
+              className="bg-success hover:bg-success/90 text-success-foreground"
+            >
+              نعم، تم التسليم
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
