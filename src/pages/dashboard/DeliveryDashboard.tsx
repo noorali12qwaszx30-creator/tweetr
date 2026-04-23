@@ -13,6 +13,12 @@ import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
 import { ROLE_LABELS } from '@/types';
 import { toEnglishNumbers, formatNumberWithCommas } from '@/lib/formatNumber';
+import { DriverStatusToggle } from '@/components/delivery/DriverStatusToggle';
+import { DeliveryOrderExtras } from '@/components/delivery/DeliveryOrderExtras';
+import { OldOrderAlert } from '@/components/delivery/OldOrderAlert';
+import { DriverStatsTab } from '@/components/delivery/DriverStatsTab';
+import { PersonalNotesTab } from '@/components/delivery/PersonalNotesTab';
+import { useDeliveryAreas } from '@/hooks/useDeliveryAreas';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -45,10 +51,11 @@ import {
   Bell,
   BellOff,
   AlertTriangle,
-  History
+  History,
+  BookOpen
 } from 'lucide-react';
 
-type TabType = 'orders' | 'delivering' | 'history' | 'stats' | 'settings';
+type TabType = 'orders' | 'delivering' | 'history' | 'stats' | 'notes' | 'settings';
 
 export default function DeliveryDashboard() {
   const { role } = useRole();
@@ -57,6 +64,7 @@ export default function DeliveryDashboard() {
   const { reasons } = useCancellationReasons();
   const { reasons: issueReasons } = useIssueReasons();
   const { permission, isSupported, requestPermission, showNotification } = useNotificationPermission();
+  const { areas } = useDeliveryAreas();
   const [activeTab, setActiveTab] = useState<TabType>('orders');
   const [returnDialogOpen, setReturnDialogOpen] = useState(false);
   const [orderToReturn, setOrderToReturn] = useState<string | null>(null);
@@ -73,15 +81,30 @@ export default function DeliveryDashboard() {
   // Orders assigned to this delivery person (pending acceptance)
   // Filter by delivery_person_id to show only orders assigned to current user
   const currentUserId = user?.id;
-  const pendingAcceptanceOrders = orders.filter(o => 
-    o.status === 'ready' && 
-    o.pending_delivery_acceptance && 
-    o.delivery_person_id === currentUserId
-  );
-  const deliveringOrders = orders.filter(o => 
-    o.status === 'delivering' && 
-    o.delivery_person_id === currentUserId
-  );
+
+  // Build a map of area_id => display_order for sorting orders by proximity
+  const areaOrderMap = new Map<string, number>();
+  areas.forEach((a) => areaOrderMap.set(a.id, a.display_order));
+
+  const sortByAreaProximity = (a: typeof orders[0], b: typeof orders[0]) => {
+    const aOrder = a.delivery_area_id ? areaOrderMap.get(a.delivery_area_id) ?? 999 : 999;
+    const bOrder = b.delivery_area_id ? areaOrderMap.get(b.delivery_area_id) ?? 999 : 999;
+    return aOrder - bOrder;
+  };
+
+  const pendingAcceptanceOrders = orders
+    .filter(o =>
+      o.status === 'ready' &&
+      o.pending_delivery_acceptance &&
+      o.delivery_person_id === currentUserId
+    )
+    .sort(sortByAreaProximity);
+  const deliveringOrders = orders
+    .filter(o =>
+      o.status === 'delivering' &&
+      o.delivery_person_id === currentUserId
+    )
+    .sort(sortByAreaProximity);
   const deliveredOrders = orders.filter(o => 
     o.status === 'delivered' && 
     o.delivery_person_id === currentUserId
@@ -196,6 +219,7 @@ export default function DeliveryDashboard() {
     { id: 'delivering', label: 'التوصيل', icon: <Truck className="w-5 h-5" />, count: deliveringOrders.length },
     { id: 'history', label: 'السجل', icon: <History className="w-5 h-5" />, count: deliveredOrders.length + cancelledByDelivery.length },
     { id: 'stats', label: 'الإحصائيات', icon: <BarChart3 className="w-5 h-5" /> },
+    { id: 'notes', label: 'دفتري', icon: <BookOpen className="w-5 h-5" /> },
     { id: 'settings', label: 'الإعدادات', icon: <Settings className="w-5 h-5" /> },
   ];
 
@@ -220,6 +244,11 @@ export default function DeliveryDashboard() {
 
       {/* Main Content */}
       <main className="container py-3 sm:py-4 flex-1 overflow-auto">
+        {/* Driver status toggle - visible on all tabs */}
+        <div className="flex items-center justify-end mb-3">
+          <DriverStatusToggle />
+        </div>
+
         {activeTab === 'orders' && (
           <div className="space-y-3 sm:space-y-4">
             <h2 className="text-lg sm:text-xl font-bold">الطلبات المحولة إليك ({toEnglishNumbers(pendingAcceptanceOrders.length)})</h2>
@@ -256,6 +285,7 @@ export default function DeliveryDashboard() {
         {activeTab === 'delivering' && (
           <div className="space-y-4">
             <h2 className="text-xl font-bold">قيد التوصيل ({toEnglishNumbers(deliveringOrders.length)})</h2>
+            <OldOrderAlert orders={deliveringOrders} />
             {deliveringOrders.length === 0 ? (
               <div className="text-center py-12 text-muted-foreground">
                 <Truck className="w-12 h-12 mx-auto mb-4 opacity-50" />
@@ -268,36 +298,39 @@ export default function DeliveryDashboard() {
                     key={order.id}
                     order={order}
                     actions={
-                      <div className="flex flex-wrap gap-2 w-full">
-                        <Button variant="outline" size="sm" asChild>
-                          <a href={`tel:${order.customer_phone}`}>
-                            <Phone className="w-3 h-3 ml-1" />
-                            اتصال
-                          </a>
-                        </Button>
-                        <Button variant="success" size="sm" asChild>
-                          <a href={`https://wa.me/${formatPhoneForWhatsApp(order.customer_phone)}`} target="_blank" rel="noopener noreferrer">
-                            <MessageCircle className="w-3 h-3 ml-1" />
-                            واتساب
-                          </a>
-                        </Button>
-                        <Button variant="default" size="sm" onClick={() => handleDelivered(order.id)}>
-                          <CheckCircle className="w-3 h-3 ml-1" />
-                          تم التوصيل
-                        </Button>
-                        <Button variant="warning" size="sm" onClick={() => handleReturnOrder(order.id)}>
-                          <Undo2 className="w-3 h-3 ml-1" />
-                          راجع
-                        </Button>
-                        <Button 
-                          variant="outline" 
-                          size="sm" 
-                          onClick={() => handleReportIssue(order.id)}
-                          className="border-destructive/50 text-destructive hover:bg-destructive/10"
-                        >
-                          <AlertTriangle className="w-3 h-3 ml-1" />
-                          تبليغ
-                        </Button>
+                      <div className="flex flex-col gap-2 w-full">
+                        <div className="flex flex-wrap gap-2 w-full">
+                          <Button variant="outline" size="sm" asChild>
+                            <a href={`tel:${order.customer_phone}`}>
+                              <Phone className="w-3 h-3 ml-1" />
+                              اتصال
+                            </a>
+                          </Button>
+                          <Button variant="success" size="sm" asChild>
+                            <a href={`https://wa.me/${formatPhoneForWhatsApp(order.customer_phone)}`} target="_blank" rel="noopener noreferrer">
+                              <MessageCircle className="w-3 h-3 ml-1" />
+                              واتساب
+                            </a>
+                          </Button>
+                          <Button variant="default" size="sm" onClick={() => handleDelivered(order.id)}>
+                            <CheckCircle className="w-3 h-3 ml-1" />
+                            تم التوصيل
+                          </Button>
+                          <Button variant="warning" size="sm" onClick={() => handleReturnOrder(order.id)}>
+                            <Undo2 className="w-3 h-3 ml-1" />
+                            راجع
+                          </Button>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => handleReportIssue(order.id)}
+                            className="border-destructive/50 text-destructive hover:bg-destructive/10"
+                          >
+                            <AlertTriangle className="w-3 h-3 ml-1" />
+                            تبليغ
+                          </Button>
+                        </div>
+                        <DeliveryOrderExtras order={order} />
                       </div>
                     }
                   />
@@ -333,29 +366,11 @@ export default function DeliveryDashboard() {
         )}
 
         {activeTab === 'stats' && (
-          <div className="space-y-3 sm:space-y-4">
-            <h2 className="text-lg sm:text-xl font-bold">الإحصائيات</h2>
-            <div className="grid grid-cols-2 gap-2 sm:gap-4">
-              <div className="bg-card border border-border rounded-xl p-3 sm:p-4 shadow-soft">
-                <p className="text-muted-foreground text-xs sm:text-sm">الطلبات المكتملة</p>
-                <p className="text-2xl sm:text-3xl font-bold text-success">{toEnglishNumbers(totalDelivered)}</p>
-              </div>
-              <div className="bg-card border border-border rounded-xl p-3 sm:p-4 shadow-soft">
-                <p className="text-muted-foreground text-xs sm:text-sm">إجمالي الأرباح</p>
-                <p className="text-2xl sm:text-3xl font-bold text-primary">{formatNumberWithCommas(totalEarnings)} د.ع</p>
-              </div>
-              <div className="bg-card border border-border rounded-xl p-3 sm:p-4 shadow-soft">
-                <p className="text-muted-foreground text-xs sm:text-sm">الطلبات الملغية</p>
-                <p className="text-2xl sm:text-3xl font-bold text-destructive">{toEnglishNumbers(cancelledByDelivery.length)}</p>
-              </div>
-              <div className="bg-card border border-border rounded-xl p-3 sm:p-4 shadow-soft">
-                <p className="text-muted-foreground text-xs sm:text-sm">متوسط الفائدة</p>
-                <p className="text-2xl sm:text-3xl font-bold text-foreground">
-                  {totalDelivered > 0 ? formatNumberWithCommas(Math.round(totalEarnings / totalDelivered)) : '0'} د.ع
-                </p>
-              </div>
-            </div>
-          </div>
+          <DriverStatsTab deliveredOrders={deliveredOrders} cancelledOrders={cancelledByDelivery} />
+        )}
+
+        {activeTab === 'notes' && (
+          <PersonalNotesTab />
         )}
 
 

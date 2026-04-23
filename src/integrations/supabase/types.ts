@@ -187,6 +187,75 @@ export type Database = {
           },
         ]
       }
+      area_notes: {
+        Row: {
+          created_at: string
+          created_by: string
+          created_by_name: string
+          delivery_area_id: string
+          delivery_area_name: string
+          id: string
+          note: string
+          severity: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          created_by: string
+          created_by_name: string
+          delivery_area_id: string
+          delivery_area_name: string
+          id?: string
+          note: string
+          severity?: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string
+          created_by_name?: string
+          delivery_area_id?: string
+          delivery_area_name?: string
+          id?: string
+          note?: string
+          severity?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      customer_notes: {
+        Row: {
+          created_at: string
+          created_by: string
+          created_by_name: string
+          customer_id: string | null
+          customer_phone: string
+          id: string
+          note: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          created_by: string
+          created_by_name: string
+          customer_id?: string | null
+          customer_phone: string
+          id?: string
+          note: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string
+          created_by_name?: string
+          customer_id?: string | null
+          customer_phone?: string
+          id?: string
+          note?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       customers: {
         Row: {
           address: string | null
@@ -307,6 +376,60 @@ export type Database = {
           name?: string
           order_count?: number
           updated_at?: string
+        }
+        Relationships: []
+      }
+      driver_personal_notes: {
+        Row: {
+          content: string
+          created_at: string
+          id: string
+          title: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          content: string
+          created_at?: string
+          id?: string
+          title?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          content?: string
+          created_at?: string
+          id?: string
+          title?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      driver_status: {
+        Row: {
+          created_at: string
+          id: string
+          status: string
+          status_message: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          status?: string
+          status_message?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          status?: string
+          status_message?: string | null
+          updated_at?: string
+          user_id?: string
         }
         Relationships: []
       }

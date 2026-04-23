@@ -14,7 +14,9 @@ import {
   X,
   Loader2,
   Package,
-  DollarSign
+  DollarSign,
+  ArrowUpDown,
+  Info
 } from 'lucide-react';
 import {
   AlertDialog,
@@ -26,6 +28,24 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
+import {
+  DndContext,
+  closestCenter,
+  KeyboardSensor,
+  PointerSensor,
+  TouchSensor,
+  useSensor,
+  useSensors,
+  DragEndEvent,
+} from '@dnd-kit/core';
+import {
+  arrayMove,
+  SortableContext,
+  sortableKeyboardCoordinates,
+  verticalListSortingStrategy,
+} from '@dnd-kit/sortable';
+import { SortableAreaItem } from '@/components/delivery/SortableAreaItem';
+import { supabase } from '@/integrations/supabase/client';
 
 export function DeliveryAreasManager() {
   const { areas, loading, addArea, updateArea, deleteArea } = useDeliveryAreas();
@@ -36,6 +56,42 @@ export function DeliveryAreasManager() {
   const [editFee, setEditFee] = useState('');
   const [deletingArea, setDeletingArea] = useState<DeliveryArea | null>(null);
   const [submitting, setSubmitting] = useState(false);
+  const [reorderMode, setReorderMode] = useState(false);
+
+  const sensors = useSensors(
+    useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
+    useSensor(TouchSensor, { activationConstraint: { delay: 200, tolerance: 5 } }),
+    useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates })
+  );
+
+  const handleDragEnd = async (event: DragEndEvent) => {
+    const { active, over } = event;
+    if (!over || active.id === over.id) return;
+
+    const oldIndex = areas.findIndex((a) => a.id === active.id);
+    const newIndex = areas.findIndex((a) => a.id === over.id);
+    if (oldIndex === -1 || newIndex === -1) return;
+
+    const reordered = arrayMove(areas, oldIndex, newIndex);
+
+    // Update display_order in DB for all reordered items
+    try {
+      const updates = reordered.map((a, idx) =>
+        supabase.from('delivery_areas').update({ display_order: idx }).eq('id', a.id)
+      );
+      await Promise.all(updates);
+      // Refresh local state via hook update calls
+      reordered.forEach((a, idx) => {
+        if (a.display_order !== idx) {
+          updateArea(a.id, { display_order: idx });
+        }
+      });
+      toast.success('تم تحديث ترتيب المناطق');
+    } catch (err) {
+      console.error(err);
+      toast.error('فشل تحديث الترتيب');
+    }
+  };
 
   const handleAddArea = async () => {
     if (!newAreaName.trim()) {
@@ -123,6 +179,17 @@ export function DeliveryAreasManager() {
 
   return (
     <div className="space-y-4">
+      {/* Hint about ordering */}
+      <div className="bg-info/10 border border-info/30 rounded-xl p-3 flex gap-2 text-xs">
+        <Info className="w-4 h-4 text-info shrink-0 mt-0.5" />
+        <div className="space-y-1">
+          <p className="font-semibold text-info">ترتيب المناطق حسب القرب الجغرافي</p>
+          <p className="text-muted-foreground">
+            رتّب المناطق من الأقرب إلى الأبعد. السائقون سيرون طلباتهم مرتّبة تلقائياً وفق هذا الترتيب لتسهيل تخطيط المسار.
+          </p>
+        </div>
+      </div>
+
       {/* Add New Area */}
       <div className="bg-card border border-border rounded-xl p-4 shadow-soft">
         <h3 className="font-bold text-sm mb-3 flex items-center gap-2">
@@ -160,10 +227,22 @@ export function DeliveryAreasManager() {
 
       {/* Areas List */}
       <div className="space-y-2">
-        <h3 className="font-bold text-sm flex items-center gap-2">
-          <MapPin className="w-4 h-4 text-primary" />
-          قائمة المناطق ({areas.length})
-        </h3>
+        <div className="flex items-center justify-between">
+          <h3 className="font-bold text-sm flex items-center gap-2">
+            <MapPin className="w-4 h-4 text-primary" />
+            قائمة المناطق ({toEnglishNumbers(areas.length)})
+          </h3>
+          {areas.length > 1 && (
+            <Button
+              variant={reorderMode ? 'default' : 'outline'}
+              size="sm"
+              onClick={() => setReorderMode(!reorderMode)}
+            >
+              <ArrowUpDown className="w-3 h-3 ml-1" />
+              {reorderMode ? 'إنهاء الترتيب' : 'إعادة الترتيب'}
+            </Button>
+          )}
+        </div>
 
         {areas.length === 0 ? (
           <div className="text-center py-8 text-muted-foreground">
@@ -171,6 +250,27 @@ export function DeliveryAreasManager() {
             <p>لا توجد مناطق محددة</p>
             <p className="text-sm">أضف مناطق التوصيل لتظهر للكاشير</p>
           </div>
+        ) : reorderMode ? (
+          <DndContext
+            sensors={sensors}
+            collisionDetection={closestCenter}
+            onDragEnd={handleDragEnd}
+          >
+            <SortableContext items={areas.map((a) => a.id)} strategy={verticalListSortingStrategy}>
+              <div className="space-y-2">
+                {areas.map((area, idx) => (
+                  <SortableAreaItem
+                    key={area.id}
+                    area={area}
+                    position={idx + 1}
+                    onEdit={handleStartEdit}
+                    onDelete={setDeletingArea}
+                    onToggle={handleToggleActive}
+                  />
+                ))}
+              </div>
+            </SortableContext>
+          </DndContext>
         ) : (
           areas.map(area => (
             <div
