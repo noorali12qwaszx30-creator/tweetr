@@ -19,6 +19,7 @@ import { OldOrderAlert } from '@/components/delivery/OldOrderAlert';
 import { DriverStatsTab } from '@/components/delivery/DriverStatsTab';
 import { DriverHubTab } from '@/components/delivery/driver-hub/DriverHubTab';
 import { useDeliveryAreas } from '@/hooks/useDeliveryAreas';
+import { useDriverArchivedOrders } from '@/hooks/useDriverArchivedOrders';
 import {
   AlertDialog,
   AlertDialogAction,
