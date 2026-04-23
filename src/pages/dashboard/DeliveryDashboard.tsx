@@ -244,6 +244,11 @@ export default function DeliveryDashboard() {
 
       {/* Main Content */}
       <main className="container py-3 sm:py-4 flex-1 overflow-auto">
+        {/* Driver status toggle - visible on all tabs */}
+        <div className="flex items-center justify-end mb-3">
+          <DriverStatusToggle />
+        </div>
+
         {activeTab === 'orders' && (
           <div className="space-y-3 sm:space-y-4">
             <h2 className="text-lg sm:text-xl font-bold">الطلبات المحولة إليك ({toEnglishNumbers(pendingAcceptanceOrders.length)})</h2>
