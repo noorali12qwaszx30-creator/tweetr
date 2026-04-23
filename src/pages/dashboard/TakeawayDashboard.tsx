@@ -25,6 +25,8 @@ import {
   Menu as MenuIcon,
   Loader2,
   Settings,
+  Pencil,
+  XCircle,
 } from 'lucide-react';
 import {
   DndContext,
@@ -47,7 +49,7 @@ type TabType = 'menu' | 'tracking' | 'stats' | 'settings';
 export default function TakeawayDashboard() {
   const { role } = useRole();
   const { user } = useAuth();
-  const { orders, addOrder, updateOrderStatus, cancelOrder, loading, realtimeConnected } = useSupabaseOrders({ orderTypeFilter: 'takeaway' });
+  const { orders, addOrder, updateOrder, updateOrderStatus, cancelOrder, loading, realtimeConnected } = useSupabaseOrders({ orderTypeFilter: 'takeaway' });
   const { menuItems, categories, loading: menuLoading, updateDisplayOrder } = useMenuItems();
   const { items: topSellingItems } = useTopSellingItems(20);
   const { 
@@ -57,6 +59,7 @@ export default function TakeawayDashboard() {
     updateQuantity, 
     removeFromCart, 
     clearCart, 
+    setCartItems,
     totalPrice,
     getItemQuantity 
   } = useCart();
@@ -68,6 +71,7 @@ export default function TakeawayDashboard() {
   const [orderToCancel, setOrderToCancel] = useState<OrderWithItems | null>(null);
   const [showCompletedOrders, setShowCompletedOrders] = useState(false);
   const [showCancelledOrders, setShowCancelledOrders] = useState(false);
+  const [editingOrder, setEditingOrder] = useState<OrderWithItems | null>(null);
 
   const sensors = useSensors(
     useSensor(PointerSensor, {
