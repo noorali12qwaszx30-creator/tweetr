@@ -349,7 +349,7 @@ export default function DeliveryDashboard() {
                               واتساب
                             </a>
                           </Button>
-                          <Button variant="default" size="sm" onClick={() => handleDelivered(order.id)}>
+                          <Button variant="default" size="sm" onClick={() => setDeliveredConfirmId(order.id)}>
                             <CheckCircle className="w-3 h-3 ml-1" />
                             تم التوصيل
                           </Button>
