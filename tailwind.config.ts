@@ -14,8 +14,9 @@ export default {
     },
     extend: {
       fontFamily: {
-        cairo: ["Cairo", "Noto Sans Arabic", "sans-serif"],
-        sans: ["Cairo", "Noto Sans Arabic", "sans-serif"],
+        cairo: ["Cairo", "Poppins", "Noto Sans Arabic", "sans-serif"],
+        poppins: ["Poppins", "Cairo", "sans-serif"],
+        sans: ["Poppins", "Cairo", "Noto Sans Arabic", "sans-serif"],
       },
       colors: {
         border: "hsl(var(--border))",
@@ -26,6 +27,7 @@ export default {
         primary: {
           DEFAULT: "hsl(var(--primary))",
           foreground: "hsl(var(--primary-foreground))",
+          glow: "hsl(var(--primary-glow))",
         },
         secondary: {
           DEFAULT: "hsl(var(--secondary))",

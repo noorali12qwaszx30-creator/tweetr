@@ -28,19 +28,19 @@ export function OrderCard({
   return (
     <div
       className={`
-        bg-card rounded-xl border shadow-soft transition-all duration-200
-        ${order.type === 'takeaway' ? 'border-warning/50 bg-warning/5' : ''}
-        ${order.type === 'pickup' ? 'border-secondary/50 bg-secondary/5' : ''}
-        ${order.type === 'delivery' ? 'border-border' : ''}
+        bg-card rounded-3xl border shadow-card hover:shadow-elevated transition-all duration-300
+        ${order.type === 'takeaway' ? 'border-warning/40' : ''}
+        ${order.type === 'pickup' ? 'border-accent/40' : ''}
+        ${order.type === 'delivery' ? 'border-border/50' : ''}
         ${hasNotes ? 'order-has-notes' : ''}
-        ${order.is_edited ? 'ring-2 ring-warning/50' : ''}
-        ${order.has_issue ? 'ring-2 ring-destructive/50 border-destructive/50' : ''}
-        ${compact ? 'p-2 sm:p-3' : 'p-3 sm:p-4'}
+        ${order.is_edited ? 'ring-2 ring-warning/40' : ''}
+        ${order.has_issue ? 'ring-2 ring-destructive/40 border-destructive/40' : ''}
+        ${compact ? 'p-3 sm:p-3.5' : 'p-4 sm:p-5'}
       `}
     >
       {/* Issue Alert Banner */}
       {order.has_issue && (
-        <div className="mb-3 p-2 bg-destructive/20 border border-destructive/40 rounded-lg">
+        <div className="mb-3 p-3 bg-destructive/10 border border-destructive/30 rounded-2xl">
           <div className="flex items-center gap-2 text-destructive font-medium text-sm">
             <AlertTriangle className="w-4 h-4" />
             <span>بلاغ: {order.issue_reason}</span>
@@ -56,34 +56,34 @@ export function OrderCard({
       {/* Header */}
       <div className="flex items-center justify-between mb-2 sm:mb-3 flex-wrap gap-2">
         <div className="flex items-center gap-2 sm:gap-3 flex-wrap">
-          <span className="text-xl sm:text-2xl font-bold text-primary px-2 py-0.5 border-2 border-primary/30 rounded-lg bg-primary/5">{toEnglishNumbers(order.order_number)}</span>
-          <span className={`px-2 py-0.5 rounded-full text-[10px] sm:text-xs font-medium border ${statusColors[order.status]}`}>
+          <span className="text-lg sm:text-xl font-bold text-primary-foreground bg-primary px-3 py-1 rounded-full shadow-button">#{toEnglishNumbers(order.order_number)}</span>
+          <span className={`px-2.5 py-1 rounded-full text-[10px] sm:text-xs font-semibold ${statusColors[order.status]}`}>
             {ORDER_STATUS_LABELS[order.status]}
           </span>
           {order.type === 'takeaway' && (
-            <span className="px-2 py-0.5 rounded-full text-[10px] sm:text-xs font-medium bg-warning/20 text-warning">
+            <span className="px-2.5 py-1 rounded-full text-[10px] sm:text-xs font-semibold bg-warning/15 text-warning">
               سفري
             </span>
           )}
           {order.type === 'pickup' && (
-            <span className="px-2 py-0.5 rounded-full text-[10px] sm:text-xs font-medium bg-secondary/20 text-secondary">
+            <span className="px-2.5 py-1 rounded-full text-[10px] sm:text-xs font-semibold bg-accent/15 text-accent">
               استلام
             </span>
           )}
           {order.is_edited && (
-            <span className="px-2 py-0.5 rounded-full text-[10px] sm:text-xs font-medium bg-info/20 text-info flex items-center gap-1">
+            <span className="px-2.5 py-1 rounded-full text-[10px] sm:text-xs font-semibold bg-info/15 text-info flex items-center gap-1">
               <Pencil className="w-3 h-3" />
               معدّل
             </span>
           )}
           {order.has_issue && (
-            <span className="px-2 py-0.5 rounded-full text-[10px] sm:text-xs font-medium bg-destructive/20 text-destructive flex items-center gap-1">
+            <span className="px-2.5 py-1 rounded-full text-[10px] sm:text-xs font-semibold bg-destructive/15 text-destructive flex items-center gap-1">
               <AlertTriangle className="w-3 h-3" />
               بلاغ
             </span>
           )}
           {order.order_source && (
-            <span className="px-2 py-0.5 rounded-full text-[10px] sm:text-xs font-medium bg-accent text-accent-foreground">
+            <span className="px-2.5 py-1 rounded-full text-[10px] sm:text-xs font-semibold bg-muted text-muted-foreground">
               {ORDER_SOURCE_LABELS[order.order_source] || order.order_source}
             </span>
           )}
@@ -95,7 +95,7 @@ export function OrderCard({
 
       {/* Customer Info */}
       {showCustomerInfo && (
-        <div className="mb-2 sm:mb-3 p-2 sm:p-3 bg-muted/50 rounded-lg">
+        <div className="mb-2 sm:mb-3 p-3 bg-muted/40 rounded-2xl">
           <p className="font-semibold text-foreground text-sm sm:text-base">{order.customer_name}</p>
           {order.customer_phone && (
             <p className="text-xs sm:text-sm text-muted-foreground">{toEnglishNumbers(order.customer_phone)}</p>
@@ -112,7 +112,7 @@ export function OrderCard({
           {order.items.map((item: DbOrderItem, idx: number) => (
             <div key={idx} className="flex items-center justify-between text-xs sm:text-sm">
               <div className="flex items-center gap-1.5 sm:gap-2">
-                <span className="w-5 h-5 sm:w-6 sm:h-6 flex items-center justify-center bg-primary/10 text-primary rounded-md text-[10px] sm:text-xs font-bold">
+                <span className="w-6 h-6 flex items-center justify-center bg-primary/10 text-primary rounded-full text-[10px] sm:text-xs font-bold">
                   {toEnglishNumbers(item.quantity)}
                 </span>
                 <span className="text-foreground truncate max-w-[120px] sm:max-w-none">{item.menu_item_name}</span>
@@ -126,7 +126,7 @@ export function OrderCard({
             </div>
           ))}
           {/* Price breakdown */}
-          <div className="pt-2 border-t border-border space-y-1">
+          <div className="pt-2 mt-1 border-t border-dashed border-border/70 space-y-1">
             {order.type === 'delivery' && order.delivery_fee > 0 && (
               <>
                 <div className="flex items-center justify-between text-xs sm:text-sm text-muted-foreground">
@@ -142,9 +142,9 @@ export function OrderCard({
                 </div>
               </>
             )}
-            <div className="flex items-center justify-between font-semibold text-sm sm:text-base">
-              <span>المجموع الكلي</span>
-              <span className="text-primary">{formatNumberWithCommas(Number(order.total_price))} د.ع</span>
+            <div className="flex items-center justify-between font-bold text-sm sm:text-base pt-1">
+              <span>المجموع</span>
+              <span className="text-primary text-base sm:text-lg">{formatNumberWithCommas(Number(order.total_price))} <span className="text-xs opacity-70 font-medium">د.ع</span></span>
             </div>
           </div>
         </div>
@@ -152,7 +152,7 @@ export function OrderCard({
 
       {/* Notes */}
       {order.notes && (
-        <div className="mb-3 p-2 bg-warning/10 border border-warning/30 rounded-lg">
+        <div className="mb-3 p-3 bg-warning/10 border border-warning/30 rounded-2xl">
           <p className="text-sm text-warning flex items-center gap-2">
             <MessageSquare className="w-4 h-4" />
             {order.notes}
@@ -162,7 +162,7 @@ export function OrderCard({
 
       {/* Delivery Person */}
       {order.delivery_person_name && (
-        <div className="mb-3 p-2 bg-info/10 border border-info/30 rounded-lg">
+        <div className="mb-3 p-3 bg-info/10 border border-info/30 rounded-2xl">
           <p className="text-sm text-info flex items-center gap-2">
             <Truck className="w-4 h-4" />
             موظف التوصيل: {order.delivery_person_name}
@@ -172,7 +172,7 @@ export function OrderCard({
 
       {/* Cancellation Reason */}
       {order.cancellation_reason && (
-        <div className="mb-3 p-2 bg-destructive/10 border border-destructive/30 rounded-lg">
+        <div className="mb-3 p-3 bg-destructive/10 border border-destructive/30 rounded-2xl">
           <p className="text-sm text-destructive">
             سبب الإلغاء: {order.cancellation_reason}
           </p>

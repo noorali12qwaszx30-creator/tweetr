@@ -60,9 +60,9 @@ const RoleButton = ({ role, index, mounted, onSelect, isCenter }: RoleButtonProp
   <button
     onClick={() => onSelect(role)}
     className={`
-      group relative bg-card/60 backdrop-blur-xl border-2 border-border/50 rounded-2xl sm:rounded-3xl p-4 sm:p-6 
-      transition-all duration-500 active:scale-95 hover:scale-105 hover:border-primary/50
-      hover:shadow-2xl hover:shadow-primary/20
+      group relative bg-card border border-border/40 rounded-3xl p-4 sm:p-6 
+      transition-all duration-500 active:scale-95 hover:scale-[1.03] hover:border-primary/30
+      shadow-card hover:shadow-elevated
       focus:outline-none focus:ring-4 focus:ring-primary/20
       ${isCenter ? 'w-full max-w-xs' : ''}
       ${mounted ? 'opacity-100' : 'opacity-0'}
@@ -74,15 +74,15 @@ const RoleButton = ({ role, index, mounted, onSelect, isCenter }: RoleButtonProp
       opacity: 0,
     }}
   >
-    {/* Glow effect on hover */}
-    <div className="absolute inset-0 rounded-3xl bg-gradient-to-br from-primary/0 via-primary/0 to-primary/0 group-hover:from-primary/10 group-hover:via-primary/5 group-hover:to-transparent transition-all duration-500" />
+    {/* Soft tint on hover */}
+    <div className="absolute inset-0 rounded-3xl bg-gradient-to-br from-primary/0 to-primary/0 group-hover:from-primary/5 group-hover:to-transparent transition-all duration-500" />
     
-    {/* Selected indicator */}
-    <div className="absolute top-3 right-3 w-3 h-3 rounded-full bg-primary/0 group-hover:bg-primary group-hover:animate-pulse transition-all duration-300" />
+    {/* Selected indicator dot */}
+    <div className="absolute top-3 right-3 w-2.5 h-2.5 rounded-full bg-primary/0 group-hover:bg-primary group-hover:animate-pulse transition-all duration-300" />
 
     <div className="relative flex flex-col items-center gap-2 sm:gap-4">
       {/* Icon container */}
-      <div className={`${isCenter ? 'w-16 h-16 sm:w-20 sm:h-20 md:w-24 md:h-24' : 'w-12 h-12 sm:w-16 sm:h-16 md:w-20 md:h-20'} rounded-xl sm:rounded-2xl bg-gradient-to-br from-muted to-muted/50 flex items-center justify-center text-muted-foreground group-hover:from-primary group-hover:to-primary/80 group-hover:text-primary-foreground transition-all duration-500 group-hover:scale-110 group-hover:rotate-3 group-hover:shadow-lg group-hover:shadow-primary/30`}>
+      <div className={`${isCenter ? 'w-16 h-16 sm:w-20 sm:h-20 md:w-24 md:h-24' : 'w-12 h-12 sm:w-16 sm:h-16 md:w-20 md:h-20'} rounded-2xl sm:rounded-3xl bg-secondary flex items-center justify-center text-primary group-hover:bg-gradient-to-br group-hover:from-primary group-hover:to-primary-glow group-hover:text-primary-foreground transition-all duration-500 group-hover:scale-110 group-hover:shadow-button`}>
         <div className={isCenter ? 'scale-100 sm:scale-125' : 'scale-75 sm:scale-100'}>{ROLE_ICONS[role]}</div>
       </div>
 
@@ -165,16 +165,16 @@ export default function RoleSelector() {
   // Login form after role selection
   if (selectedRole) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-background via-background to-primary/5 flex items-center justify-center p-4 overflow-hidden" dir="rtl">
+      <div className="min-h-screen gradient-hero flex items-center justify-center p-4 overflow-hidden" dir="rtl">
         {/* Background decorations */}
         <div className="absolute inset-0 overflow-hidden pointer-events-none">
-          <div className="absolute -top-40 -right-40 w-80 h-80 bg-primary/10 rounded-full blur-3xl animate-float" />
-          <div className="absolute -bottom-40 -left-40 w-96 h-96 bg-primary/5 rounded-full blur-3xl animate-float" style={{ animationDelay: '1s' }} />
+          <div className="absolute -top-40 -right-40 w-80 h-80 bg-primary/15 rounded-full blur-3xl animate-float" />
+          <div className="absolute -bottom-40 -left-40 w-96 h-96 bg-primary/10 rounded-full blur-3xl animate-float" style={{ animationDelay: '1s' }} />
         </div>
 
         <div className="w-full max-w-md relative z-10">
           <div 
-            className="bg-card/80 backdrop-blur-xl border border-border/50 rounded-3xl p-8 shadow-elevated animate-scale-in"
+            className="bg-card border border-border/40 rounded-[2rem] p-8 shadow-floating animate-scale-in"
           >
             <button
               onClick={handleBack}
@@ -185,11 +185,11 @@ export default function RoleSelector() {
             </button>
 
             <div className="text-center mb-8">
-              <div className="mx-auto w-20 h-20 bg-gradient-to-br from-primary to-primary/80 rounded-2xl flex items-center justify-center mb-4 shadow-glow text-primary-foreground rotate-3 hover:rotate-0 transition-transform duration-300">
+              <div className="mx-auto w-24 h-24 bg-gradient-to-br from-primary to-primary-glow rounded-3xl flex items-center justify-center mb-4 shadow-button text-primary-foreground hover:scale-105 transition-transform duration-300">
                 {ROLE_ICONS[selectedRole]}
               </div>
-              <h2 className="text-2xl font-bold text-foreground">{ROLE_LABELS[selectedRole]}</h2>
-              <p className="text-muted-foreground mt-2">{ROLE_DESCRIPTIONS[selectedRole]}</p>
+              <h2 className="text-2xl font-extrabold text-foreground">{ROLE_LABELS[selectedRole]}</h2>
+              <p className="text-muted-foreground mt-2 text-sm">{ROLE_DESCRIPTIONS[selectedRole]}</p>
             </div>
 
             <form onSubmit={handleLogin} className="space-y-5">
@@ -202,7 +202,7 @@ export default function RoleSelector() {
                     value={username}
                     onChange={(e) => setUsername(e.target.value)}
                     placeholder="أدخل اسم المستخدم"
-                    className="pr-12 h-14 text-lg bg-background/50 border-border/50 rounded-xl focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all"
+                    className="pr-12 h-14 text-base bg-muted/40 border-transparent rounded-2xl focus:ring-2 focus:ring-primary/30 focus:border-primary/50 transition-all"
                     disabled={isLoading}
                   />
                 </div>
@@ -217,7 +217,7 @@ export default function RoleSelector() {
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
                     placeholder="أدخل الرمز السري"
-                    className="pr-12 pl-12 h-14 text-lg bg-background/50 border-border/50 rounded-xl focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all"
+                    className="pr-12 pl-12 h-14 text-base bg-muted/40 border-transparent rounded-2xl focus:ring-2 focus:ring-primary/30 focus:border-primary/50 transition-all"
                     disabled={isLoading}
                   />
                   <button
@@ -231,7 +231,7 @@ export default function RoleSelector() {
               </div>
 
               {error && (
-                <div className="bg-destructive/10 border border-destructive/30 rounded-xl p-4 flex items-start gap-3 animate-scale-in">
+                <div className="bg-destructive/10 border border-destructive/30 rounded-2xl p-4 flex items-start gap-3 animate-scale-in">
                   <AlertCircle className="w-5 h-5 text-destructive mt-0.5 flex-shrink-0" />
                   <span className="text-sm text-destructive font-medium">{error}</span>
                 </div>
@@ -239,12 +239,13 @@ export default function RoleSelector() {
 
               <Button
                 type="submit"
-                className="w-full h-14 text-lg font-bold rounded-xl bg-gradient-to-r from-primary to-primary/90 hover:from-primary/90 hover:to-primary shadow-lg hover:shadow-primary/25 transition-all duration-300 hover:scale-[1.02]"
+                size="lg"
+                className="w-full h-14 text-base font-bold bg-gradient-to-r from-primary to-primary-glow hover:from-primary-glow hover:to-primary shadow-button hover:shadow-elevated transition-all duration-300 hover:scale-[1.02]"
                 disabled={isLoading}
               >
                 {isLoading ? (
                   <span className="flex items-center gap-2">
-                    <span className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                    <span className="w-5 h-5 border-2 border-primary-foreground/30 border-t-primary-foreground rounded-full animate-spin" />
                     جاري تسجيل الدخول...
                   </span>
                 ) : (
@@ -254,7 +255,7 @@ export default function RoleSelector() {
             </form>
 
             <div className="mt-8 pt-6 border-t border-border/50">
-              <div className="bg-muted/30 backdrop-blur rounded-xl p-4 text-center">
+              <div className="bg-secondary/50 rounded-2xl p-4 text-center">
                 <p className="text-sm text-muted-foreground mb-2">في حال واجهت مشكلة بتسجيل الدخول</p>
                 <div className="flex items-center justify-center gap-2 text-primary font-semibold">
                   <Phone className="w-4 h-4" />
@@ -270,17 +271,17 @@ export default function RoleSelector() {
 
   // Welcome & Role selection screen
   return (
-    <div className="min-h-screen bg-gradient-to-br from-background via-background to-primary/10 flex flex-col items-center justify-center p-4 overflow-hidden" dir="rtl">
+    <div className="min-h-screen gradient-hero flex flex-col items-center justify-center p-4 overflow-hidden" dir="rtl">
       {/* Animated background decorations */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
         <div className="absolute top-0 left-0 w-full h-full">
-          <div className="absolute top-20 right-20 w-72 h-72 bg-primary/20 rounded-full blur-3xl animate-float" />
+          <div className="absolute top-20 right-20 w-72 h-72 bg-primary/15 rounded-full blur-3xl animate-float" />
           <div className="absolute bottom-20 left-20 w-96 h-96 bg-primary/10 rounded-full blur-3xl animate-float" style={{ animationDelay: '1.5s' }} />
           <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-gradient-radial from-primary/5 to-transparent rounded-full" />
         </div>
         {/* Decorative shapes */}
         <div className="absolute top-10 left-10 w-4 h-4 bg-primary/30 rounded-full animate-pulse" />
-        <div className="absolute top-32 right-32 w-3 h-3 bg-primary/40 rounded-full animate-pulse" style={{ animationDelay: '0.5s' }} />
+        <div className="absolute top-32 right-32 w-3 h-3 bg-accent/40 rounded-full animate-pulse" style={{ animationDelay: '0.5s' }} />
         <div className="absolute bottom-40 right-20 w-5 h-5 bg-primary/20 rounded-full animate-pulse" style={{ animationDelay: '1s' }} />
       </div>
 
@@ -295,20 +296,20 @@ export default function RoleSelector() {
           {/* Logo/Brand */}
           <div className="inline-flex items-center justify-center mb-6">
             <div className="relative">
-              <div className="w-24 h-24 bg-gradient-to-br from-primary via-primary to-primary/80 rounded-3xl flex flex-col items-center justify-center shadow-2xl shadow-primary/30 rotate-3 hover:rotate-0 transition-transform duration-500 gap-1">
+              <div className="w-28 h-28 bg-gradient-to-br from-primary via-primary to-primary-glow rounded-[2rem] flex flex-col items-center justify-center shadow-floating hover:scale-105 transition-transform duration-500 gap-1">
                 <ChefHat className="w-8 h-8 text-primary-foreground" />
                 <UtensilsCrossed className="w-6 h-6 text-primary-foreground" />
               </div>
-              <div className="absolute -top-2 -right-2 w-8 h-8 bg-gradient-to-br from-yellow-400 to-orange-500 rounded-full flex items-center justify-center shadow-lg animate-float">
-                <Sparkles className="w-4 h-4 text-white" />
+              <div className="absolute -top-2 -right-2 w-9 h-9 bg-accent rounded-full flex items-center justify-center shadow-button animate-float">
+                <Sparkles className="w-4 h-4 text-accent-foreground" />
               </div>
             </div>
           </div>
 
           {/* Welcome Title */}
-          <h1 className="text-3xl sm:text-4xl md:text-6xl font-black text-foreground mb-4 leading-tight px-2">
+          <h1 className="text-3xl sm:text-4xl md:text-6xl font-extrabold text-foreground mb-4 leading-tight px-2 tracking-tight">
             أهلاً بكم في{' '}
-            <span className="text-transparent bg-clip-text bg-gradient-to-l from-primary via-accent to-primary">
+            <span className="text-transparent bg-clip-text bg-gradient-to-l from-primary via-primary-glow to-primary">
               تويتر
             </span>
           </h1>
