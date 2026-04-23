@@ -64,6 +64,7 @@ export default function DeliveryDashboard() {
   const { reasons } = useCancellationReasons();
   const { reasons: issueReasons } = useIssueReasons();
   const { permission, isSupported, requestPermission, showNotification } = useNotificationPermission();
+  const { areas } = useDeliveryAreas();
   const [activeTab, setActiveTab] = useState<TabType>('orders');
   const [returnDialogOpen, setReturnDialogOpen] = useState(false);
   const [orderToReturn, setOrderToReturn] = useState<string | null>(null);
@@ -80,15 +81,30 @@ export default function DeliveryDashboard() {
   // Orders assigned to this delivery person (pending acceptance)
   // Filter by delivery_person_id to show only orders assigned to current user
   const currentUserId = user?.id;
-  const pendingAcceptanceOrders = orders.filter(o => 
-    o.status === 'ready' && 
-    o.pending_delivery_acceptance && 
-    o.delivery_person_id === currentUserId
-  );
-  const deliveringOrders = orders.filter(o => 
-    o.status === 'delivering' && 
-    o.delivery_person_id === currentUserId
-  );
+
+  // Build a map of area_id => display_order for sorting orders by proximity
+  const areaOrderMap = new Map<string, number>();
+  areas.forEach((a) => areaOrderMap.set(a.id, a.display_order));
+
+  const sortByAreaProximity = (a: typeof orders[0], b: typeof orders[0]) => {
+    const aOrder = a.delivery_area_id ? areaOrderMap.get(a.delivery_area_id) ?? 999 : 999;
+    const bOrder = b.delivery_area_id ? areaOrderMap.get(b.delivery_area_id) ?? 999 : 999;
+    return aOrder - bOrder;
+  };
+
+  const pendingAcceptanceOrders = orders
+    .filter(o =>
+      o.status === 'ready' &&
+      o.pending_delivery_acceptance &&
+      o.delivery_person_id === currentUserId
+    )
+    .sort(sortByAreaProximity);
+  const deliveringOrders = orders
+    .filter(o =>
+      o.status === 'delivering' &&
+      o.delivery_person_id === currentUserId
+    )
+    .sort(sortByAreaProximity);
   const deliveredOrders = orders.filter(o => 
     o.status === 'delivered' && 
     o.delivery_person_id === currentUserId
