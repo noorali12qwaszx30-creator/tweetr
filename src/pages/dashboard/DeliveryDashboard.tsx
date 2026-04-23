@@ -219,6 +219,7 @@ export default function DeliveryDashboard() {
     { id: 'delivering', label: 'التوصيل', icon: <Truck className="w-5 h-5" />, count: deliveringOrders.length },
     { id: 'history', label: 'السجل', icon: <History className="w-5 h-5" />, count: deliveredOrders.length + cancelledByDelivery.length },
     { id: 'stats', label: 'الإحصائيات', icon: <BarChart3 className="w-5 h-5" /> },
+    { id: 'notes', label: 'دفتري', icon: <BookOpen className="w-5 h-5" /> },
     { id: 'settings', label: 'الإعدادات', icon: <Settings className="w-5 h-5" /> },
   ];
 
