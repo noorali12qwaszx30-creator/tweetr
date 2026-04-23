@@ -62,7 +62,7 @@ export default function AdminDashboard() {
     }
   };
 
-  const mainTabs: { id: MainTab; label: string; icon: React.ReactNode }[] = [
+  const mainTabs: { id: MainTab; label: string; icon: React.ReactNode; isPrimary?: boolean }[] = [
     { id: 'home', label: 'الرئيسية', icon: <Home className="w-5 h-5" /> },
     { id: 'menu', label: 'المنيو', icon: <UtensilsCrossed className="w-5 h-5" /> },
     { id: 'orders', label: 'الطلبات', icon: <Package className="w-5 h-5" /> },
