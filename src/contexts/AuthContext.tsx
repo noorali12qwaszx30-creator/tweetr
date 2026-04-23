@@ -23,6 +23,16 @@ interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
+function getTokenIssuedAtMs(accessToken: string | undefined): number {
+  if (!accessToken) return 0;
+  try {
+    const payload = JSON.parse(atob(accessToken.split('.')[1]));
+    return typeof payload.iat === 'number' ? payload.iat * 1000 : 0;
+  } catch {
+    return 0;
+  }
+}
+
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<AuthUser | null>(null);
   const [session, setSession] = useState<Session | null>(null);
@@ -66,9 +76,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           const revokedAt = (session.user.app_metadata as any)?.session_revoked_at;
           if (revokedAt) {
             const revokedMs = new Date(revokedAt).getTime();
-            const issuedMs = (session as any).user?.iat
-              ? (session as any).user.iat * 1000
-              : (session.expires_at ? (session.expires_at - 3600) * 1000 : 0);
+            const issuedMs = getTokenIssuedAtMs(session.access_token);
             if (issuedMs && issuedMs < revokedMs) {
               supabase.auth.signOut();
               setUser(null);
