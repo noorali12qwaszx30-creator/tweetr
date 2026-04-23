@@ -197,6 +197,52 @@ export function DriverStatsTab({ deliveredOrders, cancelledOrders }: Props) {
         </div>
       </div>
 
+      {/* مستحقات المطعم - بطاقة مميزة */}
+      <div className="bg-gradient-to-br from-destructive/15 via-destructive/10 to-warning/10 border-2 border-destructive/30 rounded-2xl p-4 shadow-elevated">
+        <div className="flex items-start justify-between mb-3">
+          <div className="flex items-center gap-2">
+            <div className="w-10 h-10 rounded-xl bg-destructive/20 flex items-center justify-center">
+              <Building2 className="w-5 h-5 text-destructive" />
+            </div>
+            <div>
+              <h3 className="font-bold text-sm">مستحقات المطعم</h3>
+              <p className="text-[10px] text-muted-foreground">المبلغ الذي يجب تسليمه للمطعم</p>
+            </div>
+          </div>
+          <Wallet className="w-4 h-4 text-muted-foreground" />
+        </div>
+
+        <div className="bg-card/60 backdrop-blur rounded-xl p-3 mb-2">
+          <p className="text-[10px] text-muted-foreground mb-0.5">مستحقات اليوم</p>
+          <p className="text-3xl font-bold text-destructive leading-tight">
+            {formatNumberWithCommas(stats.todayRestaurantDue)} <span className="text-base font-semibold">د.ع</span>
+          </p>
+          <div className="flex items-center justify-between mt-1.5 text-[10px]">
+            <span className="text-muted-foreground">
+              المحصّل اليوم: <span className="font-bold text-foreground">{formatNumberWithCommas(stats.todayCollected)}</span> د.ع
+            </span>
+            <span className="text-muted-foreground">
+              أمس: <span className="font-bold text-foreground">{formatNumberWithCommas(stats.yesterdayRestaurantDue)}</span>
+            </span>
+          </div>
+        </div>
+
+        <div className="grid grid-cols-3 gap-2 text-center">
+          <div className="bg-card/40 rounded-lg p-2">
+            <p className="text-[9px] text-muted-foreground">الأسبوع</p>
+            <p className="text-xs font-bold text-destructive">{formatNumberWithCommas(stats.weekRestaurantDue)}</p>
+          </div>
+          <div className="bg-card/40 rounded-lg p-2">
+            <p className="text-[9px] text-muted-foreground">الشهر</p>
+            <p className="text-xs font-bold text-destructive">{formatNumberWithCommas(stats.monthRestaurantDue)}</p>
+          </div>
+          <div className="bg-card/40 rounded-lg p-2">
+            <p className="text-[9px] text-muted-foreground">الإجمالي</p>
+            <p className="text-xs font-bold text-destructive">{formatNumberWithCommas(stats.totalRestaurantDue)}</p>
+          </div>
+        </div>
+      </div>
+
       {/* Period Stats */}
       <div>
         <h3 className="text-xs font-bold text-muted-foreground mb-2 px-1">على المدى الأطول</h3>
