@@ -36,45 +36,47 @@ export function CartSummary({
   const accentClass = variant === 'warning' ? 'warning' : 'primary';
 
   return (
-    <div className={`bg-${accentClass}/10 border border-${accentClass}/30 rounded-xl p-3`}>
-      <div className="flex items-center justify-between mb-2">
+    <div className={`bg-card border border-${accentClass}/20 rounded-3xl p-4 shadow-elevated`}>
+      <div className="flex items-center justify-between mb-3">
         <h2 className={`font-bold text-sm flex items-center gap-2 text-${accentClass}`}>
-          <ShoppingCart className="w-4 h-4" />
+          <span className={`w-8 h-8 rounded-full bg-${accentClass}/15 flex items-center justify-center`}>
+            <ShoppingCart className="w-4 h-4" />
+          </span>
           {title} ({toEnglishNumbers(cart.length)})
         </h2>
-        <span className={`font-bold text-${accentClass}`}>{formatNumberWithCommas(totalPrice)} د.ع</span>
+        <span className={`font-bold text-${accentClass} text-base`}>{formatNumberWithCommas(totalPrice)} <span className="text-xs opacity-70">د.ع</span></span>
       </div>
-      <div className="space-y-2 max-h-32 overflow-y-auto">
+      <div className="space-y-2 max-h-32 overflow-y-auto pr-1">
         {cart.map(item => (
-          <div key={item.menuItem.id} className="flex items-center gap-2 text-sm bg-background/50 rounded-lg p-2">
-            <div className="flex items-center gap-1">
-              <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => onUpdateQuantity(item.menuItem.id, -1)}>
+          <div key={item.menuItem.id} className="flex items-center gap-2 text-sm bg-muted/50 rounded-2xl p-2">
+            <div className={`flex items-center gap-1 bg-card rounded-full p-0.5 border border-${accentClass}/20`}>
+              <Button variant="ghost" size="icon" className={`h-6 w-6 rounded-full text-${accentClass} hover:bg-${accentClass}/10`} onClick={() => onUpdateQuantity(item.menuItem.id, -1)}>
                 <Minus className="w-3 h-3" />
               </Button>
               <span className="w-5 text-center font-semibold text-xs">{toEnglishNumbers(item.quantity)}</span>
-              <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => onUpdateQuantity(item.menuItem.id, 1)}>
+              <Button variant="ghost" size="icon" className={`h-6 w-6 rounded-full text-${accentClass} hover:bg-${accentClass}/10`} onClick={() => onUpdateQuantity(item.menuItem.id, 1)}>
                 <Plus className="w-3 h-3" />
               </Button>
             </div>
-            <span className="flex-1 truncate text-xs">{item.menuItem.name}</span>
+            <span className="flex-1 truncate text-xs font-medium">{item.menuItem.name}</span>
             <span className="text-xs text-muted-foreground">{formatNumberWithCommas(item.menuItem.price * item.quantity)}</span>
-            <Button variant="ghost" size="icon" className="h-6 w-6 text-destructive" onClick={() => onRemoveItem(item.menuItem.id)}>
+            <Button variant="ghost" size="icon" className="h-6 w-6 rounded-full text-destructive hover:bg-destructive/10" onClick={() => onRemoveItem(item.menuItem.id)}>
               <Trash2 className="w-3 h-3" />
             </Button>
           </div>
         ))}
       </div>
-      <div className="relative mt-2">
-        <MessageSquare className="absolute right-2 top-2 w-3 h-3 text-muted-foreground" />
+      <div className="relative mt-3">
+        <MessageSquare className="absolute right-3 top-3 w-3.5 h-3.5 text-muted-foreground" />
         <Textarea
           placeholder="ملاحظات (اختياري)"
           value={orderNotes}
           onChange={(e) => onOrderNotesChange(e.target.value)}
-          className="pr-7 min-h-[50px] text-sm"
+          className="pr-9 min-h-[50px] text-sm rounded-2xl bg-muted/40 border-border/40 focus-visible:ring-primary/30"
         />
       </div>
-      <div className="flex gap-2 mt-2">
-        <Button variant="destructive" size="sm" className="flex-1" onClick={onClear}>
+      <div className="flex gap-2 mt-3">
+        <Button variant="outline" size="sm" className="flex-1 border-destructive/30 text-destructive hover:bg-destructive hover:text-destructive-foreground hover:border-destructive" onClick={onClear}>
           <Trash2 className="w-3 h-3 ml-1" />
           مسح
         </Button>
