@@ -86,6 +86,7 @@ export default function CashierDashboard() {
   const { user } = useAuth();
   const { orders, addOrder, updateOrder, updateOrderStatus, cancelOrder, resolveIssue, loading, realtimeConnected } = useSupabaseOrders({ orderTypeFilter: 'all' });
   const { menuItems, categories, loading: menuLoading, updateDisplayOrder } = useMenuItems();
+  const { items: topSellingItems } = useTopSellingItems(20);
   const { activeAreas, loading: areasLoading } = useDeliveryAreas();
   const { cart, animatingItemId, addToCart, updateQuantity, removeFromCart, clearCart, setCartItems, totalPrice, getItemQuantity } = useCart();
   const [activeTab, setActiveTab] = useState<TabType>('menu');
@@ -117,11 +118,24 @@ export default function CashierDashboard() {
 
   const filteredItems = useMemo(() => {
     const available = menuItems.filter(item => item.is_available);
+    if (selectedCategory === '__top__') {
+      const topNames = new Set(topSellingItems.map(t => t.menu_item_name));
+      const topIds = new Set(topSellingItems.map(t => t.menu_item_id).filter(Boolean));
+      const matched = available.filter(item => topIds.has(item.id) || topNames.has(item.name));
+      // Sort by topSellingItems order
+      return matched.sort((a, b) => {
+        const aIdx = topSellingItems.findIndex(t => t.menu_item_id === a.id || t.menu_item_name === a.name);
+        const bIdx = topSellingItems.findIndex(t => t.menu_item_id === b.id || t.menu_item_name === b.name);
+        return aIdx - bIdx;
+      });
+    }
     if (!selectedCategory) return available;
     return available.filter(item => item.category === selectedCategory);
-  }, [menuItems, selectedCategory]);
+  }, [menuItems, selectedCategory, topSellingItems]);
 
-  const sortedItems = [...filteredItems].sort((a, b) => (a.display_order || 0) - (b.display_order || 0));
+  const sortedItems = selectedCategory === '__top__'
+    ? filteredItems
+    : [...filteredItems].sort((a, b) => (a.display_order || 0) - (b.display_order || 0));
 
   const clearForm = () => {
     clearCart();
