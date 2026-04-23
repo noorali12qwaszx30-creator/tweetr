@@ -13,6 +13,12 @@ import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
 import { ROLE_LABELS } from '@/types';
 import { toEnglishNumbers, formatNumberWithCommas } from '@/lib/formatNumber';
+import { DriverStatusToggle } from '@/components/delivery/DriverStatusToggle';
+import { DeliveryOrderExtras } from '@/components/delivery/DeliveryOrderExtras';
+import { OldOrderAlert } from '@/components/delivery/OldOrderAlert';
+import { DriverStatsTab } from '@/components/delivery/DriverStatsTab';
+import { PersonalNotesTab } from '@/components/delivery/PersonalNotesTab';
+import { useDeliveryAreas } from '@/hooks/useDeliveryAreas';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -45,10 +51,11 @@ import {
   Bell,
   BellOff,
   AlertTriangle,
-  History
+  History,
+  BookOpen
 } from 'lucide-react';
 
-type TabType = 'orders' | 'delivering' | 'history' | 'stats' | 'settings';
+type TabType = 'orders' | 'delivering' | 'history' | 'stats' | 'notes' | 'settings';
 
 export default function DeliveryDashboard() {
   const { role } = useRole();
