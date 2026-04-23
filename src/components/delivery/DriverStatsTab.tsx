@@ -25,22 +25,32 @@ interface Props {
   historicalCancelled?: OrderWithItems[];
 }
 
-function startOfDay(d: Date) {
-  const x = new Date(d);
-  x.setHours(0, 0, 0, 0);
-  return x;
+// يوم العمل التشغيلي يبدأ الساعة 11:00 صباحاً (نفس موعد الـ daily reset)
+// وليس منتصف الليل، حتى لا تتصفّر إحصائيات الوردية عند 12 ليلاً.
+const SHIFT_START_HOUR = 11;
+
+function startOfCurrentShift(now: Date = new Date()): Date {
+  const start = new Date(now);
+  start.setHours(SHIFT_START_HOUR, 0, 0, 0);
+  // لو الساعة الآن قبل 11 صباحاً فالوردية الحالية بدأت 11 صباحاً أمس
+  if (now.getTime() < start.getTime()) {
+    start.setDate(start.getDate() - 1);
+  }
+  return start;
 }
 
 function isToday(date: string) {
-  const d = new Date(date);
-  return startOfDay(d).getTime() === startOfDay(new Date()).getTime();
+  const d = new Date(date).getTime();
+  const start = startOfCurrentShift().getTime();
+  const end = start + 24 * 60 * 60 * 1000;
+  return d >= start && d < end;
 }
 
 function isYesterday(date: string) {
-  const d = new Date(date);
-  const yesterday = new Date();
-  yesterday.setDate(yesterday.getDate() - 1);
-  return startOfDay(d).getTime() === startOfDay(yesterday).getTime();
+  const d = new Date(date).getTime();
+  const currentStart = startOfCurrentShift().getTime();
+  const prevStart = currentStart - 24 * 60 * 60 * 1000;
+  return d >= prevStart && d < currentStart;
 }
 
 function isThisWeek(date: string) {
