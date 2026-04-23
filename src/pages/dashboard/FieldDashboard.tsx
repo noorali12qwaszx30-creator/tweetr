@@ -13,6 +13,8 @@ import { BottomNavigation } from '@/components/shared/BottomNavigation';
 import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
 import { ROLE_LABELS } from '@/types';
+import { DriverHubTab } from '@/components/delivery/driver-hub/DriverHubTab';
+import { DriverStatusMonitor } from '@/components/field/DriverStatusMonitor';
 import {
   Users,
   ClipboardList,
@@ -22,10 +24,12 @@ import {
   Settings,
   Clock,
   Loader2,
-  HandMetal
+  HandMetal,
+  Network,
+  UserCheck
 } from 'lucide-react';
 
-type TabType = 'orders' | 'ready' | 'delivering' | 'delivered' | 'cancelled' | 'admin';
+type TabType = 'orders' | 'ready' | 'delivering' | 'drivers' | 'hub' | 'delivered' | 'cancelled' | 'admin';
 
 export default function FieldDashboard() {
   const { role } = useRole();
