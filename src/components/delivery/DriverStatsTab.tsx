@@ -12,6 +12,8 @@ import {
   Trophy,
   Activity,
   Target,
+  Wallet,
+  Building2,
 } from 'lucide-react';
 
 interface Props {
@@ -86,6 +88,18 @@ export function DriverStatsTab({ deliveredOrders, cancelledOrders }: Props) {
     const weekEarnings = weekDelivered.reduce((s, o) => s + (o.delivery_fee || 0), 0);
     const monthEarnings = monthDelivered.reduce((s, o) => s + (o.delivery_fee || 0), 0);
 
+    // مستحقات المطعم = إجمالي الطلب - أجور التوصيل (المبلغ الذي يجب على السائق تسليمه للمطعم)
+    const restaurantDue = (orders: OrderWithItems[]) =>
+      orders.reduce((s, o) => s + Math.max((o.total_price || 0) - (o.delivery_fee || 0), 0), 0);
+
+    const todayRestaurantDue = restaurantDue(todayDelivered);
+    const yesterdayRestaurantDue = restaurantDue(yesterdayDelivered);
+    const weekRestaurantDue = restaurantDue(weekDelivered);
+    const monthRestaurantDue = restaurantDue(monthDelivered);
+    const totalRestaurantDue = restaurantDue(deliveredOrders);
+
+    const todayCollected = todayDelivered.reduce((s, o) => s + (o.total_price || 0), 0);
+
     const todayAvgTime = avgDeliveryMinutes(todayDelivered);
     const yesterdayAvgTime = avgDeliveryMinutes(yesterdayDelivered);
     const overallAvgTime = avgDeliveryMinutes(deliveredOrders);
@@ -104,6 +118,12 @@ export function DriverStatsTab({ deliveredOrders, cancelledOrders }: Props) {
       yesterdayEarnings,
       weekEarnings,
       monthEarnings,
+      todayRestaurantDue,
+      yesterdayRestaurantDue,
+      weekRestaurantDue,
+      monthRestaurantDue,
+      totalRestaurantDue,
+      todayCollected,
       todayAvgTime,
       yesterdayAvgTime,
       overallAvgTime,
