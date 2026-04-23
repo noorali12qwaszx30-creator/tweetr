@@ -366,29 +366,11 @@ export default function DeliveryDashboard() {
         )}
 
         {activeTab === 'stats' && (
-          <div className="space-y-3 sm:space-y-4">
-            <h2 className="text-lg sm:text-xl font-bold">الإحصائيات</h2>
-            <div className="grid grid-cols-2 gap-2 sm:gap-4">
-              <div className="bg-card border border-border rounded-xl p-3 sm:p-4 shadow-soft">
-                <p className="text-muted-foreground text-xs sm:text-sm">الطلبات المكتملة</p>
-                <p className="text-2xl sm:text-3xl font-bold text-success">{toEnglishNumbers(totalDelivered)}</p>
-              </div>
-              <div className="bg-card border border-border rounded-xl p-3 sm:p-4 shadow-soft">
-                <p className="text-muted-foreground text-xs sm:text-sm">إجمالي الأرباح</p>
-                <p className="text-2xl sm:text-3xl font-bold text-primary">{formatNumberWithCommas(totalEarnings)} د.ع</p>
-              </div>
-              <div className="bg-card border border-border rounded-xl p-3 sm:p-4 shadow-soft">
-                <p className="text-muted-foreground text-xs sm:text-sm">الطلبات الملغية</p>
-                <p className="text-2xl sm:text-3xl font-bold text-destructive">{toEnglishNumbers(cancelledByDelivery.length)}</p>
-              </div>
-              <div className="bg-card border border-border rounded-xl p-3 sm:p-4 shadow-soft">
-                <p className="text-muted-foreground text-xs sm:text-sm">متوسط الفائدة</p>
-                <p className="text-2xl sm:text-3xl font-bold text-foreground">
-                  {totalDelivered > 0 ? formatNumberWithCommas(Math.round(totalEarnings / totalDelivered)) : '0'} د.ع
-                </p>
-              </div>
-            </div>
-          </div>
+          <DriverStatsTab deliveredOrders={deliveredOrders} cancelledOrders={cancelledByDelivery} />
+        )}
+
+        {activeTab === 'notes' && (
+          <PersonalNotesTab />
         )}
 
 
