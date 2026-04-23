@@ -240,13 +240,30 @@
     @apply px-3;
   }
   
-  /* Smaller text on mobile */
+  /* Smaller text on mobile - tighter scale for better fit */
   h1 {
-    @apply text-2xl;
+    font-size: 1.125rem; /* 18px */
+    line-height: 1.4;
   }
-  
+
   h2 {
-    @apply text-lg;
+    font-size: 1rem; /* 16px */
+    line-height: 1.4;
+  }
+
+  h3 {
+    font-size: 0.95rem;
+    line-height: 1.4;
+  }
+
+  /* Cap oversized utility text classes on mobile */
+  .text-2xl { font-size: 1.25rem !important; line-height: 1.4 !important; }
+  .text-xl  { font-size: 1.0625rem !important; line-height: 1.4 !important; }
+  .text-lg  { font-size: 0.975rem !important; line-height: 1.4 !important; }
+
+  /* Slightly tighten body */
+  body {
+    font-size: 14px;
   }
   
   /* Compact cards on mobile */
@@ -255,9 +272,7 @@
   }
   
   /* Better touch targets */
-  button, a {
-    min-height: 44px;
-  }
+  /* (removed forced min-height — was causing oversized bottom nav buttons) */
   
   /* Optimize input fields for mobile */
   input, textarea, select {

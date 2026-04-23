@@ -103,6 +103,7 @@ export function useDeliveryAreas() {
     addArea,
     updateArea,
     deleteArea,
+    setAreas,
     refetch: fetchAreas,
   };
 }

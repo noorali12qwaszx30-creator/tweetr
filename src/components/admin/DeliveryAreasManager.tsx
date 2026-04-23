@@ -48,7 +48,7 @@ import { SortableAreaItem } from '@/components/delivery/SortableAreaItem';
 import { supabase } from '@/integrations/supabase/client';
 
 export function DeliveryAreasManager() {
-  const { areas, loading, addArea, updateArea, deleteArea } = useDeliveryAreas();
+  const { areas, loading, addArea, updateArea, deleteArea, setAreas } = useDeliveryAreas();
   const [newAreaName, setNewAreaName] = useState('');
   const [newAreaFee, setNewAreaFee] = useState('');
   const [editingArea, setEditingArea] = useState<DeliveryArea | null>(null);
@@ -72,20 +72,21 @@ export function DeliveryAreasManager() {
     const newIndex = areas.findIndex((a) => a.id === over.id);
     if (oldIndex === -1 || newIndex === -1) return;
 
-    const reordered = arrayMove(areas, oldIndex, newIndex);
+    // Optimistic update: re-order locally first with new display_order values
+    const reordered = arrayMove(areas, oldIndex, newIndex).map((a, idx) => ({
+      ...a,
+      display_order: idx,
+    }));
+    setAreas(reordered);
 
-    // Update display_order in DB for all reordered items
+    // Persist to DB
     try {
       const updates = reordered.map((a, idx) =>
         supabase.from('delivery_areas').update({ display_order: idx }).eq('id', a.id)
       );
-      await Promise.all(updates);
-      // Refresh local state via hook update calls
-      reordered.forEach((a, idx) => {
-        if (a.display_order !== idx) {
-          updateArea(a.id, { display_order: idx });
-        }
-      });
+      const results = await Promise.all(updates);
+      const firstError = results.find((r) => r.error);
+      if (firstError?.error) throw firstError.error;
       toast.success('تم تحديث ترتيب المناطق');
     } catch (err) {
       console.error(err);

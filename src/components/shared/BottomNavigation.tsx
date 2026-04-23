@@ -28,8 +28,6 @@ interface BottomNavigationProps {
 }
 
 export function BottomNavigation({ tabs, activeTab, onTabChange, primaryTabId }: BottomNavigationProps) {
-  // Determine which tab should be the centered floating action button (FAB).
-  // Priority: explicit primaryTabId prop > tab marked isPrimary > middle tab.
   const primaryTab =
     tabs.find(t => t.id === primaryTabId) ||
     tabs.find(t => t.isPrimary) ||
@@ -51,19 +49,19 @@ export function BottomNavigation({ tabs, activeTab, onTabChange, primaryTabId }:
       <button
         key={tab.id}
         onClick={() => handleTabChange(tab.id)}
-        className={`relative flex flex-col items-center justify-center gap-0.5 py-2 px-3 transition-all duration-300 ${
+        className={`relative flex flex-col items-center justify-center gap-0.5 py-1.5 px-1 flex-1 min-w-0 transition-all duration-300 ${
           isActive ? 'text-primary' : 'text-muted-foreground hover:text-primary/70'
         }`}
         aria-label={tab.label}
       >
-        <span className={`flex items-center justify-center [&>svg]:w-6 [&>svg]:h-6 transition-transform duration-300 ${isActive ? 'scale-110' : ''}`}>
+        <span className={`flex items-center justify-center [&>svg]:w-[20px] [&>svg]:h-[20px] transition-transform duration-300 ${isActive ? 'scale-110' : ''}`}>
           {tab.icon}
         </span>
-        {isActive && (
-          <span className="absolute -bottom-0.5 left-1/2 -translate-x-1/2 w-1 h-1 bg-primary rounded-full" />
-        )}
+        <span className={`text-[10px] leading-tight truncate max-w-full px-0.5 ${isActive ? 'font-semibold' : 'opacity-75'}`}>
+          {tab.label}
+        </span>
         {tab.count !== undefined && tab.count > 0 && (
-          <span className="absolute top-1 right-1 min-w-[18px] h-[18px] px-1 bg-destructive text-destructive-foreground rounded-full text-[10px] font-bold flex items-center justify-center shadow-soft ring-2 ring-card">
+          <span className="absolute top-0 right-0 min-w-[16px] h-[16px] px-1 bg-destructive text-destructive-foreground rounded-full text-[9px] font-bold flex items-center justify-center shadow-soft ring-2 ring-card">
             {toEnglishNumbers(tab.count)}
           </span>
         )}
@@ -73,18 +71,18 @@ export function BottomNavigation({ tabs, activeTab, onTabChange, primaryTabId }:
 
   return (
     <nav className="relative z-50 shrink-0 pb-safe">
-      <div className="bg-card rounded-t-[2rem] shadow-floating border-t border-x border-border/40">
-        <div className="container relative flex items-center justify-between h-16 px-4">
+      <div className="bg-card rounded-t-[1.5rem] shadow-floating border-t border-x border-border/40">
+        <div className="relative flex items-stretch justify-between h-[64px] px-1.5">
           {/* Left side tabs */}
-          <div className="flex items-center justify-around flex-1">
+          <div className="flex items-stretch flex-1 min-w-0">
             {leftTabs.map(renderTab)}
           </div>
 
           {/* Center FAB spacer */}
-          {primaryTab && <div className="w-16 shrink-0" aria-hidden="true" />}
+          {primaryTab && <div className="w-14 shrink-0" aria-hidden="true" />}
 
           {/* Right side tabs */}
-          <div className="flex items-center justify-around flex-1">
+          <div className="flex items-stretch flex-1 min-w-0">
             {rightTabs.map(renderTab)}
           </div>
 
@@ -92,16 +90,16 @@ export function BottomNavigation({ tabs, activeTab, onTabChange, primaryTabId }:
           {primaryTab && (
             <button
               onClick={() => handleTabChange(primaryTab.id)}
-              className={`absolute left-1/2 -translate-x-1/2 -top-6 w-14 h-14 rounded-full bg-accent text-accent-foreground flex items-center justify-center shadow-floating transition-all duration-300 hover:scale-110 active:scale-95 ring-4 ring-background ${
+              className={`absolute left-1/2 -translate-x-1/2 -top-5 w-[52px] h-[52px] rounded-full bg-accent text-accent-foreground flex flex-col items-center justify-center shadow-floating transition-all duration-300 active:scale-95 ring-4 ring-background ${
                 activeTab === primaryTab.id ? 'scale-110' : ''
               }`}
               aria-label={primaryTab.label}
             >
-              <span className="flex items-center justify-center [&>svg]:w-6 [&>svg]:h-6">
+              <span className="flex items-center justify-center [&>svg]:w-[22px] [&>svg]:h-[22px]">
                 {primaryTab.icon}
               </span>
               {primaryTab.count !== undefined && primaryTab.count > 0 && (
-                <span className="absolute -top-1 -right-1 min-w-[20px] h-[20px] px-1 bg-destructive text-destructive-foreground rounded-full text-[10px] font-bold flex items-center justify-center shadow-soft ring-2 ring-background">
+                <span className="absolute -top-1 -right-1 min-w-[18px] h-[18px] px-1 bg-destructive text-destructive-foreground rounded-full text-[10px] font-bold flex items-center justify-center shadow-soft ring-2 ring-background">
                   {toEnglishNumbers(primaryTab.count)}
                 </span>
               )}
