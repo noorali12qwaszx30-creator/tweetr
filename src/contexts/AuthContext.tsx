@@ -129,6 +129,23 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return () => subscription.unsubscribe();
   }, []);
 
+  // Periodic check for forced logout by admin
+  useEffect(() => {
+    if (!session) return;
+    const interval = setInterval(async () => {
+      const { data: { user: fresh } } = await supabase.auth.getUser();
+      if (!fresh) return;
+      const revokedAt = (fresh.app_metadata as any)?.session_revoked_at;
+      if (!revokedAt) return;
+      const revokedMs = new Date(revokedAt).getTime();
+      const issuedMs = getTokenIssuedAtMs(session.access_token);
+      if (issuedMs && issuedMs < revokedMs) {
+        await supabase.auth.signOut();
+      }
+    }, 30000);
+    return () => clearInterval(interval);
+  }, [session]);
+
   const login = async (username: string, password: string, selectedRole?: UserRole): Promise<{ error: string | null }> => {
     try {
       // Convert username to email format for Supabase auth
