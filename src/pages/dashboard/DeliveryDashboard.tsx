@@ -285,6 +285,7 @@ export default function DeliveryDashboard() {
         {activeTab === 'delivering' && (
           <div className="space-y-4">
             <h2 className="text-xl font-bold">قيد التوصيل ({toEnglishNumbers(deliveringOrders.length)})</h2>
+            <OldOrderAlert orders={deliveringOrders} />
             {deliveringOrders.length === 0 ? (
               <div className="text-center py-12 text-muted-foreground">
                 <Truck className="w-12 h-12 mx-auto mb-4 opacity-50" />
@@ -297,36 +298,39 @@ export default function DeliveryDashboard() {
                     key={order.id}
                     order={order}
                     actions={
-                      <div className="flex flex-wrap gap-2 w-full">
-                        <Button variant="outline" size="sm" asChild>
-                          <a href={`tel:${order.customer_phone}`}>
-                            <Phone className="w-3 h-3 ml-1" />
-                            اتصال
-                          </a>
-                        </Button>
-                        <Button variant="success" size="sm" asChild>
-                          <a href={`https://wa.me/${formatPhoneForWhatsApp(order.customer_phone)}`} target="_blank" rel="noopener noreferrer">
-                            <MessageCircle className="w-3 h-3 ml-1" />
-                            واتساب
-                          </a>
-                        </Button>
-                        <Button variant="default" size="sm" onClick={() => handleDelivered(order.id)}>
-                          <CheckCircle className="w-3 h-3 ml-1" />
-                          تم التوصيل
-                        </Button>
-                        <Button variant="warning" size="sm" onClick={() => handleReturnOrder(order.id)}>
-                          <Undo2 className="w-3 h-3 ml-1" />
-                          راجع
-                        </Button>
-                        <Button 
-                          variant="outline" 
-                          size="sm" 
-                          onClick={() => handleReportIssue(order.id)}
-                          className="border-destructive/50 text-destructive hover:bg-destructive/10"
-                        >
-                          <AlertTriangle className="w-3 h-3 ml-1" />
-                          تبليغ
-                        </Button>
+                      <div className="flex flex-col gap-2 w-full">
+                        <div className="flex flex-wrap gap-2 w-full">
+                          <Button variant="outline" size="sm" asChild>
+                            <a href={`tel:${order.customer_phone}`}>
+                              <Phone className="w-3 h-3 ml-1" />
+                              اتصال
+                            </a>
+                          </Button>
+                          <Button variant="success" size="sm" asChild>
+                            <a href={`https://wa.me/${formatPhoneForWhatsApp(order.customer_phone)}`} target="_blank" rel="noopener noreferrer">
+                              <MessageCircle className="w-3 h-3 ml-1" />
+                              واتساب
+                            </a>
+                          </Button>
+                          <Button variant="default" size="sm" onClick={() => handleDelivered(order.id)}>
+                            <CheckCircle className="w-3 h-3 ml-1" />
+                            تم التوصيل
+                          </Button>
+                          <Button variant="warning" size="sm" onClick={() => handleReturnOrder(order.id)}>
+                            <Undo2 className="w-3 h-3 ml-1" />
+                            راجع
+                          </Button>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => handleReportIssue(order.id)}
+                            className="border-destructive/50 text-destructive hover:bg-destructive/10"
+                          >
+                            <AlertTriangle className="w-3 h-3 ml-1" />
+                            تبليغ
+                          </Button>
+                        </div>
+                        <DeliveryOrderExtras order={order} />
                       </div>
                     }
                   />
