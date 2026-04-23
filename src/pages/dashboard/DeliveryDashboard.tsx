@@ -191,8 +191,8 @@ export default function DeliveryDashboard() {
   const totalDelivered = deliveredOrders.length;
   const totalEarnings = deliveredOrders.reduce((sum, order) => sum + (order.delivery_fee || 0), 0);
 
-  const tabs: { id: TabType; label: string; icon: React.ReactNode; count?: number }[] = [
-    { id: 'orders', label: 'الطلبات', icon: <ClipboardList className="w-5 h-5" />, count: pendingAcceptanceOrders.length },
+  const tabs: { id: TabType; label: string; icon: React.ReactNode; count?: number; isPrimary?: boolean }[] = [
+    { id: 'orders', label: 'الطلبات المحولة', icon: <ClipboardList className="w-5 h-5" />, count: pendingAcceptanceOrders.length, isPrimary: true },
     { id: 'delivering', label: 'التوصيل', icon: <Truck className="w-5 h-5" />, count: deliveringOrders.length },
     { id: 'history', label: 'السجل', icon: <History className="w-5 h-5" />, count: deliveredOrders.length + cancelledByDelivery.length },
     { id: 'stats', label: 'الإحصائيات', icon: <BarChart3 className="w-5 h-5" /> },
