@@ -6,6 +6,7 @@ import { useMenuItems, MenuItem } from '@/hooks/useMenuItems';
 import { useDeliveryAreas } from '@/hooks/useDeliveryAreas';
 import { useCart } from '@/hooks/useCart';
 import { DashboardHeader } from '@/components/shared/DashboardHeader';
+import { BottomNavigation } from '@/components/shared/BottomNavigation';
 import { SortableMenuItem } from '@/components/shared/SortableMenuItem';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -763,66 +764,17 @@ export default function CashierDashboard() {
         />
       </main>
 
-      {/* Bottom Navigation */}
-      <nav className="bg-card border-t border-border shadow-elevated pb-safe shrink-0">
-        <div className="container flex">
-          <button
-            onClick={() => setActiveTab('menu')}
-            className={`flex-1 py-3 flex flex-col items-center gap-1 transition-colors ${
-              activeTab === 'menu' ? 'text-primary' : 'text-muted-foreground'
-            }`}
-          >
-            <MenuIcon className="w-5 h-5" />
-            <span className="text-xs font-medium">المنيو</span>
-          </button>
-          <button
-            onClick={() => setActiveTab('orders')}
-            className={`flex-1 py-3 flex flex-col items-center gap-1 transition-colors relative ${
-              activeTab === 'orders' ? 'text-primary' : 'text-muted-foreground'
-            }`}
-          >
-            <ClipboardList className="w-5 h-5" />
-            <span className="text-xs font-medium">الطلبات</span>
-            {activeOrders.length > 0 && (
-              <span className="absolute top-1 right-1/2 translate-x-4 w-5 h-5 bg-destructive text-destructive-foreground rounded-full text-xs flex items-center justify-center">
-                {activeOrders.length}
-              </span>
-            )}
-          </button>
-          <button
-            onClick={() => setActiveTab('search')}
-            className={`flex-1 py-3 flex flex-col items-center gap-1 transition-colors ${
-              activeTab === 'search' ? 'text-primary' : 'text-muted-foreground'
-            }`}
-          >
-            <Search className="w-5 h-5" />
-            <span className="text-xs font-medium">بحث</span>
-          </button>
-          <button
-            onClick={() => setActiveTab('reports')}
-            className={`flex-1 py-3 flex flex-col items-center gap-1 transition-colors relative ${
-              activeTab === 'reports' ? 'text-destructive' : 'text-muted-foreground'
-            }`}
-          >
-            <AlertTriangle className="w-5 h-5" />
-            <span className="text-xs font-medium">البلاغات</span>
-            {ordersWithIssues.length > 0 && (
-              <span className="absolute top-1 right-1/2 translate-x-4 w-5 h-5 bg-destructive text-destructive-foreground rounded-full text-xs flex items-center justify-center animate-pulse">
-                {ordersWithIssues.length}
-              </span>
-            )}
-          </button>
-          <button
-            onClick={() => setActiveTab('settings')}
-            className={`flex-1 py-3 flex flex-col items-center gap-1 transition-colors ${
-              activeTab === 'settings' ? 'text-primary' : 'text-muted-foreground'
-            }`}
-          >
-            <Settings className="w-5 h-5" />
-            <span className="text-xs font-medium">الإعدادات</span>
-          </button>
-        </div>
-      </nav>
+      <BottomNavigation
+        tabs={[
+          { id: 'menu', label: 'المنيو', icon: <MenuIcon className="w-5 h-5" /> },
+          { id: 'orders', label: 'الطلبات', icon: <ClipboardList className="w-5 h-5" />, count: activeOrders.length },
+          { id: 'search', label: 'بحث', icon: <Search className="w-5 h-5" />, isPrimary: true },
+          { id: 'reports', label: 'البلاغات', icon: <AlertTriangle className="w-5 h-5" />, count: ordersWithIssues.length },
+          { id: 'settings', label: 'الإعدادات', icon: <Settings className="w-5 h-5" /> },
+        ]}
+        activeTab={activeTab}
+        onTabChange={(id) => setActiveTab(id as TabType)}
+      />
     </div>
   );
 }

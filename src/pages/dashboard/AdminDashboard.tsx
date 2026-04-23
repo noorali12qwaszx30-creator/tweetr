@@ -11,6 +11,7 @@ import { AdminOrdersTab } from '@/components/admin/AdminOrdersTab';
 import { AdminStatsTab } from '@/components/admin/AdminStatsTab';
 import { AdminMonitoringTab } from '@/components/admin/AdminMonitoringTab';
 import { AdminSettingsTab } from '@/components/admin/AdminSettingsTab';
+import { BottomNavigation } from '@/components/shared/BottomNavigation';
 import { toast } from 'sonner';
 import { ShieldCheck, Loader2, Home, UtensilsCrossed, Package, BarChart3, Eye, Settings, Bot } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
@@ -113,20 +114,11 @@ export default function AdminDashboard() {
         {activeTab === 'settings' && <AdminSettingsTab ordersCount={orders.length} onDeleteAllOrders={handleDeleteAllOrders} isDeletingOrders={isDeletingOrders} />}
       </main>
 
-      <nav className="bg-card border-t border-border shadow-elevated safe-area-pb shrink-0">
-        <div className="container">
-          <div className="flex justify-around items-center">
-            {mainTabs.map(tab => (
-              <button key={tab.id} onClick={() => setActiveTab(tab.id)} className={`flex-1 py-3 flex flex-col items-center gap-1 transition-all ${activeTab === tab.id ? 'text-primary' : 'text-muted-foreground hover:text-foreground'}`}>
-                <div className={`p-1.5 rounded-lg transition-colors ${activeTab === tab.id ? 'bg-primary/10' : ''}`}>
-                  {tab.icon}
-                </div>
-                <span className="text-xs font-medium">{tab.label}</span>
-              </button>
-            ))}
-          </div>
-        </div>
-      </nav>
+      <BottomNavigation
+        tabs={mainTabs}
+        activeTab={activeTab}
+        onTabChange={(id) => setActiveTab(id as MainTab)}
+      />
 
       {selectedOrder && (
         <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4" onClick={() => setSelectedOrder(null)}>
