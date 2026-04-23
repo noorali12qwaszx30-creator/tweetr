@@ -97,6 +97,8 @@ export default function FieldDashboard() {
     { id: 'orders', label: 'الطلبات', icon: <ClipboardList className="w-5 h-5" />, count: incomingOrders.length, isPrimary: true },
     { id: 'ready', label: 'الجاهز', icon: <CheckCircle className="w-5 h-5" />, count: readyOrders.length },
     { id: 'delivering', label: 'قيد التوصيل', icon: <Truck className="w-5 h-5" />, count: deliveringOrders.length },
+    { id: 'drivers', label: 'السائقون', icon: <UserCheck className="w-5 h-5" /> },
+    { id: 'hub', label: 'الشبكة', icon: <Network className="w-5 h-5" /> },
     { id: 'delivered', label: 'المكتمل', icon: <CheckCircle className="w-5 h-5" /> },
     { id: 'cancelled', label: 'الملغي', icon: <XCircle className="w-5 h-5" /> },
     { id: 'admin', label: 'الإدارة', icon: <Settings className="w-5 h-5" /> },
