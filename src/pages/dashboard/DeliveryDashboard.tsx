@@ -17,7 +17,7 @@ import { DriverStatusToggle } from '@/components/delivery/DriverStatusToggle';
 import { DeliveryOrderExtras } from '@/components/delivery/DeliveryOrderExtras';
 import { OldOrderAlert } from '@/components/delivery/OldOrderAlert';
 import { DriverStatsTab } from '@/components/delivery/DriverStatsTab';
-import { PersonalNotesTab } from '@/components/delivery/PersonalNotesTab';
+import { DriverHubTab } from '@/components/delivery/driver-hub/DriverHubTab';
 import { useDeliveryAreas } from '@/hooks/useDeliveryAreas';
 import {
   AlertDialog,
@@ -52,10 +52,10 @@ import {
   BellOff,
   AlertTriangle,
   History,
-  BookOpen
+  Network
 } from 'lucide-react';
 
-type TabType = 'orders' | 'delivering' | 'history' | 'stats' | 'notes' | 'settings';
+type TabType = 'orders' | 'delivering' | 'history' | 'stats' | 'hub' | 'settings';
 
 export default function DeliveryDashboard() {
   const { role } = useRole();
@@ -219,7 +219,7 @@ export default function DeliveryDashboard() {
     { id: 'delivering', label: 'التوصيل', icon: <Truck className="w-5 h-5" />, count: deliveringOrders.length },
     { id: 'history', label: 'السجل', icon: <History className="w-5 h-5" />, count: deliveredOrders.length + cancelledByDelivery.length },
     { id: 'stats', label: 'الإحصائيات', icon: <BarChart3 className="w-5 h-5" /> },
-    { id: 'notes', label: 'دفتري', icon: <BookOpen className="w-5 h-5" /> },
+    { id: 'hub', label: 'الشبكة', icon: <Network className="w-5 h-5" /> },
     { id: 'settings', label: 'الإعدادات', icon: <Settings className="w-5 h-5" /> },
   ];
 
@@ -369,8 +369,8 @@ export default function DeliveryDashboard() {
           <DriverStatsTab deliveredOrders={deliveredOrders} cancelledOrders={cancelledByDelivery} />
         )}
 
-        {activeTab === 'notes' && (
-          <PersonalNotesTab />
+        {activeTab === 'hub' && (
+          <DriverHubTab />
         )}
 
 

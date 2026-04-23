@@ -379,6 +379,110 @@ export type Database = {
         }
         Relationships: []
       }
+      driver_hub_posts: {
+        Row: {
+          content: string
+          created_at: string
+          delivery_area_id: string | null
+          delivery_area_name: string | null
+          expires_at: string | null
+          id: string
+          image_url: string | null
+          is_active: boolean
+          is_pinned: boolean
+          is_resolved: boolean
+          post_type: string
+          resolved_at: string | null
+          resolved_by: string | null
+          severity: string
+          still_there_count: number
+          thanks_count: number
+          title: string | null
+          updated_at: string
+          user_id: string
+          user_name: string
+        }
+        Insert: {
+          content: string
+          created_at?: string
+          delivery_area_id?: string | null
+          delivery_area_name?: string | null
+          expires_at?: string | null
+          id?: string
+          image_url?: string | null
+          is_active?: boolean
+          is_pinned?: boolean
+          is_resolved?: boolean
+          post_type: string
+          resolved_at?: string | null
+          resolved_by?: string | null
+          severity?: string
+          still_there_count?: number
+          thanks_count?: number
+          title?: string | null
+          updated_at?: string
+          user_id: string
+          user_name: string
+        }
+        Update: {
+          content?: string
+          created_at?: string
+          delivery_area_id?: string | null
+          delivery_area_name?: string | null
+          expires_at?: string | null
+          id?: string
+          image_url?: string | null
+          is_active?: boolean
+          is_pinned?: boolean
+          is_resolved?: boolean
+          post_type?: string
+          resolved_at?: string | null
+          resolved_by?: string | null
+          severity?: string
+          still_there_count?: number
+          thanks_count?: number
+          title?: string | null
+          updated_at?: string
+          user_id?: string
+          user_name?: string
+        }
+        Relationships: []
+      }
+      driver_hub_reactions: {
+        Row: {
+          created_at: string
+          id: string
+          post_id: string
+          reaction_type: string
+          user_id: string
+          user_name: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          post_id: string
+          reaction_type: string
+          user_id: string
+          user_name: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          post_id?: string
+          reaction_type?: string
+          user_id?: string
+          user_name?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "driver_hub_reactions_post_id_fkey"
+            columns: ["post_id"]
+            isOneToOne: false
+            referencedRelation: "driver_hub_posts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       driver_personal_notes: {
         Row: {
           content: string
@@ -403,6 +507,84 @@ export type Database = {
           title?: string | null
           updated_at?: string
           user_id?: string
+        }
+        Relationships: []
+      }
+      driver_points: {
+        Row: {
+          created_at: string
+          id: string
+          points: number
+          reason: string
+          related_post_id: string | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          points?: number
+          reason: string
+          related_post_id?: string | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          points?: number
+          reason?: string
+          related_post_id?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
+      driver_sos_alerts: {
+        Row: {
+          acknowledged_at: string | null
+          acknowledged_by: string | null
+          acknowledged_by_name: string | null
+          alert_type: string
+          created_at: string
+          delivery_area_id: string | null
+          delivery_area_name: string | null
+          id: string
+          message: string | null
+          resolved_at: string | null
+          status: string
+          updated_at: string
+          user_id: string
+          user_name: string
+        }
+        Insert: {
+          acknowledged_at?: string | null
+          acknowledged_by?: string | null
+          acknowledged_by_name?: string | null
+          alert_type: string
+          created_at?: string
+          delivery_area_id?: string | null
+          delivery_area_name?: string | null
+          id?: string
+          message?: string | null
+          resolved_at?: string | null
+          status?: string
+          updated_at?: string
+          user_id: string
+          user_name: string
+        }
+        Update: {
+          acknowledged_at?: string | null
+          acknowledged_by?: string | null
+          acknowledged_by_name?: string | null
+          alert_type?: string
+          created_at?: string
+          delivery_area_id?: string | null
+          delivery_area_name?: string | null
+          id?: string
+          message?: string | null
+          resolved_at?: string | null
+          status?: string
+          updated_at?: string
+          user_id?: string
+          user_name?: string
         }
         Relationships: []
       }
@@ -805,6 +987,7 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      get_driver_total_points: { Args: { _user_id: string }; Returns: number }
       get_top_selling_items_today: {
         Args: { _limit?: number }
         Returns: {
