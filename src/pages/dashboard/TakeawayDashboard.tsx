@@ -4,6 +4,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useSupabaseOrders, OrderWithItems } from '@/hooks/useSupabaseOrders';
 import { useMenuItems } from '@/hooks/useMenuItems';
 import { useCart } from '@/hooks/useCart';
+import { useTopSellingItems } from '@/hooks/useTopSellingItems';
 import { OrderCard } from '@/components/OrderCard';
 import { CancelOrderDialog } from '@/components/CancelOrderDialog';
 import { LogoutConfirmButton } from '@/components/LogoutConfirmButton';
@@ -48,6 +49,7 @@ export default function TakeawayDashboard() {
   const { user } = useAuth();
   const { orders, addOrder, updateOrderStatus, cancelOrder, loading, realtimeConnected } = useSupabaseOrders({ orderTypeFilter: 'takeaway' });
   const { menuItems, categories, loading: menuLoading, updateDisplayOrder } = useMenuItems();
+  const { items: topSellingItems } = useTopSellingItems(20);
   const { 
     cart, 
     animatingItemId, 
@@ -85,11 +87,23 @@ export default function TakeawayDashboard() {
   // Filter and sort menu items
   const filteredItems = useMemo(() => {
     const available = menuItems.filter(item => item.is_available);
+    if (selectedCategory === '__top__') {
+      const topNames = new Set(topSellingItems.map(t => t.menu_item_name));
+      const topIds = new Set(topSellingItems.map(t => t.menu_item_id).filter(Boolean));
+      const matched = available.filter(item => topIds.has(item.id) || topNames.has(item.name));
+      return matched.sort((a, b) => {
+        const aIdx = topSellingItems.findIndex(t => t.menu_item_id === a.id || t.menu_item_name === a.name);
+        const bIdx = topSellingItems.findIndex(t => t.menu_item_id === b.id || t.menu_item_name === b.name);
+        return aIdx - bIdx;
+      });
+    }
     if (!selectedCategory) return available;
     return available.filter(item => item.category === selectedCategory);
-  }, [menuItems, selectedCategory]);
+  }, [menuItems, selectedCategory, topSellingItems]);
 
-  const sortedItems = [...filteredItems].sort((a, b) => (a.display_order || 0) - (b.display_order || 0));
+  const sortedItems = selectedCategory === '__top__'
+    ? filteredItems
+    : [...filteredItems].sort((a, b) => (a.display_order || 0) - (b.display_order || 0));
 
   const submitOrder = () => {
     if (cart.length === 0) {
@@ -196,6 +210,7 @@ export default function TakeawayDashboard() {
               selectedCategory={selectedCategory}
               onSelectCategory={setSelectedCategory}
               variant="warning"
+              showTopSelling
             />
 
             <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
