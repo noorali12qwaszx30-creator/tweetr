@@ -66,6 +66,7 @@ export default function DeliveryDashboard() {
   const { reasons: issueReasons } = useIssueReasons();
   const { permission, isSupported, requestPermission, showNotification } = useNotificationPermission();
   const { areas } = useDeliveryAreas();
+  const { archivedOrders } = useDriverArchivedOrders(user?.id);
   const [activeTab, setActiveTab] = useState<TabType>('orders');
   const [returnDialogOpen, setReturnDialogOpen] = useState(false);
   const [orderToReturn, setOrderToReturn] = useState<string | null>(null);
