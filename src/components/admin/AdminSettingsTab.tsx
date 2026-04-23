@@ -27,13 +27,14 @@ export function AdminSettingsTab({ ordersCount, onDeleteAllOrders, isDeletingOrd
   const handleForceLogoutAll = async () => {
     setForcingLogoutAll(true);
     try {
-      const { data: { users }, error: listErr } = await (supabase.from('profiles').select('user_id') as any);
+      const { data: profiles, error: listErr } = await supabase
+        .from('profiles')
+        .select('user_id');
       if (listErr) throw listErr;
-      const profiles = (users ?? []) as Array<{ user_id: string }>;
       const { data: { user: me } } = await supabase.auth.getUser();
       let success = 0;
       let failed = 0;
-      for (const p of profiles) {
+      for (const p of (profiles ?? [])) {
         if (me && p.user_id === me.id) continue; // don't logout self
         const { error } = await supabase.functions.invoke('admin-force-logout', {
           body: { user_id: p.user_id },
