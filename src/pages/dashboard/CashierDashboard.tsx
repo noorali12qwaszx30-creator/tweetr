@@ -319,9 +319,9 @@ export default function CashierDashboard() {
                   توصيل
                 </Button>
                 <Button
-                  variant={orderType === 'pickup' ? 'default' : 'outline'}
+                  variant={orderType === 'pickup' ? 'secondary' : 'outline'}
                   size="sm"
-                  className={`flex-1 h-9 text-sm ${orderType === 'pickup' ? 'bg-[hsl(var(--secondary))] hover:bg-[hsl(var(--secondary))]/90' : ''}`}
+                  className={`flex-1 h-9 text-sm ${orderType === 'pickup' ? 'border-2 border-primary' : ''}`}
                   onClick={() => setOrderType('pickup')}
                 >
                   <User className="w-3 h-3 ml-1" />
