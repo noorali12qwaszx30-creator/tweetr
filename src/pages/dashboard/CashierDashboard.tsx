@@ -6,6 +6,7 @@ import { useMenuItems, MenuItem } from '@/hooks/useMenuItems';
 import { useDeliveryAreas } from '@/hooks/useDeliveryAreas';
 import { useCart } from '@/hooks/useCart';
 import { DashboardHeader } from '@/components/shared/DashboardHeader';
+import { BottomNavigation } from '@/components/shared/BottomNavigation';
 import { SortableMenuItem } from '@/components/shared/SortableMenuItem';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';

@@ -11,6 +11,7 @@ import { AdminOrdersTab } from '@/components/admin/AdminOrdersTab';
 import { AdminStatsTab } from '@/components/admin/AdminStatsTab';
 import { AdminMonitoringTab } from '@/components/admin/AdminMonitoringTab';
 import { AdminSettingsTab } from '@/components/admin/AdminSettingsTab';
+import { BottomNavigation } from '@/components/shared/BottomNavigation';
 import { toast } from 'sonner';
 import { ShieldCheck, Loader2, Home, UtensilsCrossed, Package, BarChart3, Eye, Settings, Bot } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
