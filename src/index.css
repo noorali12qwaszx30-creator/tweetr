@@ -234,49 +234,42 @@
   }
 }
 
-/* Mobile-first responsive utilities */
+/* Mobile-first responsive utilities — compact & balanced scale */
 @media (max-width: 640px) {
+  html {
+    font-size: 14px; /* shrink the entire rem scale on phones */
+  }
+
   .container {
-    @apply px-3;
-  }
-  
-  /* Smaller text on mobile - tighter scale for better fit */
-  h1 {
-    font-size: 1.125rem; /* 18px */
-    line-height: 1.4;
+    @apply px-2.5;
   }
 
-  h2 {
-    font-size: 1rem; /* 16px */
-    line-height: 1.4;
-  }
-
-  h3 {
-    font-size: 0.95rem;
-    line-height: 1.4;
-  }
+  /* Tight heading scale */
+  h1 { font-size: 1rem;     line-height: 1.35; }   /* ~14px */
+  h2 { font-size: 0.9375rem; line-height: 1.35; }  /* ~13px */
+  h3 { font-size: 0.875rem;  line-height: 1.35; }  /* ~12px */
 
   /* Cap oversized utility text classes on mobile */
-  .text-2xl { font-size: 1.25rem !important; line-height: 1.4 !important; }
-  .text-xl  { font-size: 1.0625rem !important; line-height: 1.4 !important; }
-  .text-lg  { font-size: 0.975rem !important; line-height: 1.4 !important; }
+  .text-3xl { font-size: 1.25rem  !important; line-height: 1.3 !important; }
+  .text-2xl { font-size: 1.0625rem !important; line-height: 1.3 !important; }
+  .text-xl  { font-size: 0.9375rem !important; line-height: 1.35 !important; }
+  .text-lg  { font-size: 0.875rem  !important; line-height: 1.35 !important; }
+  .text-base{ font-size: 0.8125rem !important; line-height: 1.4 !important; }
+  .text-sm  { font-size: 0.75rem   !important; line-height: 1.4 !important; }
+  .text-xs  { font-size: 0.6875rem !important; line-height: 1.4 !important; }
 
-  /* Slightly tighten body */
   body {
-    font-size: 14px;
+    font-size: 13px;
   }
-  
+
   /* Compact cards on mobile */
   .shadow-soft {
     box-shadow: 0 2px 8px -2px rgba(0, 0, 0, 0.1);
   }
-  
-  /* Better touch targets */
-  /* (removed forced min-height — was causing oversized bottom nav buttons) */
-  
-  /* Optimize input fields for mobile */
+
+  /* Optimize input fields for mobile (prevent iOS zoom) */
   input, textarea, select {
-    font-size: 16px !important; /* Prevent zoom on iOS */
+    font-size: 16px !important;
   }
 }
 
