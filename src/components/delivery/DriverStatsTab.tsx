@@ -19,6 +19,10 @@ import {
 interface Props {
   deliveredOrders: OrderWithItems[];
   cancelledOrders: OrderWithItems[];
+  /** Archived (post-reset) delivered orders — used only for week/month/all-time aggregates */
+  historicalDelivered?: OrderWithItems[];
+  /** Archived (post-reset) cancelled orders — reserved for future aggregates */
+  historicalCancelled?: OrderWithItems[];
 }
 
 function startOfDay(d: Date) {
@@ -74,12 +78,28 @@ function comparisonIcon(today: number, yesterday: number) {
   return { icon: <TrendingDown className="w-3 h-3" />, color: 'text-destructive', label: `${Math.round(diff)}%` };
 }
 
-export function DriverStatsTab({ deliveredOrders, cancelledOrders }: Props) {
+export function DriverStatsTab({
+  deliveredOrders,
+  cancelledOrders,
+  historicalDelivered = [],
+  historicalCancelled = [],
+}: Props) {
   const stats = useMemo(() => {
+    // "Today" comes only from live (non-archived) orders so the daily reset truly clears it.
     const todayDelivered = deliveredOrders.filter((o) => o.delivered_at && isToday(o.delivered_at));
-    const yesterdayDelivered = deliveredOrders.filter((o) => o.delivered_at && isYesterday(o.delivered_at));
-    const weekDelivered = deliveredOrders.filter((o) => o.delivered_at && isThisWeek(o.delivered_at));
-    const monthDelivered = deliveredOrders.filter((o) => o.delivered_at && isThisMonth(o.delivered_at));
+
+    // For week/month/all-time include archived (historical) orders so the figures
+    // survive the daily reset. Dedupe by id in case of brief overlap.
+    const seen = new Set<string>();
+    const allDelivered = [...deliveredOrders, ...historicalDelivered].filter((o) => {
+      if (seen.has(o.id)) return false;
+      seen.add(o.id);
+      return true;
+    });
+
+    const yesterdayDelivered = allDelivered.filter((o) => o.delivered_at && isYesterday(o.delivered_at));
+    const weekDelivered = allDelivered.filter((o) => o.delivered_at && isThisWeek(o.delivered_at));
+    const monthDelivered = allDelivered.filter((o) => o.delivered_at && isThisMonth(o.delivered_at));
 
     const todayCancelled = cancelledOrders.filter((o) => o.cancelled_at && isToday(o.cancelled_at));
 
@@ -96,13 +116,13 @@ export function DriverStatsTab({ deliveredOrders, cancelledOrders }: Props) {
     const yesterdayRestaurantDue = restaurantDue(yesterdayDelivered);
     const weekRestaurantDue = restaurantDue(weekDelivered);
     const monthRestaurantDue = restaurantDue(monthDelivered);
-    const totalRestaurantDue = restaurantDue(deliveredOrders);
+    const totalRestaurantDue = restaurantDue(allDelivered);
 
     const todayCollected = todayDelivered.reduce((s, o) => s + (o.total_price || 0), 0);
 
     const todayAvgTime = avgDeliveryMinutes(todayDelivered);
     const yesterdayAvgTime = avgDeliveryMinutes(yesterdayDelivered);
-    const overallAvgTime = avgDeliveryMinutes(deliveredOrders);
+    const overallAvgTime = avgDeliveryMinutes(allDelivered);
 
     const totalAttempts = todayDelivered.length + todayCancelled.length;
     const cancelRate = totalAttempts > 0 ? Math.round((todayCancelled.length / totalAttempts) * 100) : 0;
@@ -113,6 +133,7 @@ export function DriverStatsTab({ deliveredOrders, cancelledOrders }: Props) {
       yesterdayDelivered,
       weekDelivered,
       monthDelivered,
+      allDelivered,
       todayCancelled,
       todayEarnings,
       yesterdayEarnings,
@@ -130,7 +151,7 @@ export function DriverStatsTab({ deliveredOrders, cancelledOrders }: Props) {
       cancelRate,
       successRate,
     };
-  }, [deliveredOrders, cancelledOrders]);
+  }, [deliveredOrders, cancelledOrders, historicalDelivered, historicalCancelled]);
 
   const ordersComp = comparisonIcon(stats.todayDelivered.length, stats.yesterdayDelivered.length);
   const earningsComp = comparisonIcon(stats.todayEarnings, stats.yesterdayEarnings);
@@ -269,11 +290,11 @@ export function DriverStatsTab({ deliveredOrders, cancelledOrders }: Props) {
         <div className="grid grid-cols-3 gap-2 text-center">
           <div>
             <p className="text-[10px] text-muted-foreground">طلبات</p>
-            <p className="text-xl font-bold">{toEnglishNumbers(deliveredOrders.length)}</p>
+            <p className="text-xl font-bold">{toEnglishNumbers(stats.allDelivered.length)}</p>
           </div>
           <div>
             <p className="text-[10px] text-muted-foreground">أرباح</p>
-            <p className="text-base font-bold text-primary">{formatNumberWithCommas(deliveredOrders.reduce((s, o) => s + (o.delivery_fee || 0), 0))}</p>
+            <p className="text-base font-bold text-primary">{formatNumberWithCommas(stats.allDelivered.reduce((s, o) => s + (o.delivery_fee || 0), 0))}</p>
           </div>
           <div>
             <p className="text-[10px] text-muted-foreground">متوسط الوقت</p>

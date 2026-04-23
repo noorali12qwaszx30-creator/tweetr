@@ -107,26 +107,18 @@ export default function DeliveryDashboard() {
       o.delivery_person_id === currentUserId
     )
     .sort(sortByAreaProximity);
-  // Merge live + archived orders so weekly/monthly/all-time stats and history
-  // remain visible after the daily reset (which archives all orders).
-  const liveDelivered = orders.filter(o =>
+  // Live (today's, non-archived) orders — these are "today's work" and reset daily.
+  const deliveredOrders = orders.filter(o =>
     o.status === 'delivered' &&
     o.delivery_person_id === currentUserId
   );
-  const liveCancelled = orders.filter(o =>
+  const cancelledByDelivery = orders.filter(o =>
     o.status === 'cancelled' &&
     o.delivery_person_id === currentUserId
   );
-  const archivedDelivered = archivedOrders.filter(o => o.status === 'delivered');
-  const archivedCancelled = archivedOrders.filter(o => o.status === 'cancelled');
-
-  // Dedupe by id (in case an order briefly appears in both lists during a refresh)
-  const dedupe = (arr: typeof orders) => {
-    const seen = new Set<string>();
-    return arr.filter(o => (seen.has(o.id) ? false : (seen.add(o.id), true)));
-  };
-  const deliveredOrders = dedupe([...liveDelivered, ...archivedDelivered]);
-  const cancelledByDelivery = dedupe([...liveCancelled, ...archivedCancelled]);
+  // Archived (historical) orders — used only for week/month/all-time stats.
+  const historicalDelivered = archivedOrders.filter(o => o.status === 'delivered');
+  const historicalCancelled = archivedOrders.filter(o => o.status === 'cancelled');
   
 
   // Show notification when new order is assigned
@@ -380,7 +372,12 @@ export default function DeliveryDashboard() {
         )}
 
         {activeTab === 'stats' && (
-          <DriverStatsTab deliveredOrders={deliveredOrders} cancelledOrders={cancelledByDelivery} />
+          <DriverStatsTab
+            deliveredOrders={deliveredOrders}
+            cancelledOrders={cancelledByDelivery}
+            historicalDelivered={historicalDelivered}
+            historicalCancelled={historicalCancelled}
+          />
         )}
 
         {activeTab === 'hub' && (
