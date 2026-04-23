@@ -62,6 +62,21 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         setSession(session);
         
         if (session?.user) {
+          // Check if session was forcibly revoked by admin
+          const revokedAt = (session.user.app_metadata as any)?.session_revoked_at;
+          if (revokedAt) {
+            const revokedMs = new Date(revokedAt).getTime();
+            const issuedMs = (session as any).user?.iat
+              ? (session as any).user.iat * 1000
+              : (session.expires_at ? (session.expires_at - 3600) * 1000 : 0);
+            if (issuedMs && issuedMs < revokedMs) {
+              supabase.auth.signOut();
+              setUser(null);
+              setSession(null);
+              setLoading(false);
+              return;
+            }
+          }
           // Defer Supabase calls with setTimeout to avoid deadlock
           setTimeout(async () => {
             const profile = await fetchUserProfile(session.user.id);
