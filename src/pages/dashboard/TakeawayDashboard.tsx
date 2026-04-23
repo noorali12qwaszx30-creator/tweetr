@@ -109,32 +109,84 @@ export default function TakeawayDashboard() {
     ? filteredItems
     : [...filteredItems].sort((a, b) => (a.display_order || 0) - (b.display_order || 0));
 
-  const submitOrder = () => {
+  const submitOrder = async () => {
     if (cart.length === 0) {
       toast.error('السلة فارغة');
       return;
     }
 
-    const orderData = {
-      customer_name: 'زبون سفري',
-      customer_phone: '',
-      customer_address: 'عنوان المطعم',
-      type: 'takeaway' as const,
-      notes: orderNotes || undefined,
-      cashier_name: role ? ROLE_LABELS[role] : 'سفري',
-      items: cart.map(item => ({
-        menu_item_id: item.menuItem.id,
-        menu_item_name: item.menuItem.name,
-        menu_item_price: item.menuItem.price,
-        quantity: item.quantity,
-        notes: item.notes,
-      })),
-    };
+    const items = cart.map(item => ({
+      menu_item_id: item.menuItem.id,
+      menu_item_name: item.menuItem.name,
+      menu_item_price: item.menuItem.price,
+      quantity: item.quantity,
+      notes: item.notes,
+    }));
+
+    const isEditing = !!editingOrder;
+    const editingId = editingOrder?.id;
 
     clearCart();
     setOrderNotes('');
-    toast.success('جاري رفع الطلب...');
-    addOrder(orderData);
+    if (isEditing) setEditingOrder(null);
+
+    toast.info(isEditing ? 'جاري حفظ التعديلات...' : 'جاري رفع الطلب...', { duration: 1500 });
+
+    try {
+      if (isEditing && editingId) {
+        const result = await updateOrder(editingId, {
+          customer_name: editingOrder!.customer_name,
+          customer_phone: editingOrder!.customer_phone,
+          customer_address: editingOrder!.customer_address || undefined,
+          notes: orderNotes || undefined,
+          items,
+        });
+        if (result) toast.success('تم حفظ التعديلات بنجاح');
+      } else {
+        const result = await addOrder({
+          customer_name: 'زبون سفري',
+          customer_phone: '',
+          customer_address: 'عنوان المطعم',
+          type: 'takeaway',
+          notes: orderNotes || undefined,
+          cashier_name: role ? ROLE_LABELS[role] : 'سفري',
+          items,
+        });
+        if (result) toast.success('تم رفع الطلب بنجاح');
+      }
+    } catch (error) {
+      console.error('Order submit error:', error);
+      toast.error('حدث خطأ');
+    }
+  };
+
+  const handleEditOrder = (order: OrderWithItems) => {
+    setCartItems(order.items.map(item => ({
+      menuItem: {
+        id: item.menu_item_id || '',
+        name: item.menu_item_name,
+        price: Number(item.menu_item_price),
+        image: null,
+        category: '',
+        is_available: true,
+        display_order: 0,
+        created_at: '',
+        updated_at: '',
+      },
+      quantity: item.quantity,
+      notes: item.notes || undefined,
+    })));
+    setOrderNotes(order.notes || '');
+    setEditingOrder(order);
+    setActiveTab('menu');
+    toast.info(`جاري تعديل الطلب #${order.order_number}`);
+  };
+
+  const cancelEdit = () => {
+    clearCart();
+    setOrderNotes('');
+    setEditingOrder(null);
+    toast.info('تم إلغاء التعديل');
   };
 
   const handleDelivered = async (orderId: string) => {
