@@ -9,7 +9,7 @@ import { IssueReasonsManager } from '@/components/IssueReasonsManager';
 import { LogoutConfirmButton } from '@/components/LogoutConfirmButton';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Settings, Trash2, Loader2, ImageIcon, ImageOff } from 'lucide-react';
+import { Settings, Trash2, Loader2, ImageIcon, ImageOff, RotateCcw } from 'lucide-react';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 
 interface AdminSettingsTabProps {
@@ -21,6 +21,22 @@ interface AdminSettingsTabProps {
 export function AdminSettingsTab({ ordersCount, onDeleteAllOrders, isDeletingOrders }: AdminSettingsTabProps) {
   const [migratingImages, setMigratingImages] = useState(false);
   const [clearingImages, setClearingImages] = useState(false);
+  const [resettingDay, setResettingDay] = useState(false);
+
+  const handleDailyReset = async () => {
+    setResettingDay(true);
+    try {
+      const { data, error } = await supabase.rpc('admin_trigger_daily_reset' as any);
+      if (error) throw error;
+      const result = data as { archived_orders?: number } | null;
+      toast.success(`تم بدء يوم عمل جديد ✓ (${result?.archived_orders ?? 0} طلب مؤرشف)`);
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : 'فشل تنفيذ إعادة التعيين';
+      toast.error(msg);
+    } finally {
+      setResettingDay(false);
+    }
+  };
 
   const handleMigrateImages = async () => {
     setMigratingImages(true);
@@ -76,6 +92,41 @@ export function AdminSettingsTab({ ordersCount, onDeleteAllOrders, isDeletingOrd
 
         <TabsContent value="general" className="space-y-4 mt-4">
           <KitchenAlarmToggle />
+
+          <div className="bg-info/5 border-2 border-info/30 rounded-xl p-3">
+            <div className="flex items-start gap-2 mb-2">
+              <RotateCcw className="w-5 h-5 text-info shrink-0 mt-0.5" />
+              <div className="flex-1">
+                <p className="font-bold text-sm">إعادة التعيين اليومية التلقائية</p>
+                <p className="text-xs text-muted-foreground leading-relaxed">
+                  يقوم النظام تلقائياً كل يوم الساعة <span className="font-bold text-info">11:00 صباحاً</span> بحفظ ملخّص اليوم في الإحصائيات وأرشفة الطلبات وإعادة العدّاد إلى 1. الإحصائيات الأسبوعية والشهرية محفوظة بالكامل.
+                </p>
+              </div>
+            </div>
+            <AlertDialog>
+              <AlertDialogTrigger asChild>
+                <Button variant="outline" size="sm" className="w-full" disabled={resettingDay}>
+                  {resettingDay ? <Loader2 className="w-4 h-4 ml-2 animate-spin" /> : <RotateCcw className="w-4 h-4 ml-2" />}
+                  تنفيذ إعادة التعيين الآن (يدوياً)
+                </Button>
+              </AlertDialogTrigger>
+              <AlertDialogContent>
+                <AlertDialogHeader>
+                  <AlertDialogTitle>بدء يوم عمل جديد؟</AlertDialogTitle>
+                  <AlertDialogDescription>
+                    سيتم حفظ ملخّص الطلبات الحالية في الإحصائيات اليومية، أرشفة جميع الطلبات (تبقى محفوظة)، وإعادة عدّاد رقم الطلب إلى 1. الإحصائيات الأسبوعية والشهرية لن تتأثر.
+                  </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter className="flex-row-reverse gap-2">
+                  <AlertDialogCancel>إلغاء</AlertDialogCancel>
+                  <AlertDialogAction onClick={handleDailyReset} disabled={resettingDay}>
+                    {resettingDay ? <Loader2 className="w-4 h-4 animate-spin ml-2" /> : <RotateCcw className="w-4 h-4 ml-2" />}
+                    نعم، ابدأ يوم جديد
+                  </AlertDialogAction>
+                </AlertDialogFooter>
+              </AlertDialogContent>
+            </AlertDialog>
+          </div>
 
           <Button variant="outline" size="lg" className="w-full justify-start h-auto py-4">
             <Settings className="w-5 h-5 ml-3" />
