@@ -248,6 +248,21 @@ export default function TakeawayDashboard() {
       <main className="container py-3 space-y-4 flex-1 overflow-auto">
         {activeTab === 'menu' && (
           <>
+            {editingOrder && (
+              <div className="bg-warning/20 border border-warning/50 rounded-xl p-3 flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <Pencil className="w-4 h-4 text-warning" />
+                  <span className="font-semibold text-sm text-warning">
+                    جاري تعديل الطلب <span className="px-1.5 py-0.5 border border-warning/50 rounded bg-warning/10">#{toEnglishNumbers(editingOrder.order_number)}</span>
+                  </span>
+                </div>
+                <Button variant="ghost" size="sm" onClick={cancelEdit} className="text-destructive">
+                  <XCircle className="w-4 h-4 ml-1" />
+                  إلغاء
+                </Button>
+              </div>
+            )}
+
             <CartSummary
               cart={cart}
               totalPrice={totalPrice}
@@ -255,9 +270,9 @@ export default function TakeawayDashboard() {
               onOrderNotesChange={setOrderNotes}
               onUpdateQuantity={updateQuantity}
               onRemoveItem={removeFromCart}
-              onClear={() => { clearCart(); setOrderNotes(''); }}
+              onClear={editingOrder ? cancelEdit : () => { clearCart(); setOrderNotes(''); }}
               onSubmit={submitOrder}
-              title="طلب سفري"
+              title={editingOrder ? `تعديل الطلب #${toEnglishNumbers(editingOrder.order_number)}` : 'طلب سفري'}
               variant="warning"
             />
 
