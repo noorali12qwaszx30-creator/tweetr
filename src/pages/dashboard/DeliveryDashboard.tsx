@@ -372,7 +372,12 @@ export default function DeliveryDashboard() {
         )}
 
         {activeTab === 'stats' && (
-          <DriverStatsTab deliveredOrders={deliveredOrders} cancelledOrders={cancelledByDelivery} />
+          <DriverStatsTab
+            deliveredOrders={deliveredOrders}
+            cancelledOrders={cancelledByDelivery}
+            historicalDelivered={historicalDelivered}
+            historicalCancelled={historicalCancelled}
+          />
         )}
 
         {activeTab === 'hub' && (
