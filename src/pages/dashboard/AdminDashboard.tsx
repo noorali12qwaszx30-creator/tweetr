@@ -62,12 +62,12 @@ export default function AdminDashboard() {
     }
   };
 
-  const mainTabs: { id: MainTab; label: string; icon: React.ReactNode }[] = [
+  const mainTabs: { id: MainTab; label: string; icon: React.ReactNode; isPrimary?: boolean }[] = [
     { id: 'home', label: 'الرئيسية', icon: <Home className="w-5 h-5" /> },
     { id: 'menu', label: 'المنيو', icon: <UtensilsCrossed className="w-5 h-5" /> },
     { id: 'orders', label: 'الطلبات', icon: <Package className="w-5 h-5" /> },
+    { id: 'monitoring', label: 'الرقابة', icon: <Eye className="w-5 h-5" />, isPrimary: true },
     { id: 'stats', label: 'الإحصائيات', icon: <BarChart3 className="w-5 h-5" /> },
-    { id: 'monitoring', label: 'الرقابة', icon: <Eye className="w-5 h-5" /> },
     { id: 'settings', label: 'الإعدادات', icon: <Settings className="w-5 h-5" /> },
   ];
 

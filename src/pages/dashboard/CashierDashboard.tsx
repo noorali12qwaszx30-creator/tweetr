@@ -766,9 +766,9 @@ export default function CashierDashboard() {
 
       <BottomNavigation
         tabs={[
-          { id: 'menu', label: 'المنيو', icon: <MenuIcon className="w-5 h-5" /> },
           { id: 'orders', label: 'الطلبات', icon: <ClipboardList className="w-5 h-5" />, count: activeOrders.length },
-          { id: 'search', label: 'بحث', icon: <Search className="w-5 h-5" />, isPrimary: true },
+          { id: 'search', label: 'بحث', icon: <Search className="w-5 h-5" /> },
+          { id: 'menu', label: 'المنيو', icon: <MenuIcon className="w-5 h-5" />, isPrimary: true },
           { id: 'reports', label: 'البلاغات', icon: <AlertTriangle className="w-5 h-5" />, count: ordersWithIssues.length },
           { id: 'settings', label: 'الإعدادات', icon: <Settings className="w-5 h-5" /> },
         ]}
