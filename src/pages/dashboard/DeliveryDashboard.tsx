@@ -20,6 +20,7 @@ import { DriverStatsTab } from '@/components/delivery/DriverStatsTab';
 import { DriverHubTab } from '@/components/delivery/driver-hub/DriverHubTab';
 import { useDeliveryAreas } from '@/hooks/useDeliveryAreas';
 import { useDriverArchivedOrders } from '@/hooks/useDriverArchivedOrders';
+import { useDriverHubPosts } from '@/hooks/useDriverHubPosts';
 import {
   AlertDialog,
   AlertDialogAction,
