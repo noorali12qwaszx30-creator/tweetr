@@ -565,6 +565,93 @@ export default function DeliveryDashboard() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* Accept Order Confirmation */}
+      <AlertDialog open={!!acceptConfirmId} onOpenChange={(open) => !open && setAcceptConfirmId(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle className="flex items-center gap-2 text-success">
+              <CheckCircle className="w-5 h-5" />
+              تأكيد قبول الطلب
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              هل أنت متأكد من قبول هذا الطلب؟ سيتم نقله إلى قائمة "قيد التوصيل" وتصبح مسؤولاً عن إيصاله للزبون.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter className="gap-2">
+            <AlertDialogCancel>تراجع</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={async () => {
+                if (acceptConfirmId) {
+                  await handleAcceptOrder(acceptConfirmId);
+                  setAcceptConfirmId(null);
+                }
+              }}
+              className="bg-success hover:bg-success/90 text-success-foreground"
+            >
+              نعم، اقبل الطلب
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Reject Order Confirmation */}
+      <AlertDialog open={!!rejectConfirmId} onOpenChange={(open) => !open && setRejectConfirmId(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle className="flex items-center gap-2 text-destructive">
+              <XCircle className="w-5 h-5" />
+              تأكيد رفض الطلب
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              هل أنت متأكد من رفض هذا الطلب؟ سيتم إعادته إلى قسم الميدان لإعادة توزيعه على سائق آخر.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter className="gap-2">
+            <AlertDialogCancel>تراجع</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={async () => {
+                if (rejectConfirmId) {
+                  await handleRejectOrder(rejectConfirmId);
+                  setRejectConfirmId(null);
+                }
+              }}
+              className="bg-destructive hover:bg-destructive/90 text-destructive-foreground"
+            >
+              نعم، ارفض الطلب
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Delivered Confirmation */}
+      <AlertDialog open={!!deliveredConfirmId} onOpenChange={(open) => !open && setDeliveredConfirmId(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle className="flex items-center gap-2 text-success">
+              <CheckCircle className="w-5 h-5" />
+              تأكيد تسليم الطلب
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              هل تأكدت من تسليم الطلب للزبون واستلام المبلغ؟ لا يمكن التراجع عن هذه الخطوة.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter className="gap-2">
+            <AlertDialogCancel>لا، لم يُسلَّم بعد</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={async () => {
+                if (deliveredConfirmId) {
+                  await handleDelivered(deliveredConfirmId);
+                  setDeliveredConfirmId(null);
+                }
+              }}
+              className="bg-success hover:bg-success/90 text-success-foreground"
+            >
+              نعم، تم التسليم
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
