@@ -5,6 +5,7 @@ import { useSupabaseOrders, OrderWithItems } from '@/hooks/useSupabaseOrders';
 import { useMenuItems, MenuItem } from '@/hooks/useMenuItems';
 import { useDeliveryAreas } from '@/hooks/useDeliveryAreas';
 import { useCart } from '@/hooks/useCart';
+import { useTopSellingItems } from '@/hooks/useTopSellingItems';
 import { DashboardHeader } from '@/components/shared/DashboardHeader';
 import { BottomNavigation } from '@/components/shared/BottomNavigation';
 import { SortableMenuItem } from '@/components/shared/SortableMenuItem';
@@ -39,7 +40,8 @@ import {
   ChevronDown,
   Pencil,
   AlertTriangle,
-  Search
+  Search,
+  Flame
 } from 'lucide-react';
 import {
   Select,
@@ -84,6 +86,7 @@ export default function CashierDashboard() {
   const { user } = useAuth();
   const { orders, addOrder, updateOrder, updateOrderStatus, cancelOrder, resolveIssue, loading, realtimeConnected } = useSupabaseOrders({ orderTypeFilter: 'all' });
   const { menuItems, categories, loading: menuLoading, updateDisplayOrder } = useMenuItems();
+  const { items: topSellingItems } = useTopSellingItems(20);
   const { activeAreas, loading: areasLoading } = useDeliveryAreas();
   const { cart, animatingItemId, addToCart, updateQuantity, removeFromCart, clearCart, setCartItems, totalPrice, getItemQuantity } = useCart();
   const [activeTab, setActiveTab] = useState<TabType>('menu');
@@ -115,11 +118,24 @@ export default function CashierDashboard() {
 
   const filteredItems = useMemo(() => {
     const available = menuItems.filter(item => item.is_available);
+    if (selectedCategory === '__top__') {
+      const topNames = new Set(topSellingItems.map(t => t.menu_item_name));
+      const topIds = new Set(topSellingItems.map(t => t.menu_item_id).filter(Boolean));
+      const matched = available.filter(item => topIds.has(item.id) || topNames.has(item.name));
+      // Sort by topSellingItems order
+      return matched.sort((a, b) => {
+        const aIdx = topSellingItems.findIndex(t => t.menu_item_id === a.id || t.menu_item_name === a.name);
+        const bIdx = topSellingItems.findIndex(t => t.menu_item_id === b.id || t.menu_item_name === b.name);
+        return aIdx - bIdx;
+      });
+    }
     if (!selectedCategory) return available;
     return available.filter(item => item.category === selectedCategory);
-  }, [menuItems, selectedCategory]);
+  }, [menuItems, selectedCategory, topSellingItems]);
 
-  const sortedItems = [...filteredItems].sort((a, b) => (a.display_order || 0) - (b.display_order || 0));
+  const sortedItems = selectedCategory === '__top__'
+    ? filteredItems
+    : [...filteredItems].sort((a, b) => (a.display_order || 0) - (b.display_order || 0));
 
   const clearForm = () => {
     clearCart();
@@ -486,6 +502,15 @@ export default function CashierDashboard() {
                 onClick={() => setSelectedCategory(null)}
               >
                 الكل
+              </Button>
+              <Button
+                variant={selectedCategory === '__top__' ? 'default' : 'outline'}
+                size="sm"
+                className={`flex-shrink-0 h-8 text-xs gap-1 ${selectedCategory === '__top__' ? '' : 'border-accent text-accent hover:text-accent'}`}
+                onClick={() => setSelectedCategory('__top__')}
+              >
+                <Flame className="w-3 h-3" />
+                الأكثر طلباً
               </Button>
               {categories.map(cat => (
                 <Button
