@@ -503,6 +503,15 @@ export default function CashierDashboard() {
               >
                 الكل
               </Button>
+              <Button
+                variant={selectedCategory === '__top__' ? 'default' : 'outline'}
+                size="sm"
+                className={`flex-shrink-0 h-8 text-xs gap-1 ${selectedCategory === '__top__' ? '' : 'border-accent text-accent hover:text-accent'}`}
+                onClick={() => setSelectedCategory('__top__')}
+              >
+                <Flame className="w-3 h-3" />
+                الأكثر طلباً
+              </Button>
               {categories.map(cat => (
                 <Button
                   key={cat}
