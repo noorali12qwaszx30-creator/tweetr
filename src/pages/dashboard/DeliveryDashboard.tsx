@@ -19,6 +19,7 @@ import { OldOrderAlert } from '@/components/delivery/OldOrderAlert';
 import { DriverStatsTab } from '@/components/delivery/DriverStatsTab';
 import { DriverHubTab } from '@/components/delivery/driver-hub/DriverHubTab';
 import { useDeliveryAreas } from '@/hooks/useDeliveryAreas';
+import { useDriverArchivedOrders } from '@/hooks/useDriverArchivedOrders';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -65,6 +66,7 @@ export default function DeliveryDashboard() {
   const { reasons: issueReasons } = useIssueReasons();
   const { permission, isSupported, requestPermission, showNotification } = useNotificationPermission();
   const { areas } = useDeliveryAreas();
+  const { archivedOrders } = useDriverArchivedOrders(user?.id);
   const [activeTab, setActiveTab] = useState<TabType>('orders');
   const [returnDialogOpen, setReturnDialogOpen] = useState(false);
   const [orderToReturn, setOrderToReturn] = useState<string | null>(null);
@@ -105,14 +107,26 @@ export default function DeliveryDashboard() {
       o.delivery_person_id === currentUserId
     )
     .sort(sortByAreaProximity);
-  const deliveredOrders = orders.filter(o => 
-    o.status === 'delivered' && 
+  // Merge live + archived orders so weekly/monthly/all-time stats and history
+  // remain visible after the daily reset (which archives all orders).
+  const liveDelivered = orders.filter(o =>
+    o.status === 'delivered' &&
     o.delivery_person_id === currentUserId
   );
-  const cancelledByDelivery = orders.filter(o => 
-    o.status === 'cancelled' && 
+  const liveCancelled = orders.filter(o =>
+    o.status === 'cancelled' &&
     o.delivery_person_id === currentUserId
   );
+  const archivedDelivered = archivedOrders.filter(o => o.status === 'delivered');
+  const archivedCancelled = archivedOrders.filter(o => o.status === 'cancelled');
+
+  // Dedupe by id (in case an order briefly appears in both lists during a refresh)
+  const dedupe = (arr: typeof orders) => {
+    const seen = new Set<string>();
+    return arr.filter(o => (seen.has(o.id) ? false : (seen.add(o.id), true)));
+  };
+  const deliveredOrders = dedupe([...liveDelivered, ...archivedDelivered]);
+  const cancelledByDelivery = dedupe([...liveCancelled, ...archivedCancelled]);
   
 
   // Show notification when new order is assigned
