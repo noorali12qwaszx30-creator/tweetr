@@ -302,11 +302,11 @@ export default function DeliveryDashboard() {
                     order={order}
                     actions={
                       <>
-                        <Button variant="success" size="sm" onClick={() => handleAcceptOrder(order.id)}>
+                        <Button variant="success" size="sm" onClick={() => setAcceptConfirmId(order.id)}>
                           <CheckCircle className="w-3 h-3 ml-1" />
                           قبول الطلب
                         </Button>
-                        <Button variant="destructive" size="sm" onClick={() => handleRejectOrder(order.id)}>
+                        <Button variant="destructive" size="sm" onClick={() => setRejectConfirmId(order.id)}>
                           <XCircle className="w-3 h-3 ml-1" />
                           رفض الطلب
                         </Button>
