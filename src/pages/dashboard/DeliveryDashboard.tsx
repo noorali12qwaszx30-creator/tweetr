@@ -17,7 +17,7 @@ import { DriverStatusToggle } from '@/components/delivery/DriverStatusToggle';
 import { DeliveryOrderExtras } from '@/components/delivery/DeliveryOrderExtras';
 import { OldOrderAlert } from '@/components/delivery/OldOrderAlert';
 import { DriverStatsTab } from '@/components/delivery/DriverStatsTab';
-import { PersonalNotesTab } from '@/components/delivery/PersonalNotesTab';
+import { DriverHubTab } from '@/components/delivery/driver-hub/DriverHubTab';
 import { useDeliveryAreas } from '@/hooks/useDeliveryAreas';
 import {
   AlertDialog,
@@ -52,10 +52,10 @@ import {
   BellOff,
   AlertTriangle,
   History,
-  BookOpen
+  Network
 } from 'lucide-react';
 
-type TabType = 'orders' | 'delivering' | 'history' | 'stats' | 'notes' | 'settings';
+type TabType = 'orders' | 'delivering' | 'history' | 'stats' | 'hub' | 'settings';
 
 export default function DeliveryDashboard() {
   const { role } = useRole();
