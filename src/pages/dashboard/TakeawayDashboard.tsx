@@ -321,6 +321,10 @@ export default function TakeawayDashboard() {
                     showCustomerInfo={false}
                     actions={
                       <>
+                        <Button variant="outline" size="sm" onClick={() => handleEditOrder(order)}>
+                          <Pencil className="w-3 h-3 ml-1" />
+                          تعديل
+                        </Button>
                         <Button variant="success" size="sm" onClick={() => handleDelivered(order.id)}>
                           تم التسليم
                         </Button>
