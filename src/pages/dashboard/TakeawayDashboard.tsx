@@ -25,6 +25,8 @@ import {
   Menu as MenuIcon,
   Loader2,
   Settings,
+  Pencil,
+  XCircle,
 } from 'lucide-react';
 import {
   DndContext,
@@ -47,7 +49,7 @@ type TabType = 'menu' | 'tracking' | 'stats' | 'settings';
 export default function TakeawayDashboard() {
   const { role } = useRole();
   const { user } = useAuth();
-  const { orders, addOrder, updateOrderStatus, cancelOrder, loading, realtimeConnected } = useSupabaseOrders({ orderTypeFilter: 'takeaway' });
+  const { orders, addOrder, updateOrder, updateOrderStatus, cancelOrder, loading, realtimeConnected } = useSupabaseOrders({ orderTypeFilter: 'takeaway' });
   const { menuItems, categories, loading: menuLoading, updateDisplayOrder } = useMenuItems();
   const { items: topSellingItems } = useTopSellingItems(20);
   const { 
@@ -57,6 +59,7 @@ export default function TakeawayDashboard() {
     updateQuantity, 
     removeFromCart, 
     clearCart, 
+    setCartItems,
     totalPrice,
     getItemQuantity 
   } = useCart();
@@ -68,6 +71,7 @@ export default function TakeawayDashboard() {
   const [orderToCancel, setOrderToCancel] = useState<OrderWithItems | null>(null);
   const [showCompletedOrders, setShowCompletedOrders] = useState(false);
   const [showCancelledOrders, setShowCancelledOrders] = useState(false);
+  const [editingOrder, setEditingOrder] = useState<OrderWithItems | null>(null);
 
   const sensors = useSensors(
     useSensor(PointerSensor, {
@@ -105,32 +109,84 @@ export default function TakeawayDashboard() {
     ? filteredItems
     : [...filteredItems].sort((a, b) => (a.display_order || 0) - (b.display_order || 0));
 
-  const submitOrder = () => {
+  const submitOrder = async () => {
     if (cart.length === 0) {
       toast.error('السلة فارغة');
       return;
     }
 
-    const orderData = {
-      customer_name: 'زبون سفري',
-      customer_phone: '',
-      customer_address: 'عنوان المطعم',
-      type: 'takeaway' as const,
-      notes: orderNotes || undefined,
-      cashier_name: role ? ROLE_LABELS[role] : 'سفري',
-      items: cart.map(item => ({
-        menu_item_id: item.menuItem.id,
-        menu_item_name: item.menuItem.name,
-        menu_item_price: item.menuItem.price,
-        quantity: item.quantity,
-        notes: item.notes,
-      })),
-    };
+    const items = cart.map(item => ({
+      menu_item_id: item.menuItem.id,
+      menu_item_name: item.menuItem.name,
+      menu_item_price: item.menuItem.price,
+      quantity: item.quantity,
+      notes: item.notes,
+    }));
+
+    const isEditing = !!editingOrder;
+    const editingId = editingOrder?.id;
 
     clearCart();
     setOrderNotes('');
-    toast.success('جاري رفع الطلب...');
-    addOrder(orderData);
+    if (isEditing) setEditingOrder(null);
+
+    toast.info(isEditing ? 'جاري حفظ التعديلات...' : 'جاري رفع الطلب...', { duration: 1500 });
+
+    try {
+      if (isEditing && editingId) {
+        const result = await updateOrder(editingId, {
+          customer_name: editingOrder!.customer_name,
+          customer_phone: editingOrder!.customer_phone,
+          customer_address: editingOrder!.customer_address || undefined,
+          notes: orderNotes || undefined,
+          items,
+        });
+        if (result) toast.success('تم حفظ التعديلات بنجاح');
+      } else {
+        const result = await addOrder({
+          customer_name: 'زبون سفري',
+          customer_phone: '',
+          customer_address: 'عنوان المطعم',
+          type: 'takeaway',
+          notes: orderNotes || undefined,
+          cashier_name: role ? ROLE_LABELS[role] : 'سفري',
+          items,
+        });
+        if (result) toast.success('تم رفع الطلب بنجاح');
+      }
+    } catch (error) {
+      console.error('Order submit error:', error);
+      toast.error('حدث خطأ');
+    }
+  };
+
+  const handleEditOrder = (order: OrderWithItems) => {
+    setCartItems(order.items.map(item => ({
+      menuItem: {
+        id: item.menu_item_id || '',
+        name: item.menu_item_name,
+        price: Number(item.menu_item_price),
+        image: null,
+        category: '',
+        is_available: true,
+        display_order: 0,
+        created_at: '',
+        updated_at: '',
+      },
+      quantity: item.quantity,
+      notes: item.notes || undefined,
+    })));
+    setOrderNotes(order.notes || '');
+    setEditingOrder(order);
+    setActiveTab('menu');
+    toast.info(`جاري تعديل الطلب #${order.order_number}`);
+  };
+
+  const cancelEdit = () => {
+    clearCart();
+    setOrderNotes('');
+    setEditingOrder(null);
+    toast.info('تم إلغاء التعديل');
   };
 
   const handleDelivered = async (orderId: string) => {
@@ -192,6 +248,21 @@ export default function TakeawayDashboard() {
       <main className="container py-3 space-y-4 flex-1 overflow-auto">
         {activeTab === 'menu' && (
           <>
+            {editingOrder && (
+              <div className="bg-warning/20 border border-warning/50 rounded-xl p-3 flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <Pencil className="w-4 h-4 text-warning" />
+                  <span className="font-semibold text-sm text-warning">
+                    جاري تعديل الطلب <span className="px-1.5 py-0.5 border border-warning/50 rounded bg-warning/10">#{toEnglishNumbers(editingOrder.order_number)}</span>
+                  </span>
+                </div>
+                <Button variant="ghost" size="sm" onClick={cancelEdit} className="text-destructive">
+                  <XCircle className="w-4 h-4 ml-1" />
+                  إلغاء
+                </Button>
+              </div>
+            )}
+
             <CartSummary
               cart={cart}
               totalPrice={totalPrice}
@@ -199,9 +270,9 @@ export default function TakeawayDashboard() {
               onOrderNotesChange={setOrderNotes}
               onUpdateQuantity={updateQuantity}
               onRemoveItem={removeFromCart}
-              onClear={() => { clearCart(); setOrderNotes(''); }}
+              onClear={editingOrder ? cancelEdit : () => { clearCart(); setOrderNotes(''); }}
               onSubmit={submitOrder}
-              title="طلب سفري"
+              title={editingOrder ? `تعديل الطلب #${toEnglishNumbers(editingOrder.order_number)}` : 'طلب سفري'}
               variant="warning"
             />
 
@@ -250,6 +321,10 @@ export default function TakeawayDashboard() {
                     showCustomerInfo={false}
                     actions={
                       <>
+                        <Button variant="outline" size="sm" onClick={() => handleEditOrder(order)}>
+                          <Pencil className="w-3 h-3 ml-1" />
+                          تعديل
+                        </Button>
                         <Button variant="success" size="sm" onClick={() => handleDelivered(order.id)}>
                           تم التسليم
                         </Button>
