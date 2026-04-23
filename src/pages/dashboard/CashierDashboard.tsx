@@ -5,6 +5,7 @@ import { useSupabaseOrders, OrderWithItems } from '@/hooks/useSupabaseOrders';
 import { useMenuItems, MenuItem } from '@/hooks/useMenuItems';
 import { useDeliveryAreas } from '@/hooks/useDeliveryAreas';
 import { useCart } from '@/hooks/useCart';
+import { useTopSellingItems } from '@/hooks/useTopSellingItems';
 import { DashboardHeader } from '@/components/shared/DashboardHeader';
 import { BottomNavigation } from '@/components/shared/BottomNavigation';
 import { SortableMenuItem } from '@/components/shared/SortableMenuItem';
@@ -39,7 +40,8 @@ import {
   ChevronDown,
   Pencil,
   AlertTriangle,
-  Search
+  Search,
+  Flame
 } from 'lucide-react';
 import {
   Select,
