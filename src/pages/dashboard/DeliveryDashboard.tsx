@@ -8,6 +8,7 @@ import { useNotificationPermission } from '@/hooks/useNotificationPermission';
 import { OrderCard } from '@/components/OrderCard';
 import { LogoutConfirmButton } from '@/components/LogoutConfirmButton';
 import { DashboardHeader } from '@/components/shared/DashboardHeader';
+import { BottomNavigation } from '@/components/shared/BottomNavigation';
 import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
 import { ROLE_LABELS } from '@/types';

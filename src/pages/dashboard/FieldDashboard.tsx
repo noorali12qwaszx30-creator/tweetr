@@ -9,6 +9,7 @@ import { LogoutConfirmButton } from '@/components/LogoutConfirmButton';
 import { CancelOrderDialog } from '@/components/CancelOrderDialog';
 import { OrderDetailsDialog } from '@/components/OrderDetailsDialog';
 import { DashboardHeader } from '@/components/shared/DashboardHeader';
+import { BottomNavigation } from '@/components/shared/BottomNavigation';
 import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
 import { ROLE_LABELS } from '@/types';
