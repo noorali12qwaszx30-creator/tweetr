@@ -82,6 +82,11 @@ export default function DeliveryDashboard() {
   const [issueDialogOpen, setIssueDialogOpen] = useState(false);
   const [orderToReport, setOrderToReport] = useState<string | null>(null);
   const [selectedIssueReason, setSelectedIssueReason] = useState<string>('');
+
+  // Confirmation dialogs to prevent accidental taps
+  const [acceptConfirmId, setAcceptConfirmId] = useState<string | null>(null);
+  const [rejectConfirmId, setRejectConfirmId] = useState<string | null>(null);
+  const [deliveredConfirmId, setDeliveredConfirmId] = useState<string | null>(null);
   
   // Track previous pending orders count to detect new assignments
   const prevPendingCountRef = useRef<number>(0);
