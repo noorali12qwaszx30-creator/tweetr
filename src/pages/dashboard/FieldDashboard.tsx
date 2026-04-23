@@ -89,8 +89,8 @@ export default function FieldDashboard() {
     setDetailsDialogOpen(true);
   };
 
-  const tabs: { id: TabType; label: string; icon: React.ReactNode; count?: number }[] = [
-    { id: 'orders', label: 'الطلبات', icon: <ClipboardList className="w-5 h-5" />, count: incomingOrders.length },
+  const tabs: { id: TabType; label: string; icon: React.ReactNode; count?: number; isPrimary?: boolean }[] = [
+    { id: 'orders', label: 'الطلبات', icon: <ClipboardList className="w-5 h-5" />, count: incomingOrders.length, isPrimary: true },
     { id: 'ready', label: 'الجاهز', icon: <CheckCircle className="w-5 h-5" />, count: readyOrders.length },
     { id: 'delivering', label: 'قيد التوصيل', icon: <Truck className="w-5 h-5" />, count: deliveringOrders.length },
     { id: 'delivered', label: 'المكتمل', icon: <CheckCircle className="w-5 h-5" /> },
