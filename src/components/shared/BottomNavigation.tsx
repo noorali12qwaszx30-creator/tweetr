@@ -1,6 +1,17 @@
 import { ReactNode } from 'react';
 import { toEnglishNumbers } from '@/lib/formatNumber';
 
+const triggerHaptic = (tabId: string, currentTab: string) => {
+  if (tabId === currentTab) return;
+  if (typeof navigator !== 'undefined' && 'vibrate' in navigator) {
+    try {
+      navigator.vibrate(15);
+    } catch {
+      // Ignore unsupported devices
+    }
+  }
+};
+
 interface Tab {
   id: string;
   label: string;
@@ -29,12 +40,17 @@ export function BottomNavigation({ tabs, activeTab, onTabChange, primaryTabId }:
   const leftTabs = sideTabs.slice(0, half);
   const rightTabs = sideTabs.slice(half);
 
+  const handleTabChange = (tabId: string) => {
+    triggerHaptic(tabId, activeTab);
+    onTabChange(tabId);
+  };
+
   const renderTab = (tab: Tab) => {
     const isActive = activeTab === tab.id;
     return (
       <button
         key={tab.id}
-        onClick={() => onTabChange(tab.id)}
+        onClick={() => handleTabChange(tab.id)}
         className={`relative flex flex-col items-center justify-center gap-0.5 py-2 px-3 transition-all duration-300 ${
           isActive ? 'text-primary' : 'text-muted-foreground hover:text-primary/70'
         }`}
@@ -75,7 +91,7 @@ export function BottomNavigation({ tabs, activeTab, onTabChange, primaryTabId }:
           {/* Floating center action button */}
           {primaryTab && (
             <button
-              onClick={() => onTabChange(primaryTab.id)}
+              onClick={() => handleTabChange(primaryTab.id)}
               className={`absolute left-1/2 -translate-x-1/2 -top-6 w-14 h-14 rounded-full bg-accent text-accent-foreground flex items-center justify-center shadow-floating transition-all duration-300 hover:scale-110 active:scale-95 ring-4 ring-background ${
                 activeTab === primaryTab.id ? 'scale-110' : ''
               }`}
