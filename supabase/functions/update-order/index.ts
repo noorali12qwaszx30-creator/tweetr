@@ -62,6 +62,22 @@ Deno.serve(async (req) => {
       );
     }
 
+    // Verify the user has a role permitted to update orders
+    const { data: roleRow, error: roleError } = await supabaseAdmin
+      .from('user_roles')
+      .select('role')
+      .eq('user_id', user.id)
+      .maybeSingle();
+
+    const allowedRoles = ['admin', 'cashier', 'field', 'takeaway'];
+    if (roleError || !roleRow || !allowedRoles.includes(roleRow.role)) {
+      console.warn('Forbidden update-order attempt by user:', user.id, 'role:', roleRow?.role);
+      return new Response(
+        JSON.stringify({ error: 'Forbidden: insufficient role' }),
+        { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
     // Parse request
     const requestData: UpdateOrderRequest = await req.json();
     console.log('Update order request for:', requestData.order_id);
