@@ -34,47 +34,47 @@ export function BatchPrepBar({ orders }: BatchPrepBarProps) {
 
   return (
     <div className="bg-card border-b-2 border-border shadow-md sticky top-0 z-40">
-      <div className="container px-4 py-2.5">
-        <div className="flex items-center gap-3">
-          {/* Title chip */}
-          <div className="flex items-center gap-2 shrink-0 pl-3 pr-2 border-l-2 border-border">
-            <div className="w-9 h-9 rounded-lg bg-primary flex items-center justify-center">
-              <ChefHat className="w-5 h-5 text-primary-foreground" />
-            </div>
-            <div className="text-right leading-tight">
-              <p className="text-[10px] text-muted-foreground font-bold">
-                المطبخ - قيد التجهيز
-              </p>
-              <p className="text-base font-black text-primary">
-                {toEnglishNumbers(orders.length.toString())} طلب · {toEnglishNumbers(totalItems.toString())} وجبة
-              </p>
-            </div>
+      <div className="px-4 pt-2 pb-2.5">
+        {/* Title row */}
+        <div className="flex items-center justify-center gap-3 mb-2">
+          <div className="w-10 h-10 rounded-lg bg-primary flex items-center justify-center shrink-0">
+            <ChefHat className="w-6 h-6 text-primary-foreground" />
           </div>
-
-          {/* Items summary - horizontal scroll */}
-          {summary.length === 0 ? (
-            <div className="flex-1 flex items-center justify-center text-muted-foreground text-sm py-2">
-              <Utensils className="w-4 h-4 ml-2" />
-              لا توجد وجبات قيد التحضير
-            </div>
-          ) : (
-            <div className="flex-1 flex items-center gap-2 overflow-x-auto py-1 scrollbar-thin">
-              {summary.map((item) => (
-                <div
-                  key={item.name}
-                  className="shrink-0 flex items-center gap-2 px-3 py-1.5 rounded-xl bg-primary/10 border-2 border-primary/30"
-                >
-                  <span className="text-sm font-bold text-foreground whitespace-nowrap">
-                    {item.name}
-                  </span>
-                  <span className="text-base font-black text-primary whitespace-nowrap">
-                    ×{toEnglishNumbers(item.quantity.toString())}
-                  </span>
-                </div>
-              ))}
-            </div>
-          )}
+          <div className="text-center leading-tight">
+            <p className="text-xs text-muted-foreground font-bold">
+              المطبخ - قيد التجهيز
+            </p>
+            <p className="text-lg font-black text-primary">
+              {toEnglishNumbers(orders.length.toString())} طلب · {toEnglishNumbers(totalItems.toString())} وجبة
+            </p>
+          </div>
         </div>
+
+        {/* Items summary - flex-wrap grid (multi-row) */}
+        {summary.length === 0 ? (
+          <div className="flex items-center justify-center text-muted-foreground text-sm py-2">
+            <Utensils className="w-4 h-4 ml-2" />
+            لا توجد وجبات قيد التحضير
+          </div>
+        ) : (
+          <div
+            className="flex flex-wrap items-center justify-center gap-1.5 max-h-[22vh] overflow-y-auto"
+          >
+            {summary.map((item) => (
+              <div
+                key={item.name}
+                className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-primary/10 border border-primary/30"
+              >
+                <span className="text-sm font-bold text-foreground whitespace-nowrap">
+                  {item.name}
+                </span>
+                <span className="text-base font-black text-primary whitespace-nowrap">
+                  ×{toEnglishNumbers(item.quantity.toString())}
+                </span>
+              </div>
+            ))}
+          </div>
+        )}
       </div>
     </div>
   );
