@@ -5,7 +5,7 @@ import { useKitchenAlarm } from '@/hooks/useKitchenAlarm';
 import { KitchenOrderCard } from '@/components/KitchenOrderCard';
 import { LogoutConfirmButton } from '@/components/LogoutConfirmButton';
 import { ConnectionIndicator } from '@/components/shared/ConnectionIndicator';
-import { toEnglishNumbers } from '@/lib/formatNumber';
+import { BatchPrepBar } from '@/components/kitchen/BatchPrepBar';
 
 export default function KitchenDashboard() {
   const { orders, loading, realtimeConnected, refetch } = useSupabaseOrders();
@@ -19,41 +19,24 @@ export default function KitchenDashboard() {
     .sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime());
 
   return (
-    <div className="flex flex-col h-dvh bg-background" dir="rtl">
-      {/* Header */}
-      <header className="bg-card border-b-2 border-border shadow-lg sticky top-0 z-50">
-        <div className="container flex items-center justify-between h-20 px-6">
-          {/* Refresh button */}
-          <Button 
-            onClick={() => refetch()} 
-            variant="outline" 
-            size="lg"
-            className="gap-3 text-lg font-bold h-14 px-6"
-          >
-            <RefreshCw className="w-6 h-6" />
-            تحديث
-          </Button>
-          
-          {/* Title */}
-          <div className="flex items-center gap-4">
-            <div className="w-14 h-14 rounded-xl bg-primary flex items-center justify-center">
-              <ChefHat className="w-8 h-8 text-primary-foreground" />
-            </div>
-            <div className="text-center">
-              <h1 className="text-2xl font-black text-foreground">
-                المطبخ - قيد التجهيز
-              </h1>
-              <p className="text-3xl font-black text-primary">
-                ({toEnglishNumbers(activeOrders.length.toString())})
-              </p>
-            </div>
-            <ConnectionIndicator connected={realtimeConnected} />
-          </div>
-          
-          {/* Logout button */}
-          <LogoutConfirmButton variant="compact" />
-        </div>
-      </header>
+    <div className="flex flex-col h-dvh bg-background relative" dir="rtl">
+      {/* Floating compact controls */}
+      <div className="absolute top-2 left-2 z-50 flex items-center gap-2">
+        <ConnectionIndicator connected={realtimeConnected} />
+        <Button
+          onClick={() => refetch()}
+          variant="outline"
+          size="sm"
+          className="gap-1 text-xs px-3 py-1.5 h-auto shadow-md bg-card/95 backdrop-blur"
+        >
+          <RefreshCw className="w-4 h-4" />
+          تحديث
+        </Button>
+        <LogoutConfirmButton variant="compact" />
+      </div>
+
+      {/* Batch prep summary bar (replaces header) */}
+      <BatchPrepBar orders={activeOrders} />
 
       {/* Main content */}
       <main className="container p-3 flex-1 overflow-auto">
