@@ -1,3 +1,4 @@
+import { useEffect, useState } from 'react';
 import { Card } from '@/components/ui/card';
 import { OrderTimer } from '@/components/OrderTimer';
 import { OrderWithItems } from '@/hooks/useSupabaseOrders';
@@ -7,23 +8,76 @@ interface KitchenOrderCardProps {
   order: OrderWithItems;
 }
 
+type Urgency = 'normal' | 'reminder' | 'warning' | 'critical';
+
+function computeUrgency(createdAt: string): Urgency {
+  const timeStr = createdAt.endsWith('Z') || createdAt.includes('+') ? createdAt : createdAt + 'Z';
+  const start = new Date(timeStr).getTime();
+  const minutes = Math.floor((Date.now() - start) / 60000);
+  if (minutes >= 30) return 'critical';
+  if (minutes >= 20) return 'warning';
+  if (minutes >= 10) return 'reminder';
+  return 'normal';
+}
+
 export function KitchenOrderCard({ order }: KitchenOrderCardProps) {
+  const [urgency, setUrgency] = useState<Urgency>(() => computeUrgency(order.created_at));
+
+  useEffect(() => {
+    const tick = () => setUrgency(computeUrgency(order.created_at));
+    tick();
+    const id = setInterval(tick, 5000);
+    return () => clearInterval(id);
+  }, [order.created_at]);
+
+  // Base type-based colors (used only when not urgent)
+  const typeBg =
+    order.type === 'delivery'
+      ? 'bg-info/5 border-info/40'
+      : order.type === 'pickup'
+      ? 'bg-accent/5 border-accent/40'
+      : 'bg-success/5 border-success/40';
+
+  const typeBar =
+    order.type === 'delivery'
+      ? 'bg-info/40 border-b-2 border-info'
+      : order.type === 'pickup'
+      ? 'bg-accent/40 border-b-2 border-accent'
+      : 'bg-success/40 border-b-2 border-success';
+
+  // Urgency overrides — escalate the whole card visually
+  const urgencyCardClass =
+    urgency === 'critical'
+      ? 'bg-destructive/20 border-destructive border-[3px] shadow-lg shadow-destructive/40 animate-pulse'
+      : urgency === 'warning'
+      ? 'bg-warning/15 border-warning border-[3px] animate-pulse'
+      : urgency === 'reminder'
+      ? 'bg-warning/5 border-warning/50'
+      : typeBg;
+
+  const urgencyBarClass =
+    urgency === 'critical'
+      ? 'bg-destructive/40 border-b-2 border-destructive'
+      : urgency === 'warning'
+      ? 'bg-warning/40 border-b-2 border-warning'
+      : urgency === 'reminder'
+      ? 'bg-warning/20 border-b-2 border-warning/60'
+      : typeBar;
+
+  const pulseStyle =
+    urgency === 'critical'
+      ? { animationDuration: '0.5s' }
+      : urgency === 'warning'
+      ? { animationDuration: '1.5s' }
+      : undefined;
+
   return (
-    <Card className={`rounded-2xl border-2 hover:border-primary/40 hover:shadow-elevated transition-all duration-300 h-full flex flex-col overflow-hidden ${
-      order.type === 'delivery' 
-        ? 'bg-info/5 border-info/40' 
-        : order.type === 'pickup'
-        ? 'bg-accent/5 border-accent/40'
-        : 'bg-success/5 border-success/40'
-    }`}>
+    <Card
+      className={`rounded-2xl border-2 hover:shadow-elevated transition-colors duration-300 h-full flex flex-col overflow-hidden ${urgencyCardClass}`}
+      style={pulseStyle}
+    >
       {/* Unified top bar */}
-      <div className={`flex items-center justify-between px-3 py-2 shrink-0 ${
-        order.type === 'delivery' 
-          ? 'bg-info/40 border-b-2 border-info' 
-          : order.type === 'pickup'
-          ? 'bg-accent/40 border-b-2 border-accent'
-          : 'bg-success/40 border-b-2 border-success'
-      }`}>
+      <div className={`flex items-center justify-between px-3 py-2 shrink-0 ${urgencyBarClass}`}>
         <div className="flex items-center gap-1 min-w-0">
           <span className="text-base font-black text-primary whitespace-nowrap">
             #{toEnglishNumbers(order.order_number.toString())}
