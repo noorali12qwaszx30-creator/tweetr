@@ -801,6 +801,17 @@ export default function CashierDashboard() {
           open={!!selectedOrderDetails}
           onOpenChange={(open) => !open && setSelectedOrderDetails(null)}
         />
+
+        {/* Large Order Confirmation Dialog */}
+        <LargeOrderConfirmDialog
+          open={confirmDialogOpen}
+          onCancel={() => setConfirmDialogOpen(false)}
+          onConfirm={executeSubmit}
+          totalPrice={totalPrice}
+          cart={cart}
+          customerName={customerName}
+          orderType={orderType}
+        />
       </main>
 
       <BottomNavigation
