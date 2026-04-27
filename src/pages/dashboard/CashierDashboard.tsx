@@ -103,6 +103,7 @@ export default function CashierDashboard() {
   const [selectedOrderDetails, setSelectedOrderDetails] = useState<OrderWithItems | null>(null);
   const [editingOrder, setEditingOrder] = useState<OrderWithItems | null>(null);
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
+  const [confirmDialogOpen, setConfirmDialogOpen] = useState(false);
 
   const sensors = useSensors(
     useSensor(PointerSensor, {
@@ -174,6 +175,17 @@ export default function CashierDashboard() {
       return;
     }
 
+    // تأكيد الطلبات الكبيرة (بدون التطبيق على وضع التعديل)
+    const needsConfirm = !editingOrder && (totalPrice > 30000 || cart.length > 10);
+    if (needsConfirm) {
+      setConfirmDialogOpen(true);
+      return;
+    }
+
+    executeSubmit();
+  };
+
+  const executeSubmit = () => {
     const orderData = {
       customer_name: customerName.trim(),
       customer_phone: customerPhone || '',
@@ -196,6 +208,7 @@ export default function CashierDashboard() {
 
     clearForm();
     if (isEditing) setEditingOrder(null);
+    setConfirmDialogOpen(false);
 
     toast.info(isEditing ? 'جاري حفظ التعديلات...' : 'جاري إرسال الطلب...', { duration: 1500 });
 
