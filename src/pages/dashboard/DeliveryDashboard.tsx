@@ -336,14 +336,21 @@ export default function DeliveryDashboard() {
                     order={order}
                     actions={
                       <div className="flex flex-col gap-2 w-full">
-                        <div className="flex flex-wrap gap-2 w-full">
+                        {/* Big primary call button - full width across the order card */}
+                        <Button
+                          variant="success"
+                          size="lg"
+                          asChild
+                          className="w-full h-16 text-lg font-bold shadow-elevated"
+                        >
+                          <a href={`tel:${order.customer_phone}`}>
+                            <Phone className="w-6 h-6 ml-2" />
+                            اتصال بالزبون
+                          </a>
+                        </Button>
+                        {/* Secondary actions - arranged below */}
+                        <div className="grid grid-cols-2 gap-2 w-full">
                           <Button variant="outline" size="sm" asChild>
-                            <a href={`tel:${order.customer_phone}`}>
-                              <Phone className="w-3 h-3 ml-1" />
-                              اتصال
-                            </a>
-                          </Button>
-                          <Button variant="success" size="sm" asChild>
                             <a href={`https://wa.me/${formatPhoneForWhatsApp(order.customer_phone)}`} target="_blank" rel="noopener noreferrer">
                               <MessageCircle className="w-3 h-3 ml-1" />
                               واتساب
