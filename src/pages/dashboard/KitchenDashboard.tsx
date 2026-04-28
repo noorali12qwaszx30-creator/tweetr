@@ -1,8 +1,7 @@
-import { useState, useEffect } from 'react';
-import { RefreshCw, ChefHat, Volume2, VolumeX } from 'lucide-react';
+import { useEffect } from 'react';
+import { RefreshCw, ChefHat } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useSupabaseOrders } from '@/hooks/useSupabaseOrders';
-import { useKitchenAlarm } from '@/hooks/useKitchenAlarm';
 import { useKitchenVoiceAnnouncer } from '@/hooks/useKitchenVoiceAnnouncer';
 import { KitchenOrderCard } from '@/components/KitchenOrderCard';
 import { LogoutConfirmButton } from '@/components/LogoutConfirmButton';
@@ -11,41 +10,30 @@ import { BatchPrepBar } from '@/components/kitchen/BatchPrepBar';
 
 export default function KitchenDashboard() {
   const { orders, loading, realtimeConnected, refetch } = useSupabaseOrders();
-  const [voiceEnabled, setVoiceEnabled] = useState<boolean>(() => {
-    return localStorage.getItem('kitchen-voice-enabled') === 'true';
-  });
 
-  // Activate kitchen alarm for orders > 30 min
-  useKitchenAlarm(orders);
+  // Arabic voice announcements - always on (no toggle)
+  useKitchenVoiceAnnouncer(orders);
 
-  // Arabic voice announcements (only when enabled)
-  useKitchenVoiceAnnouncer(voiceEnabled ? orders : []);
-
-  // Pre-load voices for SpeechSynthesis
+  // Unlock audio playback on first user interaction (browser autoplay policy)
   useEffect(() => {
-    if ('speechSynthesis' in window) {
-      window.speechSynthesis.getVoices();
-      window.speechSynthesis.onvoiceschanged = () => window.speechSynthesis.getVoices();
-    }
-  }, []);
-
-  const toggleVoice = () => {
-    const next = !voiceEnabled;
-    setVoiceEnabled(next);
-    localStorage.setItem('kitchen-voice-enabled', String(next));
-    // Unlock browser TTS with a short greeting on first activation (user gesture)
-    if (next && 'speechSynthesis' in window) {
+    const unlock = () => {
       try {
-        const u = new SpeechSynthesisUtterance('تم تفعيل التنبيهات الصوتية');
-        u.lang = 'ar-SA';
-        const arVoice = window.speechSynthesis.getVoices().find(v => v.lang.startsWith('ar'));
-        if (arVoice) u.voice = arVoice;
-        window.speechSynthesis.speak(u);
+        const a = new Audio();
+        a.play().catch(() => {});
       } catch {}
-    } else if (!next && 'speechSynthesis' in window) {
-      window.speechSynthesis.cancel();
-    }
-  };
+      document.removeEventListener('click', unlock);
+      document.removeEventListener('touchstart', unlock);
+      document.removeEventListener('keydown', unlock);
+    };
+    document.addEventListener('click', unlock, { once: true });
+    document.addEventListener('touchstart', unlock, { once: true });
+    document.addEventListener('keydown', unlock, { once: true });
+    return () => {
+      document.removeEventListener('click', unlock);
+      document.removeEventListener('touchstart', unlock);
+      document.removeEventListener('keydown', unlock);
+    };
+  }, []);
 
   // Filter preparing and pending orders, sort by oldest first
   const activeOrders = orders
@@ -57,16 +45,6 @@ export default function KitchenDashboard() {
       {/* Floating compact controls */}
       <div className="absolute top-2 left-2 z-50 flex items-center gap-2">
         <ConnectionIndicator connected={realtimeConnected} />
-        <Button
-          onClick={toggleVoice}
-          variant={voiceEnabled ? 'default' : 'outline'}
-          size="sm"
-          className="gap-1 text-xs px-3 py-1.5 h-auto shadow-md backdrop-blur"
-          title={voiceEnabled ? 'إيقاف التنبيهات الصوتية' : 'تفعيل التنبيهات الصوتية'}
-        >
-          {voiceEnabled ? <Volume2 className="w-4 h-4" /> : <VolumeX className="w-4 h-4" />}
-          {voiceEnabled ? 'الصوت مفعّل' : 'تفعيل الصوت'}
-        </Button>
         <Button
           onClick={() => refetch()}
           variant="outline"
