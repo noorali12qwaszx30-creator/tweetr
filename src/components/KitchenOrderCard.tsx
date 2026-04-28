@@ -214,13 +214,18 @@ export function KitchenOrderCard({ order }: KitchenOrderCardProps) {
 
 function EditedRibbon() {
   return (
-    <div className="absolute top-0 left-0 w-28 h-28 overflow-hidden pointer-events-none z-20">
-      <div
-        className="absolute top-[22px] -left-[34px] w-[160px] text-center py-1.5 bg-destructive text-destructive-foreground font-black text-sm shadow-lg border-y-2 border-destructive-foreground/30 animate-pulse"
-        style={{ transform: 'rotate(-45deg)', animationDuration: '1.2s' }}
-      >
-        ✏️ معدّل
+    <>
+      {/* Diagonal corner ribbon */}
+      <div className="absolute top-0 left-0 w-36 h-36 overflow-hidden pointer-events-none z-30">
+        <div
+          className="absolute top-[30px] -left-[40px] w-[200px] text-center py-2 bg-destructive text-destructive-foreground font-black text-base shadow-2xl border-y-2 border-white/40 animate-pulse"
+          style={{ transform: 'rotate(-45deg)', animationDuration: '1s' }}
+        >
+          ✏️ معدّل
+        </div>
       </div>
-    </div>
+      {/* Extra red outline so it's unmistakable on big kitchen screens */}
+      <div className="absolute inset-0 rounded-2xl ring-4 ring-destructive pointer-events-none z-10 animate-pulse" style={{ animationDuration: '1.2s' }} />
+    </>
   );
 }
