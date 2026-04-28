@@ -213,19 +213,14 @@ export function KitchenOrderCard({ order }: KitchenOrderCardProps) {
 }
 
 function EditedRibbon() {
+  // Red banner sits at the very top of the affected order card only —
+  // not at a screen corner — so kitchen staff immediately see WHICH order changed.
   return (
-    <>
-      {/* Diagonal corner ribbon */}
-      <div className="absolute top-0 left-0 w-36 h-36 overflow-hidden pointer-events-none z-30">
-        <div
-          className="absolute top-[30px] -left-[40px] w-[200px] text-center py-2 bg-destructive text-destructive-foreground font-black text-base shadow-2xl border-y-2 border-white/40 animate-pulse"
-          style={{ transform: 'rotate(-45deg)', animationDuration: '1s' }}
-        >
-          ✏️ معدّل
-        </div>
-      </div>
-      {/* Extra red outline so it's unmistakable on big kitchen screens */}
-      <div className="absolute inset-0 rounded-2xl ring-4 ring-destructive pointer-events-none z-10 animate-pulse" style={{ animationDuration: '1.2s' }} />
-    </>
+    <div
+      className="w-full bg-destructive text-destructive-foreground text-center font-black text-sm py-1.5 shrink-0 animate-pulse border-b-2 border-destructive-foreground/40 z-20"
+      style={{ animationDuration: '1s' }}
+    >
+      ✏️ تم تعديل هذا الطلب — يرجى المراجعة
+    </div>
   );
 }
