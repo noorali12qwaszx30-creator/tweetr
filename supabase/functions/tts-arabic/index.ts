@@ -1,4 +1,7 @@
-import { corsHeaders } from '@supabase/supabase-js/cors';
+const corsHeaders = {
+  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+};
 
 // Arabic TTS via ElevenLabs - returns base64 mp3
 // Voice: Sarah (EXAVITQu4vr4xnSDxMaL) - good multilingual female voice
