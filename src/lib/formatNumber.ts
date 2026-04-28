@@ -68,3 +68,46 @@ export const formatDateEnglish = (date: Date | string): string => {
   const day = d.getDate().toString().padStart(2, '0');
   return `${year}/${month}/${day}`;
 };
+
+/**
+ * Converts a number (0-9999) into Arabic words for proper TTS pronunciation.
+ * Example: 168 -> "مئة وثمانية وستون"
+ */
+export const numberToArabicWords = (num: number): string => {
+  if (num === 0) return 'صفر';
+  if (num < 0) return 'سالب ' + numberToArabicWords(-num);
+
+  const ones = ['', 'واحد', 'اثنان', 'ثلاثة', 'أربعة', 'خمسة', 'ستة', 'سبعة', 'ثمانية', 'تسعة'];
+  const teens = ['عشرة', 'أحد عشر', 'اثنا عشر', 'ثلاثة عشر', 'أربعة عشر', 'خمسة عشر', 'ستة عشر', 'سبعة عشر', 'ثمانية عشر', 'تسعة عشر'];
+  const tens = ['', '', 'عشرون', 'ثلاثون', 'أربعون', 'خمسون', 'ستون', 'سبعون', 'ثمانون', 'تسعون'];
+  const hundreds = ['', 'مئة', 'مئتان', 'ثلاثمئة', 'أربعمئة', 'خمسمئة', 'ستمئة', 'سبعمئة', 'ثمانمئة', 'تسعمئة'];
+
+  const parts: string[] = [];
+
+  if (num >= 1000) {
+    const th = Math.floor(num / 1000);
+    if (th === 1) parts.push('ألف');
+    else if (th === 2) parts.push('ألفان');
+    else if (th >= 3 && th <= 10) parts.push(ones[th] + ' آلاف');
+    else parts.push(numberToArabicWords(th) + ' ألف');
+    num %= 1000;
+  }
+
+  if (num >= 100) {
+    parts.push(hundreds[Math.floor(num / 100)]);
+    num %= 100;
+  }
+
+  if (num >= 20) {
+    const t = Math.floor(num / 10);
+    const o = num % 10;
+    if (o === 0) parts.push(tens[t]);
+    else parts.push(ones[o] + ' و' + tens[t]);
+  } else if (num >= 10) {
+    parts.push(teens[num - 10]);
+  } else if (num > 0) {
+    parts.push(ones[num]);
+  }
+
+  return parts.join(' و');
+};
