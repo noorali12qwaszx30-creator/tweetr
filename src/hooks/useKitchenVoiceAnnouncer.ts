@@ -26,12 +26,14 @@ export function useKitchenVoiceAnnouncer(orders: OrderWithItems[]) {
 
       // New order (only kitchen-relevant statuses)
       if (!prevOrder && (order.status === 'pending' || order.status === 'preparing')) {
+        console.log('[KitchenVoice] New order detected:', order.order_number);
         speakOrderEvent('new', order.order_number);
       }
 
       if (prevOrder) {
         // Edited
         if (!prevOrder.is_edited && order.is_edited) {
+          console.log('[KitchenVoice] Edited order detected:', order.order_number);
           speakOrderEvent('edited', order.order_number);
         }
         // Cancelled
