@@ -1,6 +1,6 @@
 import { useCallback, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/client';
-import { toEnglishNumbers } from '@/lib/formatNumber';
+import { numberToArabicWords } from '@/lib/formatNumber';
 
 // Arabic TTS using ElevenLabs via edge function (high quality)
 // Caches audio per text and queues playback sequentially.
@@ -87,7 +87,8 @@ export function useArabicSpeech() {
 
   const speakOrderEvent = useCallback(
     (event: 'new' | 'edited' | 'late' | 'cancelled' | 'issue', orderNumber: number | string) => {
-      const num = toEnglishNumbers(String(orderNumber));
+      const n = parseInt(String(orderNumber).replace(/\D/g, ''), 10) || 0;
+      const num = numberToArabicWords(n);
       const messages: Record<typeof event, { text: string; key: string }> = {
         new: { text: `طلب جديد، رقم ${num}`, key: `new-${num}` },
         edited: { text: `تنبيه، تم تعديل الطلب رقم ${num}، يرجى المراجعة`, key: `edited-${num}` },
