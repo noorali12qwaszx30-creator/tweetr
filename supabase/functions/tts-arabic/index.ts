@@ -13,13 +13,14 @@ Deno.serve(async (req) => {
   }
 
   try {
-    const apiKey = Deno.env.get('ELEVENLABS_API_KEY');
+    const apiKey = Deno.env.get('ELEVENLABS_API_KEY')?.trim();
     if (!apiKey) {
       return new Response(JSON.stringify({ error: 'ELEVENLABS_API_KEY not set' }), {
         status: 500,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
     }
+    console.log('Using API key prefix:', apiKey.slice(0, 8), 'length:', apiKey.length);
 
     const { text } = await req.json();
     if (!text || typeof text !== 'string' || text.length > 500) {
