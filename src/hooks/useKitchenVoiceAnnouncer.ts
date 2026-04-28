@@ -2,6 +2,48 @@ import { useEffect, useRef } from 'react';
 import { OrderWithItems } from '@/hooks/useSupabaseOrders';
 import { useArabicSpeech } from '@/hooks/useArabicSpeech';
 
+function diffEditDetails(prev: OrderWithItems, next: OrderWithItems): string {
+  const prevMap = new Map<string, number>();
+  prev.items.forEach(it => {
+    prevMap.set(it.menu_item_name, (prevMap.get(it.menu_item_name) || 0) + it.quantity);
+  });
+  const nextMap = new Map<string, number>();
+  next.items.forEach(it => {
+    nextMap.set(it.menu_item_name, (nextMap.get(it.menu_item_name) || 0) + it.quantity);
+  });
+
+  const added: string[] = [];
+  const removed: string[] = [];
+  const changed: string[] = [];
+
+  nextMap.forEach((qty, name) => {
+    const before = prevMap.get(name) || 0;
+    if (before === 0) added.push(name);
+    else if (qty > before) changed.push(`زيادة ${name}`);
+    else if (qty < before) changed.push(`تقليل ${name}`);
+  });
+  prevMap.forEach((_qty, name) => {
+    if (!nextMap.has(name)) removed.push(name);
+  });
+
+  const parts: string[] = [];
+  if (added.length && removed.length) {
+    // Treat as a swap when one item replaced another
+    if (added.length === 1 && removed.length === 1) {
+      parts.push(`تبديل ${removed[0]} بـ ${added[0]}`);
+    } else {
+      parts.push(`إضافة ${added.join(' و ')}`);
+      parts.push(`حذف ${removed.join(' و ')}`);
+    }
+  } else {
+    if (added.length) parts.push(`إضافة ${added.join(' و ')}`);
+    if (removed.length) parts.push(`حذف ${removed.join(' و ')}`);
+  }
+  if (changed.length) parts.push(changed.join(' و '));
+
+  return parts.join('، ');
+}
+
 // Watches kitchen orders and announces events in Arabic via TTS
 export function useKitchenVoiceAnnouncer(orders: OrderWithItems[]) {
   const { speakOrderEvent } = useArabicSpeech();
@@ -31,10 +73,14 @@ export function useKitchenVoiceAnnouncer(orders: OrderWithItems[]) {
       }
 
       if (prevOrder) {
-        // Edited
-        if (!prevOrder.is_edited && order.is_edited) {
-          console.log('[KitchenVoice] Edited order detected:', order.order_number);
-          speakOrderEvent('edited', order.order_number);
+        // Edited — announce on each new edit (use edited_at to detect repeats)
+        const wasEdited =
+          (!prevOrder.is_edited && order.is_edited) ||
+          (order.is_edited && prevOrder.edited_at !== order.edited_at);
+        if (wasEdited) {
+          const details = diffEditDetails(prevOrder, order);
+          console.log('[KitchenVoice] Edited order detected:', order.order_number, details);
+          speakOrderEvent('edited', order.order_number, details);
         }
         // Cancelled
         if (prevOrder.status !== 'cancelled' && order.status === 'cancelled') {
