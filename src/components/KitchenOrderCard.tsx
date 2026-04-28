@@ -148,6 +148,7 @@ export function KitchenOrderCard({ order }: KitchenOrderCardProps) {
         className={`rounded-2xl border-2 hover:shadow-elevated transition-colors duration-300 h-full flex flex-col overflow-hidden ${urgencyCardClass}`}
         style={pulseStyle}
       >
+        {order.is_edited && <EditedRibbon />}
         {renderTopBar()}
         {renderItemsList(frontItems)}
         {orderNotesBlock}
@@ -180,6 +181,7 @@ export function KitchenOrderCard({ order }: KitchenOrderCardProps) {
             className={`rounded-2xl border-2 hover:shadow-elevated transition-colors duration-300 h-full flex flex-col overflow-hidden ${urgencyCardClass}`}
             style={pulseStyle}
           >
+            {order.is_edited && <EditedRibbon />}
             {renderTopBar(`${toEnglishNumbers(currentPage.toString())}/${toEnglishNumbers(totalPages.toString())}`)}
             {renderItemsList(frontItems)}
             {orderNotesBlock}
@@ -199,11 +201,25 @@ export function KitchenOrderCard({ order }: KitchenOrderCardProps) {
             className={`rounded-2xl border-2 hover:shadow-elevated transition-colors duration-300 h-full flex flex-col overflow-hidden ${urgencyCardClass}`}
             style={pulseStyle}
           >
+            {order.is_edited && <EditedRibbon />}
             {renderTopBar(`${toEnglishNumbers('2')}/${toEnglishNumbers(totalPages.toString())}`)}
             {renderItemsList(backItems)}
             {orderNotesBlock}
           </Card>
         </div>
+      </div>
+    </div>
+  );
+}
+
+function EditedRibbon() {
+  return (
+    <div className="absolute top-0 left-0 w-28 h-28 overflow-hidden pointer-events-none z-20">
+      <div
+        className="absolute top-[22px] -left-[34px] w-[160px] text-center py-1.5 bg-destructive text-destructive-foreground font-black text-sm shadow-lg border-y-2 border-destructive-foreground/30 animate-pulse"
+        style={{ transform: 'rotate(-45deg)', animationDuration: '1.2s' }}
+      >
+        ✏️ معدّل
       </div>
     </div>
   );
