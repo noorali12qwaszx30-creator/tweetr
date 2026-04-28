@@ -21,8 +21,13 @@ export function useArabicSpeech() {
       const { data, error } = await supabase.functions.invoke('tts-arabic', {
         body: { text },
       });
-      if (error || !data?.audioContent) {
-        console.error('[ArabicSpeech] TTS error', error);
+      if (error) {
+        console.error('[ArabicSpeech] TTS invoke error', error);
+        elevenlabsBrokenRef.current = true;
+        return null;
+      }
+      if (data?.fallback || !data?.audioContent) {
+        console.warn('[ArabicSpeech] Falling back to browser speech', data?.error || 'No audio returned');
         // Mark broken so we instantly fall back to Web Speech for the rest of the session.
         elevenlabsBrokenRef.current = true;
         return null;
