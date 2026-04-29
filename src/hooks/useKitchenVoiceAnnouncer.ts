@@ -46,7 +46,7 @@ function diffEditDetails(prev: OrderWithItems, next: OrderWithItems): string {
 
 // Watches kitchen orders and announces events in Arabic via TTS
 export function useKitchenVoiceAnnouncer(orders: OrderWithItems[]) {
-  const { speakOrderEvent } = useArabicSpeech();
+  const { speakOrderEvent, audioUnlocked, unlockAudio } = useArabicSpeech();
   const prevOrdersRef = useRef<Map<string, OrderWithItems>>(new Map());
   const initializedRef = useRef(false);
   const announcedLateRef = useRef<Set<string>>(new Set());
@@ -126,3 +126,6 @@ export function useKitchenVoiceAnnouncer(orders: OrderWithItems[]) {
     return () => clearInterval(id);
   }, [orders, speakOrderEvent]);
 }
+
+// Re-export so the dashboard can drive the unlock UI
+export { useArabicSpeech } from '@/hooks/useArabicSpeech';
