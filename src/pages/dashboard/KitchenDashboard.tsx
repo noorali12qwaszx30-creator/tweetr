@@ -1,8 +1,9 @@
 import { useEffect } from 'react';
-import { RefreshCw, ChefHat } from 'lucide-react';
+import { RefreshCw, ChefHat, Volume2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useSupabaseOrders } from '@/hooks/useSupabaseOrders';
 import { useKitchenVoiceAnnouncer } from '@/hooks/useKitchenVoiceAnnouncer';
+import { useArabicSpeech } from '@/hooks/useArabicSpeech';
 import { KitchenOrderCard } from '@/components/KitchenOrderCard';
 import { LogoutConfirmButton } from '@/components/LogoutConfirmButton';
 import { ConnectionIndicator } from '@/components/shared/ConnectionIndicator';
@@ -10,30 +11,24 @@ import { BatchPrepBar } from '@/components/kitchen/BatchPrepBar';
 
 export default function KitchenDashboard() {
   const { orders, loading, realtimeConnected, refetch } = useSupabaseOrders();
+  const { audioUnlocked, unlockAudio, speak } = useArabicSpeech();
 
   // Arabic voice announcements - always on (no toggle)
   useKitchenVoiceAnnouncer(orders);
 
-  // Unlock audio playback on first user interaction (browser autoplay policy)
+  // Auto-unlock on any user interaction anywhere on the page
   useEffect(() => {
-    const unlock = () => {
-      try {
-        const a = new Audio();
-        a.play().catch(() => {});
-      } catch {}
-      document.removeEventListener('click', unlock);
-      document.removeEventListener('touchstart', unlock);
-      document.removeEventListener('keydown', unlock);
-    };
-    document.addEventListener('click', unlock, { once: true });
-    document.addEventListener('touchstart', unlock, { once: true });
-    document.addEventListener('keydown', unlock, { once: true });
+    if (audioUnlocked) return;
+    const handler = () => { unlockAudio(); };
+    document.addEventListener('click', handler);
+    document.addEventListener('touchstart', handler);
+    document.addEventListener('keydown', handler);
     return () => {
-      document.removeEventListener('click', unlock);
-      document.removeEventListener('touchstart', unlock);
-      document.removeEventListener('keydown', unlock);
+      document.removeEventListener('click', handler);
+      document.removeEventListener('touchstart', handler);
+      document.removeEventListener('keydown', handler);
     };
-  }, []);
+  }, [audioUnlocked, unlockAudio]);
 
   // Filter preparing and pending orders, sort by oldest first
   const activeOrders = orders
@@ -42,6 +37,31 @@ export default function KitchenDashboard() {
 
   return (
     <div className="flex flex-col h-dvh bg-background relative" dir="rtl">
+      {/* Audio unlock overlay - mandatory tap to satisfy autoplay policy on TV/kiosk */}
+      {!audioUnlocked && (
+        <div className="fixed inset-0 z-[100] bg-background/95 backdrop-blur flex flex-col items-center justify-center gap-6 p-8">
+          <div className="w-32 h-32 rounded-full bg-primary/10 flex items-center justify-center animate-pulse">
+            <Volume2 className="w-20 h-20 text-primary" />
+          </div>
+          <h2 className="text-4xl font-black text-center">تفعيل الصوت</h2>
+          <p className="text-xl text-muted-foreground text-center max-w-md">
+            اضغط الزر أدناه لتفعيل التنبيهات الصوتية للمطبخ
+          </p>
+          <Button
+            size="lg"
+            className="text-2xl px-12 py-8 h-auto font-bold"
+            onClick={async () => {
+              await unlockAudio();
+              // Speak a short test so the user confirms audio works
+              speak('تم تفعيل التنبيهات الصوتية', 'audio-unlock-test', 60000);
+            }}
+          >
+            <Volume2 className="w-8 h-8 ml-2" />
+            اضغط لتفعيل الصوت
+          </Button>
+        </div>
+      )}
+
       {/* Floating compact controls */}
       <div className="absolute top-2 left-2 z-50 flex items-center gap-2">
         <ConnectionIndicator connected={realtimeConnected} />

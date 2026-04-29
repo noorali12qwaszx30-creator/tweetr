@@ -1,6 +1,20 @@
-import { useCallback, useRef } from 'react';
+import { useCallback, useEffect, useRef, useState, useSyncExternalStore } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { numberToArabicWords } from '@/lib/formatNumber';
+
+// Module-level audio unlock state shared across all hook instances.
+let _audioUnlocked = false;
+const _unlockListeners = new Set<() => void>();
+function _setUnlocked(v: boolean) {
+  if (_audioUnlocked === v) return;
+  _audioUnlocked = v;
+  _unlockListeners.forEach(l => l());
+}
+function _subscribe(l: () => void) {
+  _unlockListeners.add(l);
+  return () => _unlockListeners.delete(l);
+}
+function _getSnapshot() { return _audioUnlocked; }
 
 // Arabic TTS using ElevenLabs via edge function (high quality)
 // Caches audio per text and queues playback sequentially.
@@ -13,6 +27,70 @@ export function useArabicSpeech() {
   const lastSpokenRef = useRef<Map<string, number>>(new Map());
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const elevenlabsBrokenRef = useRef(false); // once 401/quota, stop wasting calls
+  const audioUnlocked = useSyncExternalStore(_subscribe, _getSnapshot, _getSnapshot);
+
+  // Try a silent play to detect if audio is actually unlocked by the browser.
+  const probeUnlock = useCallback(async () => {
+    try {
+      const a = new Audio(
+        'data:audio/mp3;base64,SUQzBAAAAAAAI1RTU0UAAAAPAAADTGF2ZjU4Ljc2LjEwMAAAAAAAAAAAAAAA//tQxAADB8AhSmxhIIEVCSiJrDCQBTcu3UrAIwUdkRgQbFAZC1CQEwTJ9mjRvBA4UOLD8nKVOWfh+UlK3z/177OXrfOdKl7097v...'
+      );
+      a.muted = true;
+      a.volume = 0;
+      await a.play();
+      a.pause();
+      return true;
+    } catch {
+      return false;
+    }
+  }, []);
+
+  const unlockAudio = useCallback(async () => {
+    try {
+      // 1) Unlock HTMLAudio
+      const a = new Audio();
+      a.muted = true;
+      try { await a.play(); } catch {}
+      try { a.pause(); } catch {}
+      // 2) Unlock WebAudio context (some platforms need this)
+      try {
+        const Ctx: any = (window as any).AudioContext || (window as any).webkitAudioContext;
+        if (Ctx) {
+          const ctx = new Ctx();
+          if (ctx.state === 'suspended') await ctx.resume();
+          const buffer = ctx.createBuffer(1, 1, 22050);
+          const src = ctx.createBufferSource();
+          src.buffer = buffer;
+          src.connect(ctx.destination);
+          src.start(0);
+        }
+      } catch {}
+      // 3) Unlock SpeechSynthesis (Chrome requires a user-initiated speak)
+      try {
+        if ('speechSynthesis' in window) {
+          window.speechSynthesis.cancel();
+          const u = new SpeechSynthesisUtterance(' ');
+          u.volume = 0;
+          window.speechSynthesis.speak(u);
+        }
+      } catch {}
+      _setUnlocked(true);
+    } catch (e) {
+      console.warn('[ArabicSpeech] unlock failed', e);
+    }
+  }, []);
+
+  // Auto-detect if audio is already unlocked (e.g. user already interacted on this tab)
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      const ok = await probeUnlock();
+      if (!cancelled && ok) {
+        _setUnlocked(true);
+      }
+    })();
+    return () => { cancelled = true; };
+  }, [probeUnlock]);
 
   const fetchAudio = useCallback(async (text: string): Promise<string | null> => {
     if (cacheRef.current.has(text)) return cacheRef.current.get(text)!;
@@ -156,5 +234,5 @@ export function useArabicSpeech() {
     [speak]
   );
 
-  return { speak, speakOrderEvent };
+  return { speak, speakOrderEvent, audioUnlocked, unlockAudio };
 }
