@@ -223,5 +223,5 @@ export function useArabicSpeech() {
     [speak]
   );
 
-  return { speak, speakOrderEvent };
+  return { speak, speakOrderEvent, audioUnlocked, unlockAudio };
 }
