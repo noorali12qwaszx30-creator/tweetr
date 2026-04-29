@@ -1,6 +1,20 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState, useSyncExternalStore } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { numberToArabicWords } from '@/lib/formatNumber';
+
+// Module-level audio unlock state shared across all hook instances.
+let _audioUnlocked = false;
+const _unlockListeners = new Set<() => void>();
+function _setUnlocked(v: boolean) {
+  if (_audioUnlocked === v) return;
+  _audioUnlocked = v;
+  _unlockListeners.forEach(l => l());
+}
+function _subscribe(l: () => void) {
+  _unlockListeners.add(l);
+  return () => _unlockListeners.delete(l);
+}
+function _getSnapshot() { return _audioUnlocked; }
 
 // Arabic TTS using ElevenLabs via edge function (high quality)
 // Caches audio per text and queues playback sequentially.
@@ -13,8 +27,7 @@ export function useArabicSpeech() {
   const lastSpokenRef = useRef<Map<string, number>>(new Map());
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const elevenlabsBrokenRef = useRef(false); // once 401/quota, stop wasting calls
-  const [audioUnlocked, setAudioUnlocked] = useState<boolean>(false);
-  const unlockedRef = useRef(false);
+  const audioUnlocked = useSyncExternalStore(_subscribe, _getSnapshot, _getSnapshot);
 
   // Try a silent play to detect if audio is actually unlocked by the browser.
   const probeUnlock = useCallback(async () => {
@@ -61,8 +74,7 @@ export function useArabicSpeech() {
           window.speechSynthesis.speak(u);
         }
       } catch {}
-      unlockedRef.current = true;
-      setAudioUnlocked(true);
+      _setUnlocked(true);
     } catch (e) {
       console.warn('[ArabicSpeech] unlock failed', e);
     }
@@ -74,8 +86,7 @@ export function useArabicSpeech() {
     (async () => {
       const ok = await probeUnlock();
       if (!cancelled && ok) {
-        unlockedRef.current = true;
-        setAudioUnlocked(true);
+        _setUnlocked(true);
       }
     })();
     return () => { cancelled = true; };
