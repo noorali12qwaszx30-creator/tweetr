@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState, useSyncExternalStore } from 'react';
+import { useCallback, useRef, useSyncExternalStore } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { numberToArabicWords } from '@/lib/formatNumber';
 
@@ -29,23 +29,10 @@ export function useArabicSpeech() {
   const elevenlabsBrokenRef = useRef(false); // once 401/quota, stop wasting calls
   const audioUnlocked = useSyncExternalStore(_subscribe, _getSnapshot, _getSnapshot);
 
-  // Try a silent play to detect if audio is actually unlocked by the browser.
-  const probeUnlock = useCallback(async () => {
-    try {
-      const a = new Audio(
-        'data:audio/mp3;base64,SUQzBAAAAAAAI1RTU0UAAAAPAAADTGF2ZjU4Ljc2LjEwMAAAAAAAAAAAAAAA//tQxAADB8AhSmxhIIEVCSiJrDCQBTcu3UrAIwUdkRgQbFAZC1CQEwTJ9mjRvBA4UOLD8nKVOWfh+UlK3z/177OXrfOdKl7097v...'
-      );
-      a.muted = true;
-      a.volume = 0;
-      await a.play();
-      a.pause();
-      return true;
-    } catch {
-      return false;
-    }
-  }, []);
-
   const unlockAudio = useCallback(async () => {
+    // Set unlocked FIRST so the UI hides immediately on the user gesture,
+    // even if any of the audio init steps below throw.
+    _setUnlocked(true);
     try {
       // 1) Unlock HTMLAudio
       const a = new Audio();
@@ -74,23 +61,11 @@ export function useArabicSpeech() {
           window.speechSynthesis.speak(u);
         }
       } catch {}
-      _setUnlocked(true);
     } catch (e) {
       console.warn('[ArabicSpeech] unlock failed', e);
     }
   }, []);
 
-  // Auto-detect if audio is already unlocked (e.g. user already interacted on this tab)
-  useEffect(() => {
-    let cancelled = false;
-    (async () => {
-      const ok = await probeUnlock();
-      if (!cancelled && ok) {
-        _setUnlocked(true);
-      }
-    })();
-    return () => { cancelled = true; };
-  }, [probeUnlock]);
 
   const fetchAudio = useCallback(async (text: string): Promise<string | null> => {
     if (cacheRef.current.has(text)) return cacheRef.current.get(text)!;
