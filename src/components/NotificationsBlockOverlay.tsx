@@ -2,6 +2,7 @@ import { useNotificationsEnforcer } from '@/hooks/useNotificationsEnforcer';
 import { Button } from '@/components/ui/button';
 import { Bell, BellOff, Settings, RefreshCw, ShieldAlert } from 'lucide-react';
 import { Capacitor } from '@capacitor/core';
+import { NativeSettings, AndroidSettings, IOSSettings } from 'capacitor-native-settings';
 import { useState } from 'react';
 
 /**
@@ -19,17 +20,10 @@ export function NotificationsBlockOverlay() {
   const openSystemSettings = async () => {
     setOpening(true);
     try {
-      // Try the native bridge to open the app's notification settings page.
-      // Falls back gracefully if the plugin isn't available.
-      const anyCap = (window as any).Capacitor;
-      if (anyCap?.Plugins?.NativeSettings?.openAndroid) {
-        await anyCap.Plugins.NativeSettings.openAndroid({
-          option: 'app_notification',
-        });
-      } else {
-        // Last-resort: ask Capacitor's own permission dialog
-        await requestPermission();
-      }
+      await NativeSettings.open({
+        optionAndroid: AndroidSettings.AppNotification,
+        optionIOS: IOSSettings.App,
+      });
     } catch {
       await requestPermission();
     } finally {
