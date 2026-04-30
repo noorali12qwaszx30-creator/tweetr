@@ -13,6 +13,7 @@ import RoleSelector from "./pages/RoleSelector";
 import Dashboard from "./pages/Dashboard";
 import NotFound from "./pages/NotFound";
 import { useVersionCheck } from "@/hooks/useVersionCheck";
+import { usePushNotifications } from "@/hooks/usePushNotifications";
 
 const queryClient = new QueryClient();
 
@@ -27,6 +28,7 @@ const AppContent = () => {
               <ActivityLogProvider>
                 <TooltipProvider>
                   <ErrorBoundary fallbackTitle="حدث خطأ في التطبيق">
+                    <PushNotificationsBridge />
                     <Toaster />
                     <Sonner />
                     <Routes>
@@ -43,6 +45,11 @@ const AppContent = () => {
       </AuthProvider>
     </BrowserRouter>
   );
+};
+
+const PushNotificationsBridge = () => {
+  usePushNotifications();
+  return null;
 };
 
 const App = () => (
