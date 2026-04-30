@@ -12,11 +12,13 @@ import { ErrorBoundary } from "@/components/ErrorBoundary";
 import RoleSelector from "./pages/RoleSelector";
 import Dashboard from "./pages/Dashboard";
 import NotFound from "./pages/NotFound";
+import { useVersionCheck } from "@/hooks/useVersionCheck";
 
 const queryClient = new QueryClient();
 
-const App = () => (
-  <QueryClientProvider client={queryClient}>
+const AppContent = () => {
+  useVersionCheck();
+  return (
     <BrowserRouter>
       <AuthProvider>
         <RoleProvider>
@@ -40,6 +42,12 @@ const App = () => (
         </RoleProvider>
       </AuthProvider>
     </BrowserRouter>
+  );
+};
+
+const App = () => (
+  <QueryClientProvider client={queryClient}>
+    <AppContent />
   </QueryClientProvider>
 );
 
