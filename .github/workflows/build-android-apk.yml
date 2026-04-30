@@ -52,6 +52,19 @@ jobs:
       - name: Sync Capacitor
         run: npx cap sync android
 
+      - name: Patch AndroidManifest for notifications
+        run: |
+          MANIFEST=android/app/src/main/AndroidManifest.xml
+          # Add POST_NOTIFICATIONS permission (required on Android 13+)
+          if ! grep -q "POST_NOTIFICATIONS" "$MANIFEST"; then
+            sed -i 's|<uses-permission android:name="android.permission.INTERNET" />|<uses-permission android:name="android.permission.INTERNET" />\n    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />\n    <uses-permission android:name="android.permission.WAKE_LOCK" />\n    <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />\n    <uses-permission android:name="android.permission.VIBRATE" />|' "$MANIFEST"
+          fi
+          # Add FCM default channel meta-data inside <application>
+          if ! grep -q "default_notification_channel_id" "$MANIFEST"; then
+            sed -i 's|</application>|    <meta-data android:name="com.google.firebase.messaging.default_notification_channel_id" android:value="orders" />\n        <meta-data android:name="com.google.firebase.messaging.default_notification_color" android:resource="@color/colorAccent" tools:replace="android:resource" />\n    </application>|' "$MANIFEST"
+          fi
+          cat "$MANIFEST"
+
       - name: Build Debug APK
         working-directory: android
         run: |
