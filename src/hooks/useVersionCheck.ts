@@ -46,11 +46,13 @@ export function useVersionCheck() {
             label: 'تحديث الآن',
             onClick: () => {
               // تنظيف caches ثم إعادة تحميل قسرية
+              const reload = () => window.location.reload();
               if ('caches' in window) {
-                caches.keys().then((keys) => Promise.all(keys.map((k) => caches.delete(k))))
-                  .finally(() => window.location.reload());
+                caches.keys()
+                  .then((keys) => Promise.all(keys.map((k) => caches.delete(k))))
+                  .finally(reload);
               } else {
-                window.location.reload();
+                reload();
               }
             },
           },
