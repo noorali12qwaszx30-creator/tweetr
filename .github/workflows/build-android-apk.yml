@@ -61,7 +61,7 @@ jobs:
           fi
           # Add FCM default channel meta-data inside <application>
           if ! grep -q "default_notification_channel_id" "$MANIFEST"; then
-            sed -i 's|</application>|    <meta-data android:name="com.google.firebase.messaging.default_notification_channel_id" android:value="orders" />\n        <meta-data android:name="com.google.firebase.messaging.default_notification_color" android:resource="@color/colorAccent" tools:replace="android:resource" />\n    </application>|' "$MANIFEST"
+            sed -i 's|</application>|    <meta-data android:name="com.google.firebase.messaging.default_notification_channel_id" android:value="orders" />\n    </application>|' "$MANIFEST"
           fi
           cat "$MANIFEST"
 
