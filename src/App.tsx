@@ -14,11 +14,37 @@ import Dashboard from "./pages/Dashboard";
 import NotFound from "./pages/NotFound";
 import { useVersionCheck } from "@/hooks/useVersionCheck";
 import { usePushNotifications } from "@/hooks/usePushNotifications";
+import { useEffect } from "react";
+import { Capacitor } from "@capacitor/core";
+import { LocalNotifications } from "@capacitor/local-notifications";
 
 const queryClient = new QueryClient();
 
 const AppContent = () => {
   useVersionCheck();
+  useEffect(() => {
+    // Create the notification channel as early as possible so that FCM
+    // notifications arriving while the app is killed can be displayed
+    // by the system using the correct importance/sound settings.
+    if (!Capacitor.isNativePlatform()) return;
+    (async () => {
+      try {
+        await LocalNotifications.createChannel({
+          id: 'orders',
+          name: 'الطلبات',
+          description: 'تنبيهات الطلبات الجديدة وتغيير الحالات',
+          importance: 5,
+          visibility: 1,
+          sound: 'default',
+          vibration: true,
+          lights: true,
+          lightColor: '#F97316',
+        });
+      } catch {
+        // ignore
+      }
+    })();
+  }, []);
   return (
     <BrowserRouter>
       <AuthProvider>
