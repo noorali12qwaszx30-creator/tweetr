@@ -9,6 +9,7 @@ import { CancellationReasonsProvider } from "@/contexts/CancellationReasonsConte
 import { IssueReasonsProvider } from "@/contexts/IssueReasonsContext";
 import { ActivityLogProvider } from "@/contexts/ActivityLogContext";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
+import { NotificationsBlockOverlay } from "@/components/NotificationsBlockOverlay";
 import RoleSelector from "./pages/RoleSelector";
 import Dashboard from "./pages/Dashboard";
 import NotFound from "./pages/NotFound";
@@ -62,6 +63,7 @@ const AppContent = () => {
                       <Route path="/dashboard" element={<Dashboard />} />
                       <Route path="*" element={<NotFound />} />
                     </Routes>
+                    <NotificationsBlockOverlay />
                   </ErrorBoundary>
                 </TooltipProvider>
               </ActivityLogProvider>
