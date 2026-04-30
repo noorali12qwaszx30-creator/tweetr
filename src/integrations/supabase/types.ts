@@ -379,6 +379,39 @@ export type Database = {
         }
         Relationships: []
       }
+      device_tokens: {
+        Row: {
+          created_at: string
+          device_token: string
+          id: string
+          last_active_at: string
+          platform: string
+          role: Database["public"]["Enums"]["app_role"] | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          device_token: string
+          id?: string
+          last_active_at?: string
+          platform?: string
+          role?: Database["public"]["Enums"]["app_role"] | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          device_token?: string
+          id?: string
+          last_active_at?: string
+          platform?: string
+          role?: Database["public"]["Enums"]["app_role"] | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       driver_hub_posts: {
         Row: {
           content: string
