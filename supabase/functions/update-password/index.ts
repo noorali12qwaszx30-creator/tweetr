@@ -74,9 +74,16 @@ serve(async (req) => {
 
     if (updateError) {
       console.error("Password update error:", updateError);
+      let friendlyMessage = updateError.message;
+      const code = (updateError as any).code;
+      if (code === "weak_password" || /weak|pwned/i.test(updateError.message)) {
+        friendlyMessage = "كلمة المرور ضعيفة أو مسربة في قواعد بيانات الاختراقات. الرجاء اختيار كلمة مرور أقوى (مزيج من أحرف كبيرة وصغيرة وأرقام ورموز، ولا تكون شائعة).";
+      } else if (code === "same_password") {
+        friendlyMessage = "كلمة المرور الجديدة يجب أن تكون مختلفة عن الحالية.";
+      }
       return new Response(
-        JSON.stringify({ error: updateError.message }),
-        { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        JSON.stringify({ error: friendlyMessage, code }),
+        { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
 
