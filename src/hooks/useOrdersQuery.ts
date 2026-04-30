@@ -177,7 +177,6 @@ export function useOrdersQuery(options: UseOrdersQueryOptions = {}) {
       .on('postgres_changes', { event: 'DELETE', schema: 'public', table: 'orders' }, 
         (payload) => handleOrderDelete(payload.old as DbOrder))
       .subscribe((status) => {
-        console.log('Orders channel status:', status);
         if (status === 'SUBSCRIBED') {
           setRealtimeConnected(true);
           fetchOrders();
