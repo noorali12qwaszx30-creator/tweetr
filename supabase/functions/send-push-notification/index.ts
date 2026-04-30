@@ -98,10 +98,14 @@ async function sendOne(
           data: data ?? {},
           android: {
             priority: "HIGH",
+            ttl: "3600s",
             notification: {
               channel_id: "orders",
               sound: "default",
               default_vibrate_timings: true,
+              default_sound: true,
+              notification_priority: "PRIORITY_MAX",
+              visibility: "PUBLIC",
             },
           },
         },
