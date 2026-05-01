@@ -1,4 +1,4 @@
-import { useDriverLocationTracker } from '@/hooks/useDriverLocationTracker';
+import { useGpsState } from '@/hooks/useDriverLocationTracker';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
 import { MapPin, Settings as SettingsIcon, Loader2 } from 'lucide-react';
@@ -6,7 +6,7 @@ import { Capacitor } from '@capacitor/core';
 
 export function GpsBlockOverlay() {
   const { user } = useAuth();
-  const { gpsState, recheck } = useDriverLocationTracker();
+  const { gpsState, recheck } = useGpsState();
 
   if (!user || user.role !== 'delivery') return null;
   if (gpsState === 'ok' || gpsState === 'checking') return null;
