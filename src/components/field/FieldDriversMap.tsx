@@ -56,7 +56,12 @@ export function FieldDriversMap() {
       attribution: '&copy; OpenStreetMap',
     }).addTo(map);
     mapRef.current = map;
+    // Ensure tiles render correctly after layout settles
+    const t1 = setTimeout(() => map.invalidateSize(), 100);
+    const t2 = setTimeout(() => map.invalidateSize(), 500);
+    const t3 = setTimeout(() => map.invalidateSize(), 1200);
     return () => {
+      clearTimeout(t1); clearTimeout(t2); clearTimeout(t3);
       map.remove();
       mapRef.current = null;
       markersRef.current.clear();
