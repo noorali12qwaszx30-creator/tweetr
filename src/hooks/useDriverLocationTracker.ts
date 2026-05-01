@@ -3,6 +3,7 @@ import { Capacitor } from '@capacitor/core';
 import { Geolocation } from '@capacitor/geolocation';
 import { Device } from '@capacitor/device';
 import { App as CapacitorApp } from '@capacitor/app';
+import { BackgroundGeolocation } from '@capacitor-community/background-geolocation';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 
@@ -20,6 +21,7 @@ let watchId: string | null = null;
 let pollInterval: number | null = null;
 let lastSent = 0;
 let appListenerHandle: { remove: () => void } | null = null;
+let bgWatcherId: string | null = null;
 
 function setState(next: GpsState) {
   if (currentState === next) return;
@@ -151,10 +153,57 @@ async function checkAndStart() {
         setState('gps_disabled');
       }
     }, UPDATE_INTERVAL_MS);
+
+    // Background tracking — keeps GPS alive when app is closed/minimized
+    await startBackgroundWatcher();
   } catch (err) {
     console.error('[location] start failed', err);
     setState('gps_disabled');
   }
+}
+
+async function startBackgroundWatcher() {
+  if (bgWatcherId) return;
+  try {
+    bgWatcherId = await BackgroundGeolocation.addWatcher(
+      {
+        backgroundMessage: 'يتم تتبع موقعك لتسليم الطلبات',
+        backgroundTitle: 'تويتر - التوصيل نشط',
+        requestPermissions: true,
+        stale: false,
+        distanceFilter: 10,
+      },
+      (location, error) => {
+        if (error) {
+          if (error.code === 'NOT_AUTHORIZED') {
+            setState('permission_denied');
+          }
+          return;
+        }
+        if (!location) return;
+        const now = Date.now();
+        if (now - lastSent >= UPDATE_INTERVAL_MS) {
+          sendLocation({
+            latitude: location.latitude,
+            longitude: location.longitude,
+            accuracy: location.accuracy,
+            speed: location.speed,
+            heading: location.bearing,
+          });
+        }
+      }
+    );
+  } catch (err) {
+    console.error('[location] background watcher failed', err);
+  }
+}
+
+async function stopBackgroundWatcher() {
+  if (!bgWatcherId) return;
+  try {
+    await BackgroundGeolocation.removeWatcher({ id: bgWatcherId });
+  } catch { /* ignore */ }
+  bgWatcherId = null;
 }
 
 async function stopTracking() {
@@ -163,6 +212,7 @@ async function stopTracking() {
     try { await Geolocation.clearWatch({ id: watchId }); } catch { /* ignore */ }
     watchId = null;
   }
+  await stopBackgroundWatcher();
   if (appListenerHandle) { appListenerHandle.remove(); appListenerHandle = null; }
   started = false;
   currentUserId = null;
