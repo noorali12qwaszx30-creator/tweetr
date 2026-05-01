@@ -68,6 +68,13 @@ export function FieldDriversMap() {
     };
   }, []);
 
+  useEffect(() => {
+    if (!loading && mapRef.current) {
+      const map = mapRef.current;
+      requestAnimationFrame(() => map.invalidateSize());
+    }
+  }, [loading, locations.length]);
+
   // Sync markers
   useEffect(() => {
     const map = mapRef.current;
@@ -123,14 +130,6 @@ export function FieldDriversMap() {
     return { live, recent, stale };
   }, [locations]);
 
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center py-12">
-        <Loader2 className="w-8 h-8 animate-spin text-primary" />
-      </div>
-    );
-  }
-
   return (
     <div className="space-y-4">
       <div className="grid grid-cols-3 gap-2">
@@ -148,8 +147,13 @@ export function FieldDriversMap() {
         </Card>
       </div>
 
-      <div className="rounded-xl overflow-hidden border border-border" style={{ height: '60vh', minHeight: 400 }}>
+      <div className="relative rounded-xl overflow-hidden border border-border" style={{ height: '60vh', minHeight: 400 }}>
         <div ref={mapDivRef} style={{ height: '100%', width: '100%' }} />
+        {loading && (
+          <div className="absolute inset-0 flex items-center justify-center bg-background/70 backdrop-blur-[1px]">
+            <Loader2 className="w-8 h-8 animate-spin text-primary" />
+          </div>
+        )}
       </div>
 
       <div className="space-y-2">
