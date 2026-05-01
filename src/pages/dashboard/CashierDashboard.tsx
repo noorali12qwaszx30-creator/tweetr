@@ -17,6 +17,7 @@ import { OrderDetailsDialog } from '@/components/OrderDetailsDialog';
 import { LogoutConfirmButton } from '@/components/LogoutConfirmButton';
 import { SmartOrderSearch } from '@/components/SmartOrderSearch';
 import { LargeOrderConfirmDialog } from '@/components/LargeOrderConfirmDialog';
+import { FieldDriversMap } from '@/components/field/FieldDriversMap';
 import { toast } from 'sonner';
 import { ROLE_LABELS } from '@/types';
 import { toEnglishNumbers, formatNumberWithCommas, formatDateEnglish, formatTimeEnglish } from '@/lib/formatNumber';
@@ -42,7 +43,8 @@ import {
   Pencil,
   AlertTriangle,
   Search,
-  Flame
+  Flame,
+  Map as MapIcon
 } from 'lucide-react';
 import {
   Select,
@@ -80,7 +82,7 @@ import {
   verticalListSortingStrategy,
 } from '@dnd-kit/sortable';
 
-type TabType = 'menu' | 'orders' | 'search' | 'reports' | 'settings';
+type TabType = 'menu' | 'orders' | 'search' | 'map' | 'reports' | 'settings';
 
 export default function CashierDashboard() {
   const { role } = useRole();
