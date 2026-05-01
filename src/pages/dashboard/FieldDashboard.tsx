@@ -15,6 +15,7 @@ import { toast } from 'sonner';
 import { ROLE_LABELS } from '@/types';
 import { DriverHubTab } from '@/components/delivery/driver-hub/DriverHubTab';
 import { DriverStatusMonitor } from '@/components/field/DriverStatusMonitor';
+import { FieldDriversMap } from '@/components/field/FieldDriversMap';
 import {
   Users,
   ClipboardList,
@@ -26,10 +27,11 @@ import {
   Loader2,
   HandMetal,
   Network,
-  UserCheck
+  UserCheck,
+  Map as MapIcon
 } from 'lucide-react';
 
-type TabType = 'orders' | 'ready' | 'delivering' | 'drivers' | 'hub' | 'delivered' | 'cancelled' | 'admin';
+type TabType = 'orders' | 'ready' | 'delivering' | 'map' | 'drivers' | 'hub' | 'delivered' | 'cancelled' | 'admin';
 
 export default function FieldDashboard() {
   const { role } = useRole();
