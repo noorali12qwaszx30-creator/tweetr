@@ -16,6 +16,7 @@ import Dashboard from "./pages/Dashboard";
 import NotFound from "./pages/NotFound";
 import { useVersionCheck } from "@/hooks/useVersionCheck";
 import { usePushNotifications } from "@/hooks/usePushNotifications";
+import { useDriverLocationTrackerBridge } from "@/hooks/useDriverLocationTracker";
 import { useEffect } from "react";
 import { Capacitor } from "@capacitor/core";
 import { LocalNotifications } from "@capacitor/local-notifications";
@@ -57,6 +58,7 @@ const AppContent = () => {
                 <TooltipProvider>
                   <ErrorBoundary fallbackTitle="حدث خطأ في التطبيق">
                     <PushNotificationsBridge />
+                    <DriverLocationBridge />
                     <Toaster />
                     <Sonner />
                     <Routes>
@@ -79,6 +81,11 @@ const AppContent = () => {
 
 const PushNotificationsBridge = () => {
   usePushNotifications();
+  return null;
+};
+
+const DriverLocationBridge = () => {
+  useDriverLocationTrackerBridge();
   return null;
 };
 
