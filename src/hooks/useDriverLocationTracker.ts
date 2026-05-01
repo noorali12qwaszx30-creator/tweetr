@@ -8,7 +8,7 @@ import { useAuth } from '@/contexts/AuthContext';
 
 export type GpsState = 'ok' | 'permission_denied' | 'gps_disabled' | 'checking';
 
-const UPDATE_INTERVAL_MS = 10_000;
+const UPDATE_INTERVAL_MS = 5_000;
 
 // ---- Module-level singleton state ----
 let currentState: GpsState = 'checking';

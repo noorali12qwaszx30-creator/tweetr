@@ -3,7 +3,7 @@ import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import { useDriverLocations, getStaleness, DriverLocation } from '@/hooks/useDriverLocations';
 import { Card } from '@/components/ui/card';
-import { Battery, BatteryCharging, Phone, MessageCircle, MapPin, Loader2 } from 'lucide-react';
+import { Battery, BatteryCharging, MapPin, Loader2, Crosshair } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
 // Default Tripoli, Libya (orange brand). Adjust if needed.
@@ -38,6 +38,15 @@ export function FieldDriversMap() {
   const mapRef = useRef<L.Map | null>(null);
   const mapDivRef = useRef<HTMLDivElement | null>(null);
   const markersRef = useRef<Map<string, L.Marker>>(new Map());
+  const didFitRef = useRef(false);
+
+  const focusDriver = (loc: DriverLocation) => {
+    const map = mapRef.current;
+    if (!map) return;
+    map.flyTo([loc.latitude, loc.longitude], 16, { duration: 0.8 });
+    const marker = markersRef.current.get(loc.id);
+    marker?.openPopup();
+  };
 
   // Initialize map once
   useEffect(() => {
@@ -65,7 +74,19 @@ export function FieldDriversMap() {
       const popupHtml = `<div dir="rtl" style="min-width:180px"><div style="font-weight:bold">${loc.user_name}</div><div style="font-size:11px;color:#666">${timeAgo(loc.updated_at)}</div><div style="font-size:12px">🔋 ${loc.battery_level ?? '?'}%${loc.speed != null && loc.speed > 0 ? ` · ${Math.round(loc.speed * 3.6)} كم/س` : ''}</div></div>`;
       const existing = markersRef.current.get(loc.id);
       if (existing) {
-        existing.setLatLng([loc.latitude, loc.longitude]);
+        // Smooth animated movement between updates
+        const from = existing.getLatLng();
+        const to = L.latLng(loc.latitude, loc.longitude);
+        const start = performance.now();
+        const duration = 900;
+        const step = (t: number) => {
+          const k = Math.min(1, (t - start) / duration);
+          const lat = from.lat + (to.lat - from.lat) * k;
+          const lng = from.lng + (to.lng - from.lng) * k;
+          existing.setLatLng([lat, lng]);
+          if (k < 1) requestAnimationFrame(step);
+        };
+        requestAnimationFrame(step);
         existing.setIcon(ICONS[status]);
         existing.setPopupContent(popupHtml);
       } else {
@@ -82,10 +103,11 @@ export function FieldDriversMap() {
         markersRef.current.delete(id);
       }
     });
-    // Fit bounds
-    if (locations.length > 0) {
+    // Fit bounds only on first load so we don't keep snapping the user's view
+    if (locations.length > 0 && !didFitRef.current) {
       const bounds = L.latLngBounds(locations.map((l) => [l.latitude, l.longitude] as [number, number]));
       map.fitBounds(bounds, { padding: [40, 40], maxZoom: 14 });
+      didFitRef.current = true;
     }
   }, [locations]);
 
@@ -151,9 +173,10 @@ export function FieldDriversMap() {
               <Button
                 size="sm"
                 variant="outline"
-                onClick={() => window.open(`https://www.google.com/maps?q=${loc.latitude},${loc.longitude}`, '_blank')}
+                onClick={() => focusDriver(loc)}
+                title="عرض على الخريطة"
               >
-                <MapPin className="w-3 h-3" />
+                <Crosshair className="w-3 h-3" />
               </Button>
             </Card>
           );
