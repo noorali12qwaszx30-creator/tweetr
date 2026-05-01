@@ -17,6 +17,7 @@ import { OrderDetailsDialog } from '@/components/OrderDetailsDialog';
 import { LogoutConfirmButton } from '@/components/LogoutConfirmButton';
 import { SmartOrderSearch } from '@/components/SmartOrderSearch';
 import { LargeOrderConfirmDialog } from '@/components/LargeOrderConfirmDialog';
+import { FieldDriversMap } from '@/components/field/FieldDriversMap';
 import { toast } from 'sonner';
 import { ROLE_LABELS } from '@/types';
 import { toEnglishNumbers, formatNumberWithCommas, formatDateEnglish, formatTimeEnglish } from '@/lib/formatNumber';
@@ -42,7 +43,8 @@ import {
   Pencil,
   AlertTriangle,
   Search,
-  Flame
+  Flame,
+  Map as MapIcon
 } from 'lucide-react';
 import {
   Select,
@@ -80,7 +82,7 @@ import {
   verticalListSortingStrategy,
 } from '@dnd-kit/sortable';
 
-type TabType = 'menu' | 'orders' | 'search' | 'reports' | 'settings';
+type TabType = 'menu' | 'orders' | 'search' | 'map' | 'reports' | 'settings';
 
 export default function CashierDashboard() {
   const { role } = useRole();
@@ -606,6 +608,16 @@ export default function CashierDashboard() {
           />
         )}
 
+        {activeTab === 'map' && (
+          <div className="space-y-4">
+            <h2 className="text-xl font-bold flex items-center gap-2">
+              <MapIcon className="w-5 h-5 text-primary" />
+              خريطة السائقين المباشرة
+            </h2>
+            <FieldDriversMap />
+          </div>
+        )}
+
         {activeTab === 'reports' && (
           <div className="space-y-4">
             <div className="flex items-center justify-between">
@@ -819,6 +831,7 @@ export default function CashierDashboard() {
           { id: 'orders', label: 'الطلبات', icon: <ClipboardList className="w-5 h-5" />, count: activeOrders.length },
           { id: 'search', label: 'بحث', icon: <Search className="w-5 h-5" /> },
           { id: 'menu', label: 'المنيو', icon: <MenuIcon className="w-5 h-5" />, isPrimary: true },
+          { id: 'map', label: 'الخريطة', icon: <MapIcon className="w-5 h-5" /> },
           { id: 'reports', label: 'البلاغات', icon: <AlertTriangle className="w-5 h-5" />, count: ordersWithIssues.length },
           { id: 'settings', label: 'الإعدادات', icon: <Settings className="w-5 h-5" /> },
         ]}
