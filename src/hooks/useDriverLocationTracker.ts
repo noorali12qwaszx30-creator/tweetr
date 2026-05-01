@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Capacitor } from '@capacitor/core';
 import { Geolocation } from '@capacitor/geolocation';
 import { Device } from '@capacitor/device';
@@ -6,88 +6,139 @@ import { App as CapacitorApp } from '@capacitor/app';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 
-type GpsState = 'ok' | 'permission_denied' | 'gps_disabled' | 'checking';
+export type GpsState = 'ok' | 'permission_denied' | 'gps_disabled' | 'checking';
 
 const UPDATE_INTERVAL_MS = 10_000;
 
-export function useDriverLocationTracker(): { gpsState: GpsState; recheck: () => Promise<void> } {
-  const { user } = useAuth();
-  const [gpsState, setGpsState] = useState<GpsState>('checking');
-  const watchIdRef = useRef<string | null>(null);
-  const intervalRef = useRef<number | null>(null);
-  const lastSentRef = useRef<number>(0);
+// ---- Module-level singleton state ----
+let currentState: GpsState = 'checking';
+const listeners = new Set<(s: GpsState) => void>();
+let started = false;
+let currentUserId: string | null = null;
+let currentUserName: string = '';
+let watchId: string | null = null;
+let pollInterval: number | null = null;
+let lastSent = 0;
+let appListenerHandle: { remove: () => void } | null = null;
 
-  const isDriver = user?.role === 'delivery';
+function setState(next: GpsState) {
+  if (currentState === next) return;
+  currentState = next;
+  listeners.forEach((l) => l(next));
+}
 
-  const sendLocation = async (pos: { latitude: number; longitude: number; accuracy?: number | null; speed?: number | null; heading?: number | null }) => {
-    if (!user || !isDriver) return;
+async function sendLocation(pos: {
+  latitude: number;
+  longitude: number;
+  accuracy?: number | null;
+  speed?: number | null;
+  heading?: number | null;
+}) {
+  if (!currentUserId) return;
+  try {
+    let battery_level: number | null = null;
+    let is_charging: boolean | null = null;
     try {
-      let battery_level: number | null = null;
-      let is_charging: boolean | null = null;
-      try {
-        const info = await Device.getBatteryInfo();
-        battery_level = info.batteryLevel != null ? Math.round((info.batteryLevel as number) * 100) : null;
-        is_charging = info.isCharging ?? null;
-      } catch { /* ignore */ }
+      const info = await Device.getBatteryInfo();
+      battery_level = info.batteryLevel != null ? Math.round((info.batteryLevel as number) * 100) : null;
+      is_charging = info.isCharging ?? null;
+    } catch { /* ignore */ }
 
-      await supabase.from('driver_locations').upsert({
-        user_id: user.id,
-        user_name: user.fullName || user.username,
-        latitude: pos.latitude,
-        longitude: pos.longitude,
-        accuracy: pos.accuracy ?? null,
-        speed: pos.speed ?? null,
-        heading: pos.heading ?? null,
-        battery_level,
-        is_charging,
-        is_gps_enabled: true,
-        updated_at: new Date().toISOString(),
-      }, { onConflict: 'user_id' });
-      lastSentRef.current = Date.now();
-    } catch (err) {
-      console.error('[location] send failed', err);
+    await supabase.from('driver_locations').upsert({
+      user_id: currentUserId,
+      user_name: currentUserName,
+      latitude: pos.latitude,
+      longitude: pos.longitude,
+      accuracy: pos.accuracy ?? null,
+      speed: pos.speed ?? null,
+      heading: pos.heading ?? null,
+      battery_level,
+      is_charging,
+      is_gps_enabled: true,
+      updated_at: new Date().toISOString(),
+    }, { onConflict: 'user_id' });
+    lastSent = Date.now();
+  } catch (err) {
+    console.error('[location] send failed', err);
+  }
+}
+
+async function checkAndStart() {
+  if (!currentUserId) return;
+
+  // Web fallback
+  if (!Capacitor.isNativePlatform()) {
+    if ('geolocation' in navigator) {
+      navigator.geolocation.getCurrentPosition(
+        (pos) => {
+          setState('ok');
+          sendLocation({
+            latitude: pos.coords.latitude,
+            longitude: pos.coords.longitude,
+            accuracy: pos.coords.accuracy,
+            speed: pos.coords.speed,
+            heading: pos.coords.heading,
+          });
+        },
+        () => setState('permission_denied'),
+        { enableHighAccuracy: true, timeout: 10000 }
+      );
+    } else {
+      setState('ok');
     }
-  };
+    return;
+  }
 
-  const checkAndStart = async () => {
-    if (!isDriver) {
-      setGpsState('ok');
+  try {
+    let perm = await Geolocation.checkPermissions();
+    if (perm.location !== 'granted') {
+      perm = await Geolocation.requestPermissions({ permissions: ['location'] });
+    }
+    if (perm.location !== 'granted') {
+      setState('permission_denied');
       return;
     }
-    if (!Capacitor.isNativePlatform()) {
-      if ('geolocation' in navigator) {
-        navigator.geolocation.getCurrentPosition(
-          (pos) => {
-            setGpsState('ok');
-            sendLocation({
-              latitude: pos.coords.latitude,
-              longitude: pos.coords.longitude,
-              accuracy: pos.coords.accuracy,
-              speed: pos.coords.speed,
-              heading: pos.coords.heading,
-            });
-          },
-          () => setGpsState('permission_denied')
-        );
-      } else {
-        setGpsState('ok');
-      }
+
+    try {
+      const pos = await Geolocation.getCurrentPosition({ enableHighAccuracy: true, timeout: 10000 });
+      setState('ok');
+      await sendLocation({
+        latitude: pos.coords.latitude,
+        longitude: pos.coords.longitude,
+        accuracy: pos.coords.accuracy,
+        speed: pos.coords.speed,
+        heading: pos.coords.heading,
+      });
+    } catch {
+      setState('gps_disabled');
       return;
     }
 
-    try {
-      let perm = await Geolocation.checkPermissions();
-      if (perm.location !== 'granted') {
-        perm = await Geolocation.requestPermissions({ permissions: ['location'] });
+    if (watchId) {
+      try { await Geolocation.clearWatch({ id: watchId }); } catch { /* ignore */ }
+      watchId = null;
+    }
+    watchId = await Geolocation.watchPosition(
+      { enableHighAccuracy: true, timeout: 30000 },
+      (pos, err) => {
+        if (err || !pos) return;
+        const now = Date.now();
+        if (now - lastSent >= UPDATE_INTERVAL_MS) {
+          sendLocation({
+            latitude: pos.coords.latitude,
+            longitude: pos.coords.longitude,
+            accuracy: pos.coords.accuracy,
+            speed: pos.coords.speed,
+            heading: pos.coords.heading,
+          });
+        }
       }
-      if (perm.location !== 'granted') {
-        setGpsState('permission_denied');
-        return;
-      }
+    );
 
+    if (pollInterval) window.clearInterval(pollInterval);
+    pollInterval = window.setInterval(async () => {
       try {
-        const pos = await Geolocation.getCurrentPosition({ enableHighAccuracy: true, timeout: 10000 });
-        setGpsState('ok');
+        const pos = await Geolocation.getCurrentPosition({ enableHighAccuracy: true, timeout: 8000 });
         await sendLocation({
           latitude: pos.coords.latitude,
           longitude: pos.coords.longitude,
@@ -95,73 +146,75 @@ export function useDriverLocationTracker(): { gpsState: GpsState; recheck: () =>
           speed: pos.coords.speed,
           heading: pos.coords.heading,
         });
+        setState('ok');
       } catch {
-        setGpsState('gps_disabled');
-        return;
+        setState('gps_disabled');
       }
+    }, UPDATE_INTERVAL_MS);
+  } catch (err) {
+    console.error('[location] start failed', err);
+    setState('gps_disabled');
+  }
+}
 
-      if (watchIdRef.current) {
-        await Geolocation.clearWatch({ id: watchIdRef.current });
-        watchIdRef.current = null;
-      }
-      const id = await Geolocation.watchPosition(
-        { enableHighAccuracy: true, timeout: 30000 },
-        (pos, err) => {
-          if (err || !pos) return;
-          const now = Date.now();
-          if (now - lastSentRef.current >= UPDATE_INTERVAL_MS) {
-            sendLocation({
-              latitude: pos.coords.latitude,
-              longitude: pos.coords.longitude,
-              accuracy: pos.coords.accuracy,
-              speed: pos.coords.speed,
-              heading: pos.coords.heading,
-            });
-          }
-        }
-      );
-      watchIdRef.current = id;
+async function stopTracking() {
+  if (pollInterval) { window.clearInterval(pollInterval); pollInterval = null; }
+  if (watchId) {
+    try { await Geolocation.clearWatch({ id: watchId }); } catch { /* ignore */ }
+    watchId = null;
+  }
+  if (appListenerHandle) { appListenerHandle.remove(); appListenerHandle = null; }
+  started = false;
+  currentUserId = null;
+  setState('checking');
+}
 
-      if (intervalRef.current) window.clearInterval(intervalRef.current);
-      intervalRef.current = window.setInterval(async () => {
-        try {
-          const pos = await Geolocation.getCurrentPosition({ enableHighAccuracy: true, timeout: 8000 });
-          await sendLocation({
-            latitude: pos.coords.latitude,
-            longitude: pos.coords.longitude,
-            accuracy: pos.coords.accuracy,
-            speed: pos.coords.speed,
-            heading: pos.coords.heading,
-          });
-          setGpsState((s) => (s === 'ok' ? s : 'ok'));
-        } catch {
-          setGpsState('gps_disabled');
-        }
-      }, UPDATE_INTERVAL_MS);
-    } catch (err) {
-      console.error('[location] start failed', err);
-      setGpsState('gps_disabled');
-    }
-  };
+async function startTracking(userId: string, userName: string) {
+  if (started && currentUserId === userId) return;
+  if (started) await stopTracking();
+  currentUserId = userId;
+  currentUserName = userName;
+  started = true;
+  await checkAndStart();
+  if (Capacitor.isNativePlatform()) {
+    try {
+      const handle = await CapacitorApp.addListener('appStateChange', (state) => {
+        if (state.isActive) checkAndStart();
+      });
+      appListenerHandle = { remove: () => handle.remove() };
+    } catch { /* ignore */ }
+  }
+}
 
+export async function recheckGps() {
+  await checkAndStart();
+}
+
+/**
+ * Mount once at app root. Starts/stops tracking based on whether the
+ * current user is a driver.
+ */
+export function useDriverLocationTrackerBridge() {
+  const { user } = useAuth();
   useEffect(() => {
-    if (!isDriver || !user) return;
-    checkAndStart();
+    if (user && user.role === 'delivery') {
+      startTracking(user.id, user.fullName || user.username);
+    } else {
+      stopTracking();
+    }
+  }, [user?.id, user?.role]);
+}
 
-    let removeAppListener: (() => void) | null = null;
-    CapacitorApp.addListener('appStateChange', (state) => {
-      if (state.isActive) checkAndStart();
-    }).then((handle) => {
-      removeAppListener = () => handle.remove();
-    }).catch(() => {});
-
-    return () => {
-      if (intervalRef.current) window.clearInterval(intervalRef.current);
-      if (watchIdRef.current) Geolocation.clearWatch({ id: watchIdRef.current }).catch(() => {});
-      removeAppListener?.();
-    };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [user?.id, isDriver]);
-
-  return { gpsState, recheck: checkAndStart };
+/**
+ * Subscribe to current GPS state. Safe to use from multiple components.
+ */
+export function useGpsState(): { gpsState: GpsState; recheck: () => Promise<void> } {
+  const [gpsState, setLocal] = useState<GpsState>(currentState);
+  useEffect(() => {
+    const fn = (s: GpsState) => setLocal(s);
+    listeners.add(fn);
+    setLocal(currentState);
+    return () => { listeners.delete(fn); };
+  }, []);
+  return { gpsState, recheck: recheckGps };
 }
