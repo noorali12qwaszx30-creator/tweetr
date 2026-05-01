@@ -1,5 +1,4 @@
-import { useMemo } from 'react';
-import { MapContainer, TileLayer, Marker, Popup, useMap } from 'react-leaflet';
+import { useEffect, useMemo, useRef } from 'react';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import { useDriverLocations, getStaleness, DriverLocation } from '@/hooks/useDriverLocations';
@@ -25,15 +24,6 @@ const ICONS = {
   stale: makeIcon('#ef4444'),
 };
 
-function FitBounds({ locations }: { locations: DriverLocation[] }) {
-  const map = useMap();
-  if (locations.length > 0) {
-    const bounds = L.latLngBounds(locations.map((l) => [l.latitude, l.longitude] as [number, number]));
-    map.fitBounds(bounds, { padding: [40, 40], maxZoom: 14 });
-  }
-  return null;
-}
-
 function timeAgo(iso: string) {
   const sec = Math.floor((Date.now() - new Date(iso).getTime()) / 1000);
   if (sec < 60) return `قبل ${sec} ثانية`;
@@ -45,6 +35,59 @@ function timeAgo(iso: string) {
 
 export function FieldDriversMap() {
   const { locations, loading } = useDriverLocations();
+  const mapRef = useRef<L.Map | null>(null);
+  const mapDivRef = useRef<HTMLDivElement | null>(null);
+  const markersRef = useRef<Map<string, L.Marker>>(new Map());
+
+  // Initialize map once
+  useEffect(() => {
+    if (!mapDivRef.current || mapRef.current) return;
+    const map = L.map(mapDivRef.current).setView(DEFAULT_CENTER, 12);
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      attribution: '&copy; OpenStreetMap',
+    }).addTo(map);
+    mapRef.current = map;
+    return () => {
+      map.remove();
+      mapRef.current = null;
+      markersRef.current.clear();
+    };
+  }, []);
+
+  // Sync markers
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map) return;
+    const seen = new Set<string>();
+    locations.forEach((loc) => {
+      seen.add(loc.id);
+      const status = getStaleness(loc.updated_at);
+      const popupHtml = `<div dir="rtl" style="min-width:180px"><div style="font-weight:bold">${loc.user_name}</div><div style="font-size:11px;color:#666">${timeAgo(loc.updated_at)}</div><div style="font-size:12px">🔋 ${loc.battery_level ?? '?'}%${loc.speed != null && loc.speed > 0 ? ` · ${Math.round(loc.speed * 3.6)} كم/س` : ''}</div></div>`;
+      const existing = markersRef.current.get(loc.id);
+      if (existing) {
+        existing.setLatLng([loc.latitude, loc.longitude]);
+        existing.setIcon(ICONS[status]);
+        existing.setPopupContent(popupHtml);
+      } else {
+        const marker = L.marker([loc.latitude, loc.longitude], { icon: ICONS[status] })
+          .addTo(map)
+          .bindPopup(popupHtml);
+        markersRef.current.set(loc.id, marker);
+      }
+    });
+    // Remove stale markers
+    markersRef.current.forEach((marker, id) => {
+      if (!seen.has(id)) {
+        marker.remove();
+        markersRef.current.delete(id);
+      }
+    });
+    // Fit bounds
+    if (locations.length > 0) {
+      const bounds = L.latLngBounds(locations.map((l) => [l.latitude, l.longitude] as [number, number]));
+      map.fitBounds(bounds, { padding: [40, 40], maxZoom: 14 });
+    }
+  }, [locations]);
 
   const stats = useMemo(() => {
     const live = locations.filter((l) => getStaleness(l.updated_at) === 'live').length;
@@ -79,43 +122,7 @@ export function FieldDriversMap() {
       </div>
 
       <div className="rounded-xl overflow-hidden border border-border" style={{ height: '60vh', minHeight: 400 }}>
-        <MapContainer center={DEFAULT_CENTER} zoom={12} style={{ height: '100%', width: '100%' }}>
-          <TileLayer
-            attribution='&copy; OpenStreetMap'
-            url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-          />
-          <FitBounds locations={locations} />
-          {locations.map((loc) => {
-            const status = getStaleness(loc.updated_at);
-            return (
-              <Marker key={loc.id} position={[loc.latitude, loc.longitude]} icon={ICONS[status]}>
-                <Popup>
-                  <div className="space-y-2 min-w-[200px]" dir="rtl">
-                    <div className="font-bold text-base">{loc.user_name}</div>
-                    <div className="text-xs text-muted-foreground">{timeAgo(loc.updated_at)}</div>
-                    <div className="flex items-center gap-2 text-xs">
-                      {loc.is_charging ? (
-                        <BatteryCharging className="w-4 h-4 text-success" />
-                      ) : (
-                        <Battery className="w-4 h-4" />
-                      )}
-                      <span>{loc.battery_level ?? '?'}%</span>
-                      {loc.speed != null && loc.speed > 0 && (
-                        <span className="ml-auto">{Math.round((loc.speed * 3.6))} كم/س</span>
-                      )}
-                    </div>
-                    {loc.accuracy != null && (
-                      <div className="flex items-center gap-1 text-[11px] text-muted-foreground">
-                        <MapPin className="w-3 h-3" />
-                        دقة ±{Math.round(loc.accuracy)}م
-                      </div>
-                    )}
-                  </div>
-                </Popup>
-              </Marker>
-            );
-          })}
-        </MapContainer>
+        <div ref={mapDivRef} style={{ height: '100%', width: '100%' }} />
       </div>
 
       <div className="space-y-2">
