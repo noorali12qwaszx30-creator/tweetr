@@ -10,6 +10,7 @@ import { IssueReasonsProvider } from "@/contexts/IssueReasonsContext";
 import { ActivityLogProvider } from "@/contexts/ActivityLogContext";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
 import { NotificationsBlockOverlay } from "@/components/NotificationsBlockOverlay";
+import { GpsBlockOverlay } from "@/components/GpsBlockOverlay";
 import RoleSelector from "./pages/RoleSelector";
 import Dashboard from "./pages/Dashboard";
 import NotFound from "./pages/NotFound";
