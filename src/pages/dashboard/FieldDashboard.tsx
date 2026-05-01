@@ -15,6 +15,7 @@ import { toast } from 'sonner';
 import { ROLE_LABELS } from '@/types';
 import { DriverHubTab } from '@/components/delivery/driver-hub/DriverHubTab';
 import { DriverStatusMonitor } from '@/components/field/DriverStatusMonitor';
+import { FieldDriversMap } from '@/components/field/FieldDriversMap';
 import {
   Users,
   ClipboardList,
@@ -26,10 +27,11 @@ import {
   Loader2,
   HandMetal,
   Network,
-  UserCheck
+  UserCheck,
+  Map as MapIcon
 } from 'lucide-react';
 
-type TabType = 'orders' | 'ready' | 'delivering' | 'drivers' | 'hub' | 'delivered' | 'cancelled' | 'admin';
+type TabType = 'orders' | 'ready' | 'delivering' | 'map' | 'drivers' | 'hub' | 'delivered' | 'cancelled' | 'admin';
 
 export default function FieldDashboard() {
   const { role } = useRole();
@@ -97,6 +99,7 @@ export default function FieldDashboard() {
     { id: 'orders', label: 'الطلبات', icon: <ClipboardList className="w-5 h-5" />, count: incomingOrders.length, isPrimary: true },
     { id: 'ready', label: 'الجاهز', icon: <CheckCircle className="w-5 h-5" />, count: readyOrders.length },
     { id: 'delivering', label: 'قيد التوصيل', icon: <Truck className="w-5 h-5" />, count: deliveringOrders.length },
+    { id: 'map', label: 'الخريطة', icon: <MapIcon className="w-5 h-5" /> },
     { id: 'drivers', label: 'السائقون', icon: <UserCheck className="w-5 h-5" /> },
     { id: 'hub', label: 'الشبكة', icon: <Network className="w-5 h-5" /> },
     { id: 'delivered', label: 'المكتمل', icon: <CheckCircle className="w-5 h-5" /> },
@@ -260,6 +263,16 @@ export default function FieldDashboard() {
                  ))}
                </div>
              )}
+           </div>
+         )}
+
+         {activeTab === 'map' && (
+           <div className="space-y-4">
+             <h2 className="text-xl font-bold flex items-center gap-2">
+               <MapIcon className="w-5 h-5 text-primary" />
+               خريطة السائقين المباشرة
+             </h2>
+             <FieldDriversMap />
            </div>
          )}
 
