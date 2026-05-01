@@ -64,6 +64,7 @@ const AppContent = () => {
                       <Route path="*" element={<NotFound />} />
                     </Routes>
                     <NotificationsBlockOverlay />
+                    <GpsBlockOverlay />
                   </ErrorBoundary>
                 </TooltipProvider>
               </ActivityLogProvider>
