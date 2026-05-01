@@ -516,6 +516,54 @@ export type Database = {
           },
         ]
       }
+      driver_locations: {
+        Row: {
+          accuracy: number | null
+          battery_level: number | null
+          created_at: string
+          heading: number | null
+          id: string
+          is_charging: boolean | null
+          is_gps_enabled: boolean
+          latitude: number
+          longitude: number
+          speed: number | null
+          updated_at: string
+          user_id: string
+          user_name: string
+        }
+        Insert: {
+          accuracy?: number | null
+          battery_level?: number | null
+          created_at?: string
+          heading?: number | null
+          id?: string
+          is_charging?: boolean | null
+          is_gps_enabled?: boolean
+          latitude: number
+          longitude: number
+          speed?: number | null
+          updated_at?: string
+          user_id: string
+          user_name: string
+        }
+        Update: {
+          accuracy?: number | null
+          battery_level?: number | null
+          created_at?: string
+          heading?: number | null
+          id?: string
+          is_charging?: boolean | null
+          is_gps_enabled?: boolean
+          latitude?: number
+          longitude?: number
+          speed?: number | null
+          updated_at?: string
+          user_id?: string
+          user_name?: string
+        }
+        Relationships: []
+      }
       driver_personal_notes: {
         Row: {
           content: string
