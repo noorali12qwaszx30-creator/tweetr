@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <title>لا يوجد اتصال - tweetr</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; -webkit-user-select: none; user-select: none; }
+    html, body {
+      height: 100%;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Tahoma, sans-serif;
+      background: #F97316;
+      color: white;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      padding: 20px;
+    }
+    .container { max-width: 400px; }
+    .icon {
+      width: 96px;
+      height: 96px;
+      margin: 0 auto 24px;
+      background: rgba(255,255,255,0.15);
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 48px;
+    }
+    h1 { font-size: 24px; margin-bottom: 12px; font-weight: 700; }
+    p { font-size: 16px; opacity: 0.9; margin-bottom: 32px; line-height: 1.6; }
+    button {
+      background: white;
+      color: #F97316;
+      border: none;
+      padding: 14px 32px;
+      font-size: 16px;
+      font-weight: 700;
+      border-radius: 12px;
+      cursor: pointer;
+      font-family: inherit;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+      transition: transform 0.1s;
+    }
+    button:active { transform: scale(0.96); }
+    .status { margin-top: 24px; font-size: 13px; opacity: 0.7; }
+    .dot {
+      display: inline-block;
+      width: 8px;
+      height: 8px;
+      background: #fbbf24;
+      border-radius: 50%;
+      margin-left: 6px;
+      animation: pulse 1.5s infinite;
+    }
+    @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.3; } }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="icon">📡</div>
+    <h1>لا يوجد اتصال بالإنترنت</h1>
+    <p>تأكد من اتصالك بالشبكة ثم أعد المحاولة. سيعمل التطبيق فوراً عند عودة الاتصال.</p>
+    <button onclick="retry()">إعادة المحاولة</button>
+    <div class="status">جاري التحقق<span class="dot"></span></div>
+  </div>
+  <script>
+    function retry() {
+      window.location.href = 'https://tweetr.lovable.app';
+    }
+    // Auto-retry every 5 seconds
+    setInterval(() => {
+      fetch('https://tweetr.lovable.app', { mode: 'no-cors', cache: 'no-store' })
+        .then(() => retry())
+        .catch(() => {});
+    }, 5000);
+    window.addEventListener('online', retry);
+  </script>
+</body>
+</html>
