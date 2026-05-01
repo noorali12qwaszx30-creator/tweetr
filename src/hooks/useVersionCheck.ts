@@ -39,12 +39,24 @@ export function useVersionCheck() {
 
       if (hash !== initialHashRef.current && !notifiedRef.current) {
         notifiedRef.current = true;
+        // Auto-reload after 8 seconds for unattended screens (e.g. kitchen)
+        const autoReloadTimer = window.setTimeout(() => {
+          const reload = () => window.location.reload();
+          if ('caches' in window) {
+            caches.keys()
+              .then((keys) => Promise.all(keys.map((k) => caches.delete(k))))
+              .finally(reload);
+          } else {
+            reload();
+          }
+        }, 8000);
         toast.info('يتوفر تحديث جديد للنظام', {
           description: 'اضغط لإعادة التحميل وتطبيق التحديث',
           duration: Infinity,
           action: {
             label: 'تحديث الآن',
             onClick: () => {
+              window.clearTimeout(autoReloadTimer);
               // تنظيف caches ثم إعادة تحميل قسرية
               const reload = () => window.location.reload();
               if ('caches' in window) {

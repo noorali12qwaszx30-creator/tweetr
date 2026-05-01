@@ -4,6 +4,12 @@ const config: CapacitorConfig = {
   appId: 'app.lovable.ffbc149befc04553bf78cf970abd94af',
   appName: 'tweetr',
   webDir: 'dist',
+  server: {
+    url: 'https://tweetr.lovable.app',
+    cleartext: false,
+    androidScheme: 'https',
+    errorPath: 'offline.html',
+  },
   plugins: {
     SplashScreen: {
       launchShowDuration: 1500,
