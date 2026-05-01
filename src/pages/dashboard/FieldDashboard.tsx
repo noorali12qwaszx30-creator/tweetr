@@ -13,8 +13,6 @@ import { BottomNavigation } from '@/components/shared/BottomNavigation';
 import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
 import { ROLE_LABELS } from '@/types';
-import { DriverHubTab } from '@/components/delivery/driver-hub/DriverHubTab';
-import { DriverStatusMonitor } from '@/components/field/DriverStatusMonitor';
 import { FieldDriversMap } from '@/components/field/FieldDriversMap';
 import {
   Users,
@@ -26,12 +24,11 @@ import {
   Clock,
   Loader2,
   HandMetal,
-  Network,
-  UserCheck,
+  Archive,
   Map as MapIcon
 } from 'lucide-react';
 
-type TabType = 'orders' | 'ready' | 'delivering' | 'map' | 'drivers' | 'hub' | 'delivered' | 'cancelled' | 'admin';
+type TabType = 'orders' | 'ready' | 'delivering' | 'map' | 'history' | 'admin';
 
 export default function FieldDashboard() {
   const { role } = useRole();
@@ -100,10 +97,7 @@ export default function FieldDashboard() {
     { id: 'ready', label: 'الجاهز', icon: <CheckCircle className="w-5 h-5" />, count: readyOrders.length },
     { id: 'delivering', label: 'قيد التوصيل', icon: <Truck className="w-5 h-5" />, count: deliveringOrders.length },
     { id: 'map', label: 'الخريطة', icon: <MapIcon className="w-5 h-5" /> },
-    { id: 'drivers', label: 'السائقون', icon: <UserCheck className="w-5 h-5" /> },
-    { id: 'hub', label: 'الشبكة', icon: <Network className="w-5 h-5" /> },
-    { id: 'delivered', label: 'المكتمل', icon: <CheckCircle className="w-5 h-5" /> },
-    { id: 'cancelled', label: 'الملغي', icon: <XCircle className="w-5 h-5" /> },
+    { id: 'history', label: 'السجل', icon: <Archive className="w-5 h-5" />, count: deliveredOrders.length + cancelledOrders.length },
     { id: 'admin', label: 'الإدارة', icon: <Settings className="w-5 h-5" /> },
   ];
 
@@ -276,65 +270,51 @@ export default function FieldDashboard() {
            </div>
          )}
 
-         {activeTab === 'drivers' && (
-           <div className="space-y-4">
-             <h2 className="text-xl font-bold flex items-center gap-2">
-               <UserCheck className="w-5 h-5 text-primary" />
-               حالة السائقين المباشرة
-             </h2>
-             <DriverStatusMonitor />
+         {activeTab === 'history' && (
+           <div className="space-y-6">
+             <div className="space-y-3">
+               <h2 className="text-xl font-bold flex items-center gap-2">
+                 <CheckCircle className="w-5 h-5 text-success" />
+                 المكتملة ({deliveredOrders.length})
+               </h2>
+               {deliveredOrders.length === 0 ? (
+                 <div className="text-center py-6 text-muted-foreground bg-card rounded-xl border border-border">
+                   <CheckCircle className="w-8 h-8 mx-auto mb-2 opacity-50" />
+                   <p className="text-sm">لا توجد طلبات مكتملة</p>
+                 </div>
+               ) : (
+                 <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-3">
+                   {deliveredOrders.map(order => (
+                     <div key={order.id} onClick={() => handleOpenDetails(order)} className="cursor-pointer">
+                       <OrderCard order={order} showActions={false} />
+                     </div>
+                   ))}
+                 </div>
+               )}
+             </div>
+
+             <div className="space-y-3">
+               <h2 className="text-xl font-bold flex items-center gap-2">
+                 <XCircle className="w-5 h-5 text-destructive" />
+                 الملغية ({cancelledOrders.length})
+               </h2>
+               {cancelledOrders.length === 0 ? (
+                 <div className="text-center py-6 text-muted-foreground bg-card rounded-xl border border-border">
+                   <XCircle className="w-8 h-8 mx-auto mb-2 opacity-50" />
+                   <p className="text-sm">لا توجد طلبات ملغية</p>
+                 </div>
+               ) : (
+                 <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-3">
+                   {cancelledOrders.map(order => (
+                     <div key={order.id} onClick={() => handleOpenDetails(order)} className="cursor-pointer">
+                       <OrderCard order={order} showActions={false} />
+                     </div>
+                   ))}
+                 </div>
+               )}
+             </div>
            </div>
          )}
-
-         {activeTab === 'hub' && (
-           <DriverHubTab />
-         )}
-
-         {activeTab === 'delivered' && (
-          <div className="space-y-4">
-            <h2 className="text-xl font-bold flex items-center gap-2">
-              <CheckCircle className="w-5 h-5 text-success" />
-              الطلبات المكتملة ({deliveredOrders.length})
-            </h2>
-            {deliveredOrders.length === 0 ? (
-              <div className="text-center py-8 text-muted-foreground bg-card rounded-xl border border-border">
-                <CheckCircle className="w-10 h-10 mx-auto mb-3 opacity-50" />
-                <p>لا توجد طلبات مكتملة</p>
-              </div>
-            ) : (
-              <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
-                {deliveredOrders.map(order => (
-                  <div key={order.id} onClick={() => handleOpenDetails(order)} className="cursor-pointer">
-                    <OrderCard order={order} showActions={false} />
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
-        )}
-
-        {activeTab === 'cancelled' && (
-          <div className="space-y-4">
-            <h2 className="text-xl font-bold flex items-center gap-2">
-              <XCircle className="w-5 h-5 text-destructive" />
-              الطلبات الملغية ({cancelledOrders.length})
-            </h2>
-            {cancelledOrders.length === 0 ? (
-              <div className="text-center py-8 text-muted-foreground bg-card rounded-xl border border-border">
-                <XCircle className="w-10 h-10 mx-auto mb-3 opacity-50" />
-                <p>لا توجد طلبات ملغية</p>
-              </div>
-            ) : (
-              <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
-                {cancelledOrders.map(order => (
-                  <div key={order.id} onClick={() => handleOpenDetails(order)} className="cursor-pointer">
-                    <OrderCard order={order} showActions={false} />
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
-        )}
 
         {activeTab === 'admin' && (
           <div className="space-y-4">
