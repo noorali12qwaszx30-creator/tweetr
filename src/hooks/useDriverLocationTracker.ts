@@ -1,11 +1,13 @@
 import { useEffect, useState } from 'react';
-import { Capacitor } from '@capacitor/core';
+import { Capacitor, registerPlugin } from '@capacitor/core';
 import { Geolocation } from '@capacitor/geolocation';
 import { Device } from '@capacitor/device';
 import { App as CapacitorApp } from '@capacitor/app';
-import { BackgroundGeolocation } from '@capacitor-community/background-geolocation';
+import type { BackgroundGeolocationPlugin } from '@capacitor-community/background-geolocation';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
+
+const BackgroundGeolocation = registerPlugin<BackgroundGeolocationPlugin>('BackgroundGeolocation');
 
 export type GpsState = 'ok' | 'permission_denied' | 'gps_disabled' | 'checking';
 
