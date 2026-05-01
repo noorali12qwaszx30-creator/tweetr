@@ -47,6 +47,9 @@ export function useOrdersQuery(options: UseOrdersQueryOptions = {}) {
   }, []);
 
   const fetchOrders = useCallback(async (silent = false) => {
+    if (!silent) {
+      setLoading((prev) => prev && true);
+    }
     const { data, error } = await supabase
       .from('orders')
       .select(`*, order_items (*)`)
@@ -179,14 +182,14 @@ export function useOrdersQuery(options: UseOrdersQueryOptions = {}) {
       .subscribe((status) => {
         if (status === 'SUBSCRIBED') {
           setRealtimeConnected(true);
-          fetchOrders();
+          fetchOrders(true);
           if (pollingIntervalRef.current) {
             clearInterval(pollingIntervalRef.current);
             pollingIntervalRef.current = null;
           }
         } else if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT') {
           setRealtimeConnected(false);
-          fetchOrders();
+          fetchOrders(true);
           if (reconnectTimeoutRef.current) clearTimeout(reconnectTimeoutRef.current);
           reconnectTimeoutRef.current = setTimeout(() => setupRealtimeChannel(), 5000);
         } else if (status === 'CLOSED') {
