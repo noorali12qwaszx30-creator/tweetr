@@ -24,6 +24,8 @@ let pollInterval: number | null = null;
 let lastSent = 0;
 let appListenerHandle: { remove: () => void } | null = null;
 let bgWatcherId: string | null = null;
+let heartbeatInterval: number | null = null;
+const HEARTBEAT_MS = 30_000; // كل 30 ثانية نتأكد أن التتبع شغّال
 
 function setState(next: GpsState) {
   if (currentState === next) return;
@@ -197,7 +199,41 @@ async function startBackgroundWatcher() {
     );
   } catch (err) {
     console.error('[location] background watcher failed', err);
+    // أعد المحاولة بعد 5 ثواني
+    setTimeout(() => { if (currentUserId && !bgWatcherId) startBackgroundWatcher(); }, 5000);
   }
+}
+
+/**
+ * Heartbeat: يتأكد كل 30 ثانية أن الـ background watcher ما زال يعمل،
+ * ويعيد تشغيله إذا أوقفه نظام Android. يطلب أيضاً موقع لحظي إذا تأخّر آخر إرسال.
+ */
+function startHeartbeat() {
+  if (heartbeatInterval) return;
+  heartbeatInterval = window.setInterval(async () => {
+    if (!currentUserId) return;
+    // 1) إذا الـ watcher وقع، أعد تشغيله
+    if (!bgWatcherId) {
+      await startBackgroundWatcher();
+    }
+    // 2) إذا لم يصل أي تحديث خلال 60 ثانية، اطلب موقع لحظي
+    if (Date.now() - lastSent > 60_000) {
+      try {
+        const pos = await Geolocation.getCurrentPosition({ enableHighAccuracy: true, timeout: 15000 });
+        await sendLocation({
+          latitude: pos.coords.latitude,
+          longitude: pos.coords.longitude,
+          accuracy: pos.coords.accuracy,
+          speed: pos.coords.speed,
+          heading: pos.coords.heading,
+        });
+      } catch { /* ignore */ }
+    }
+  }, HEARTBEAT_MS);
+}
+
+function stopHeartbeat() {
+  if (heartbeatInterval) { window.clearInterval(heartbeatInterval); heartbeatInterval = null; }
 }
 
 async function stopBackgroundWatcher() {
@@ -214,6 +250,7 @@ async function stopTracking() {
     try { await Geolocation.clearWatch({ id: watchId }); } catch { /* ignore */ }
     watchId = null;
   }
+  stopHeartbeat();
   await stopBackgroundWatcher();
   if (appListenerHandle) { appListenerHandle.remove(); appListenerHandle = null; }
   started = false;
@@ -228,6 +265,7 @@ async function startTracking(userId: string, userName: string) {
   currentUserName = userName;
   started = true;
   await checkAndStart();
+  startHeartbeat();
   if (Capacitor.isNativePlatform()) {
     try {
       const handle = await CapacitorApp.addListener('appStateChange', (state) => {
