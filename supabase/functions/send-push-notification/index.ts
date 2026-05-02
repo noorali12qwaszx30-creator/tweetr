@@ -132,10 +132,12 @@ Deno.serve(async (req) => {
     }
     const sa: ServiceAccount = JSON.parse(saRaw);
 
-    const { target_roles, title, body, data } = await req.json();
-    if (!Array.isArray(target_roles) || target_roles.length === 0 || !title) {
+    const { target_roles, target_user_ids, title, body, data } = await req.json();
+    const hasRoles = Array.isArray(target_roles) && target_roles.length > 0;
+    const hasUsers = Array.isArray(target_user_ids) && target_user_ids.length > 0;
+    if ((!hasRoles && !hasUsers) || !title) {
       return new Response(
-        JSON.stringify({ error: "target_roles and title are required" }),
+        JSON.stringify({ error: "target_roles or target_user_ids and title are required" }),
         { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
@@ -145,10 +147,13 @@ Deno.serve(async (req) => {
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
     );
 
-    const { data: tokens, error } = await supabase
-      .from("device_tokens")
-      .select("device_token")
-      .in("role", target_roles);
+    let query = supabase.from("device_tokens").select("device_token");
+    if (hasUsers) {
+      query = query.in("user_id", target_user_ids);
+    } else {
+      query = query.in("role", target_roles);
+    }
+    const { data: tokens, error } = await query;
 
     if (error) {
       return new Response(JSON.stringify({ error: error.message }), {
