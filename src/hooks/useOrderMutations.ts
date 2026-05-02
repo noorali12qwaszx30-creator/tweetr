@@ -24,11 +24,33 @@ export function useOrderMutations({ setOrders, fetchOrders, playNotificationSoun
     items: { menu_item_id?: string; menu_item_name: string; menu_item_price: number; quantity: number; notes?: string }[];
   }) => {
     try {
-      const { data, error } = await supabase.functions.invoke('create-order', { body: orderData });
+      // Retry up to 3 times on transient/server-busy errors (503 / retryable flag)
+      let data: any = null;
+      let lastError: any = null;
+      const maxAttempts = 3;
+      for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+        const res = await supabase.functions.invoke('create-order', { body: orderData });
+        data = res.data;
+        lastError = res.error;
 
-      if (error) {
-        console.error('Error creating order:', error);
-        toast.error('حدث خطأ في إنشاء الطلب');
+        const serverRetryable = data?.retryable === true;
+        const networkRetryable =
+          !!lastError &&
+          (lastError.message || '').toLowerCase().match(/timeout|network|fetch|503|busy/);
+
+        if (!lastError && !data?.error) break; // success
+        if (attempt < maxAttempts && (serverRetryable || networkRetryable)) {
+          if (attempt === 1) toast.loading('الخادم مشغول، إعادة المحاولة...', { id: 'order-retry' });
+          await new Promise((r) => setTimeout(r, 600 * attempt));
+          continue;
+        }
+        break;
+      }
+      toast.dismiss('order-retry');
+
+      if (lastError) {
+        console.error('Error creating order:', lastError);
+        toast.error('حدث خطأ في إنشاء الطلب، حاول مرة أخرى');
         return null;
       }
 
