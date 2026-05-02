@@ -28,6 +28,50 @@ function sanitizeText(input: string, maxLength: number): string {
   return input.replace(/<[^>]*>/g, '').replace(/[<>]/g, '').trim().slice(0, maxLength);
 }
 
+// Retry helper for transient DB errors (timeouts, pool exhaustion)
+function isTransientError(err: any): boolean {
+  if (!err) return false;
+  const msg = (err.message || err.error_description || JSON.stringify(err) || '').toLowerCase();
+  return (
+    msg.includes('statement timeout') ||
+    msg.includes('canceling statement') ||
+    msg.includes('connection pool') ||
+    msg.includes('upstream request timeout') ||
+    msg.includes('timeout') ||
+    msg.includes('econnreset') ||
+    msg.includes('fetch failed') ||
+    msg.includes('57014') ||
+    msg.includes('53300') ||
+    msg.includes('08006')
+  );
+}
+
+async function withRetry<T>(
+  label: string,
+  fn: () => Promise<{ data: T | null; error: any }>,
+  maxAttempts = 3
+): Promise<{ data: T | null; error: any }> {
+  let lastResult: { data: T | null; error: any } = { data: null, error: null };
+  for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+    try {
+      lastResult = await fn();
+      if (!lastResult.error) return lastResult;
+      if (!isTransientError(lastResult.error)) return lastResult;
+      console.warn(`[retry:${label}] attempt ${attempt} failed:`, lastResult.error?.message);
+    } catch (e: any) {
+      lastResult = { data: null, error: e };
+      if (!isTransientError(e)) return lastResult;
+      console.warn(`[retry:${label}] attempt ${attempt} threw:`, e?.message);
+    }
+    if (attempt < maxAttempts) {
+      // exponential backoff with jitter: 250ms, 600ms
+      const delay = 200 * Math.pow(2, attempt - 1) + Math.floor(Math.random() * 150);
+      await new Promise((r) => setTimeout(r, delay));
+    }
+  }
+  return lastResult;
+}
+
 serve(async (req) => {
   const origin = req.headers.get('Origin');
   const corsHeaders = getCorsHeaders(origin);
@@ -124,16 +168,24 @@ serve(async (req) => {
     const validatedItems: OrderItem[] = [];
 
     if (menuItemIds.length > 0) {
-      const { data: menuItems, error: menuError } = await supabaseAdmin
-        .from('menu_items')
-        .select('id, name, price, is_available')
-        .in('id', menuItemIds);
+      const { data: menuItems, error: menuError } = await withRetry('fetch_menu', () =>
+        supabaseAdmin
+          .from('menu_items')
+          .select('id, name, price, is_available')
+          .in('id', menuItemIds)
+      );
 
       if (menuError) {
         console.error('Error fetching menu items:', menuError);
+        const transient = isTransientError(menuError);
         return new Response(
-          JSON.stringify({ error: 'خطأ في جلب بيانات القائمة' }),
-          { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+          JSON.stringify({
+            error: transient
+              ? 'الخادم مشغول حالياً، حاول مرة أخرى بعد لحظات'
+              : 'خطأ في جلب بيانات القائمة',
+            retryable: transient,
+          }),
+          { status: transient ? 503 : 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
         );
       }
 
@@ -215,11 +267,13 @@ serve(async (req) => {
     // Get delivery fee from delivery area if provided
     let deliveryFee = 0;
     if (orderData.delivery_area_id && orderData.type === 'delivery') {
-      const { data: deliveryArea, error: areaError } = await supabaseAdmin
-        .from('delivery_areas')
-        .select('delivery_fee')
-        .eq('id', orderData.delivery_area_id)
-        .single();
+      const { data: deliveryArea, error: areaError } = await withRetry('fetch_area', () =>
+        supabaseAdmin
+          .from('delivery_areas')
+          .select('delivery_fee')
+          .eq('id', orderData.delivery_area_id)
+          .single()
+      );
       
       if (!areaError && deliveryArea) {
         deliveryFee = Number(deliveryArea.delivery_fee) || 0;
@@ -234,33 +288,39 @@ serve(async (req) => {
     
     if (customerPhone) {
       // Try to find existing customer by phone
-      const { data: existingCustomer } = await supabaseAdmin
-        .from('customers')
-        .select('id')
-        .eq('phone', customerPhone)
-        .maybeSingle();
+      const { data: existingCustomer } = await withRetry('find_customer', () =>
+        supabaseAdmin
+          .from('customers')
+          .select('id')
+          .eq('phone', customerPhone)
+          .maybeSingle()
+      );
       
       if (existingCustomer) {
         customerId = existingCustomer.id;
         // Update customer info if changed
-        await supabaseAdmin
-          .from('customers')
-          .update({
-            name: sanitizeText(orderData.customer_name, 100),
-            address: orderData.customer_address ? sanitizeText(orderData.customer_address, 500) : null,
-          })
-          .eq('id', customerId);
+        await withRetry('update_customer', () =>
+          supabaseAdmin
+            .from('customers')
+            .update({
+              name: sanitizeText(orderData.customer_name, 100),
+              address: orderData.customer_address ? sanitizeText(orderData.customer_address, 500) : null,
+            })
+            .eq('id', customerId)
+        );
       } else {
         // Create new customer
-        const { data: newCustomer, error: customerError } = await supabaseAdmin
-          .from('customers')
-          .insert({
-            name: sanitizeText(orderData.customer_name, 100),
-            phone: customerPhone.slice(0, 20),
-            address: orderData.customer_address ? sanitizeText(orderData.customer_address, 500) : null,
-          })
-          .select('id')
-          .single();
+        const { data: newCustomer, error: customerError } = await withRetry('create_customer', () =>
+          supabaseAdmin
+            .from('customers')
+            .insert({
+              name: sanitizeText(orderData.customer_name, 100),
+              phone: customerPhone.slice(0, 20),
+              address: orderData.customer_address ? sanitizeText(orderData.customer_address, 500) : null,
+            })
+            .select('id')
+            .single()
+        );
         
         if (!customerError && newCustomer) {
           customerId = newCustomer.id;
@@ -270,9 +330,10 @@ serve(async (req) => {
 
     // Create the order with server-calculated total
     // Use authenticated user's ID as cashier_id for RLS policies
-    const { data: newOrder, error: orderError } = await supabaseAdmin
-      .from('orders')
-      .insert({
+    const { data: newOrder, error: orderError } = await withRetry('insert_order', () =>
+      supabaseAdmin
+        .from('orders')
+        .insert({
         customer_id: customerId, // Link to customers table
         customer_name: sanitizeText(orderData.customer_name, 100),
         customer_phone: orderData.customer_phone.replace(/\D/g, '').slice(0, 20),
@@ -286,15 +347,22 @@ serve(async (req) => {
         cashier_name: orderData.cashier_name ? sanitizeText(orderData.cashier_name, 100) : null,
         order_source: orderData.order_source ? sanitizeText(orderData.order_source, 50) : null,
         status: 'pending',
-      })
-      .select()
-      .single();
+        })
+        .select()
+        .single()
+    );
 
     if (orderError) {
       console.error('Error creating order:', orderError);
+      const transient = isTransientError(orderError);
       return new Response(
-        JSON.stringify({ error: 'خطأ في إنشاء الطلب' }),
-        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        JSON.stringify({
+          error: transient
+            ? 'الخادم مشغول حالياً، الطلب لم يُحفظ. أعد المحاولة بعد لحظات'
+            : 'خطأ في إنشاء الطلب',
+          retryable: transient,
+        }),
+        { status: transient ? 503 : 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 
@@ -308,17 +376,23 @@ serve(async (req) => {
       notes: item.notes || null,
     }));
 
-    const { error: itemsError } = await supabaseAdmin
-      .from('order_items')
-      .insert(orderItems);
+    const { error: itemsError } = await withRetry('insert_items', () =>
+      supabaseAdmin.from('order_items').insert(orderItems).select('id')
+    );
 
     if (itemsError) {
       console.error('Error creating order items:', itemsError);
       // Rollback: delete the order if items insertion failed
       await supabaseAdmin.from('orders').delete().eq('id', newOrder.id);
+      const transient = isTransientError(itemsError);
       return new Response(
-        JSON.stringify({ error: 'خطأ في إضافة عناصر الطلب' }),
-        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        JSON.stringify({
+          error: transient
+            ? 'الخادم مشغول حالياً، أعد المحاولة بعد لحظات'
+            : 'خطأ في إضافة عناصر الطلب',
+          retryable: transient,
+        }),
+        { status: transient ? 503 : 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 
