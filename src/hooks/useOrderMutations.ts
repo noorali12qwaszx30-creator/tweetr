@@ -24,32 +24,10 @@ export function useOrderMutations({ setOrders, fetchOrders, playNotificationSoun
     items: { menu_item_id?: string; menu_item_name: string; menu_item_price: number; quantity: number; notes?: string }[];
   }) => {
     try {
-      // Retry up to 3 times on transient/server-busy errors (503 / retryable flag)
-      let data: any = null;
-      let lastError: any = null;
-      const maxAttempts = 3;
-      for (let attempt = 1; attempt <= maxAttempts; attempt++) {
-        const res = await supabase.functions.invoke('create-order', { body: orderData });
-        data = res.data;
-        lastError = res.error;
+      const { data, error } = await supabase.functions.invoke('create-order', { body: orderData });
 
-        const serverRetryable = data?.retryable === true;
-        const networkRetryable =
-          !!lastError &&
-          (lastError.message || '').toLowerCase().match(/timeout|network|fetch|503|busy/);
-
-        if (!lastError && !data?.error) break; // success
-        if (attempt < maxAttempts && (serverRetryable || networkRetryable)) {
-          if (attempt === 1) toast.loading('الخادم مشغول، إعادة المحاولة...', { id: 'order-retry' });
-          await new Promise((r) => setTimeout(r, 600 * attempt));
-          continue;
-        }
-        break;
-      }
-      toast.dismiss('order-retry');
-
-      if (lastError) {
-        console.error('Error creating order:', lastError);
+      if (error) {
+        console.error('Error creating order:', error);
         toast.error('حدث خطأ في إنشاء الطلب، حاول مرة أخرى');
         return null;
       }
@@ -258,68 +236,37 @@ export function useOrderMutations({ setOrders, fetchOrders, playNotificationSoun
   };
 
   const reportIssue = async (orderId: string, reason: string, reporterName: string) => {
-    setOrders(prev => prev.map(order => 
-      order.id === orderId 
-        ? { ...order, has_issue: true, issue_reason: reason, issue_reported_at: new Date().toISOString(), issue_reported_by: reporterName } 
-        : order
-    ));
-
-    const { error } = await supabase.from('orders').update({
-      has_issue: true,
-      issue_reason: reason,
-      issue_reported_at: new Date().toISOString(),
-      issue_reported_by: reporterName,
-    }).eq('id', orderId);
+    const { error } = await supabase
+      .from('orders')
+      .update({ 
+        issue_reported: true,
+        issue_reason: reason,
+        issue_reported_by: reporterName,
+        issue_reported_at: new Date().toISOString()
+      })
+      .eq('id', orderId);
 
     if (error) {
       console.error('Error reporting issue:', error);
-      toast.error('حدث خطأ في التبليغ عن المشكلة');
-      fetchOrders();
+      toast.error('حدث خطأ في تسجيل المشكلة');
       return false;
     }
 
     playNotificationSound('alert');
-    toast.warning('تم التبليغ عن المشكلة', { id: `issue-${orderId}` });
-    return true;
-  };
-
-  const resolveIssue = async (orderId: string) => {
-    setOrders(prev => prev.map(order => 
-      order.id === orderId 
-        ? { ...order, has_issue: false, issue_reason: null, issue_reported_at: null, issue_reported_by: null } 
-        : order
-    ));
-
-    const { error } = await supabase.from('orders').update({
-      has_issue: false,
-      issue_reason: null,
-      issue_reported_at: null,
-      issue_reported_by: null,
-    }).eq('id', orderId);
-
-    if (error) {
-      console.error('Error resolving issue:', error);
-      toast.error('حدث خطأ في حل المشكلة');
-      fetchOrders();
-      return false;
-    }
-
-    playNotificationSound('orderReady');
-    toast.success('تم حل المشكلة', { id: `resolve-${orderId}` });
+    toast.warning('تم تسجيل المشكلة', { id: `issue-${orderId}` });
     return true;
   };
 
   return {
     addOrder,
-    updateOrder,
     updateOrderStatus,
     assignDelivery,
     acceptDelivery,
     rejectDelivery,
     returnOrder,
     cancelOrder,
-    reportIssue,
-    resolveIssue,
     getOrdersByStatus,
+    updateOrder,
+    reportIssue,
   };
 }
