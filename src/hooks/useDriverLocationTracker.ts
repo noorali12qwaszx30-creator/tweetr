@@ -172,8 +172,8 @@ async function startBackgroundWatcher() {
         backgroundMessage: 'يتم تتبع موقعك لتسليم الطلبات',
         backgroundTitle: 'تويتر - التوصيل نشط',
         requestPermissions: true,
-        stale: false,
-        distanceFilter: 10,
+        stale: true,
+        distanceFilter: 0,
       },
       (location, error) => {
         if (error) {
