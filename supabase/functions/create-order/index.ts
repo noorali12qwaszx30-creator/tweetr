@@ -23,60 +23,14 @@ interface OrderRequest {
   order_source?: string;
 }
 
-// Sanitize text input: strip HTML tags and trim
 function sanitizeText(input: string, maxLength: number): string {
   return input.replace(/<[^>]*>/g, '').replace(/[<>]/g, '').trim().slice(0, maxLength);
-}
-
-// Retry helper for transient DB errors (timeouts, pool exhaustion)
-function isTransientError(err: any): boolean {
-  if (!err) return false;
-  const msg = (err.message || err.error_description || JSON.stringify(err) || '').toLowerCase();
-  return (
-    msg.includes('statement timeout') ||
-    msg.includes('canceling statement') ||
-    msg.includes('connection pool') ||
-    msg.includes('upstream request timeout') ||
-    msg.includes('timeout') ||
-    msg.includes('econnreset') ||
-    msg.includes('fetch failed') ||
-    msg.includes('57014') ||
-    msg.includes('53300') ||
-    msg.includes('08006')
-  );
-}
-
-async function withRetry<T>(
-  label: string,
-  fn: () => Promise<{ data: T | null; error: any }>,
-  maxAttempts = 3
-): Promise<{ data: T | null; error: any }> {
-  let lastResult: { data: T | null; error: any } = { data: null, error: null };
-  for (let attempt = 1; attempt <= maxAttempts; attempt++) {
-    try {
-      lastResult = await fn();
-      if (!lastResult.error) return lastResult;
-      if (!isTransientError(lastResult.error)) return lastResult;
-      console.warn(`[retry:${label}] attempt ${attempt} failed:`, lastResult.error?.message);
-    } catch (e: any) {
-      lastResult = { data: null, error: e };
-      if (!isTransientError(e)) return lastResult;
-      console.warn(`[retry:${label}] attempt ${attempt} threw:`, e?.message);
-    }
-    if (attempt < maxAttempts) {
-      // exponential backoff with jitter: 250ms, 600ms
-      const delay = 200 * Math.pow(2, attempt - 1) + Math.floor(Math.random() * 150);
-      await new Promise((r) => setTimeout(r, delay));
-    }
-  }
-  return lastResult;
 }
 
 serve(async (req) => {
   const origin = req.headers.get('Origin');
   const corsHeaders = getCorsHeaders(origin);
 
-  // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
   }
@@ -84,8 +38,7 @@ serve(async (req) => {
   try {
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
     const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
-    
-    // Get the authorization header to identify the user
+
     const authHeader = req.headers.get('Authorization');
     if (!authHeader) {
       return new Response(
@@ -94,15 +47,12 @@ serve(async (req) => {
       );
     }
 
-    // Create admin client for database operations
     const supabaseAdmin = createClient(supabaseUrl, supabaseServiceKey);
-    
-    // Create user client to verify authentication
+
     const supabaseUser = createClient(supabaseUrl, Deno.env.get('SUPABASE_ANON_KEY')!, {
       global: { headers: { Authorization: authHeader } }
     });
-    
-    // Verify the user is authenticated
+
     const { data: { user }, error: userError } = await supabaseUser.auth.getUser();
     if (userError || !user) {
       console.error('Auth error:', userError);
@@ -114,7 +64,6 @@ serve(async (req) => {
 
     const orderData: OrderRequest = await req.json();
 
-    // Validate required fields
     if (!orderData.customer_name || orderData.customer_name.trim().length < 2) {
       return new Response(
         JSON.stringify({ error: 'اسم العميل مطلوب (حرفان على الأقل)' }),
@@ -122,8 +71,6 @@ serve(async (req) => {
       );
     }
 
-    // Phone validation only for delivery orders - must be exactly 11 digits
-    // Pickup and takeaway orders don't require strict phone validation
     if (orderData.type === 'delivery') {
       const phoneDigits = orderData.customer_phone?.replace(/\D/g, '') || '';
       if (phoneDigits.length !== 11) {
@@ -148,7 +95,6 @@ serve(async (req) => {
       );
     }
 
-    // Validate item quantities
     for (const item of orderData.items) {
       if (!item.quantity || item.quantity < 1 || item.quantity > 100) {
         return new Response(
@@ -158,45 +104,33 @@ serve(async (req) => {
       }
     }
 
-    // Get menu item IDs from the order
     const menuItemIds = orderData.items
       .map(item => item.menu_item_id)
       .filter((id): id is string => !!id);
 
-    // Fetch actual menu item prices from database
     let serverCalculatedTotal = 0;
     const validatedItems: OrderItem[] = [];
 
     if (menuItemIds.length > 0) {
-      const { data: menuItems, error: menuError } = await withRetry('fetch_menu', () =>
-        supabaseAdmin
-          .from('menu_items')
-          .select('id, name, price, is_available')
-          .in('id', menuItemIds)
-      );
+      const { data: menuItems, error: menuError } = await supabaseAdmin
+        .from('menu_items')
+        .select('id, name, price, is_available')
+        .in('id', menuItemIds);
 
       if (menuError) {
         console.error('Error fetching menu items:', menuError);
-        const transient = isTransientError(menuError);
         return new Response(
-          JSON.stringify({
-            error: transient
-              ? 'الخادم مشغول حالياً، حاول مرة أخرى بعد لحظات'
-              : 'خطأ في جلب بيانات القائمة',
-            retryable: transient,
-          }),
-          { status: transient ? 503 : 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+          JSON.stringify({ error: 'خطأ في جلب بيانات القائمة' }),
+          { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
         );
       }
 
-      // Create a map of menu items for quick lookup
       const menuItemMap = new Map(menuItems?.map(m => [m.id, m]) || []);
 
-      // Validate each item and calculate server-side total
       for (const item of orderData.items) {
         if (item.menu_item_id) {
           const menuItem = menuItemMap.get(item.menu_item_id);
-          
+
           if (!menuItem) {
             return new Response(
               JSON.stringify({ error: 'عنصر القائمة غير موجود: ' + item.menu_item_name }),
@@ -211,19 +145,17 @@ serve(async (req) => {
             );
           }
 
-          // Use server-side price, NOT client-provided price
           const serverPrice = Number(menuItem.price);
           serverCalculatedTotal += serverPrice * item.quantity;
-          
+
           validatedItems.push({
             menu_item_id: item.menu_item_id,
-            menu_item_name: menuItem.name, // Use server-side name
-            menu_item_price: serverPrice,  // Use server-side price
+            menu_item_name: menuItem.name,
+            menu_item_price: serverPrice,
             quantity: item.quantity,
             notes: item.notes ? sanitizeText(item.notes, 500) : undefined,
           });
         } else {
-          // For items without menu_item_id, validate the price is reasonable
           const price = Number(item.menu_item_price);
           if (isNaN(price) || price < 0 || price > 1000000) {
             return new Response(
@@ -231,7 +163,7 @@ serve(async (req) => {
               { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
             );
           }
-          
+
           serverCalculatedTotal += price * item.quantity;
           validatedItems.push({
             menu_item_name: sanitizeText(item.menu_item_name, 200),
@@ -242,7 +174,6 @@ serve(async (req) => {
         }
       }
     } else {
-      // All items without menu_item_id - validate prices
       for (const item of orderData.items) {
         const price = Number(item.menu_item_price);
         if (isNaN(price) || price < 0 || price > 1000000) {
@@ -251,7 +182,7 @@ serve(async (req) => {
             { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
           );
         }
-        
+
         serverCalculatedTotal += price * item.quantity;
         validatedItems.push({
           menu_item_name: sanitizeText(item.menu_item_name, 200),
@@ -262,111 +193,83 @@ serve(async (req) => {
       }
     }
 
-    // Total calculated server-side
-
-    // Get delivery fee from delivery area if provided
     let deliveryFee = 0;
     if (orderData.delivery_area_id && orderData.type === 'delivery') {
-      const { data: deliveryArea, error: areaError } = await withRetry('fetch_area', () =>
-        supabaseAdmin
-          .from('delivery_areas')
-          .select('delivery_fee')
-          .eq('id', orderData.delivery_area_id)
-          .single()
-      );
-      
+      const { data: deliveryArea, error: areaError } = await supabaseAdmin
+        .from('delivery_areas')
+        .select('delivery_fee')
+        .eq('id', orderData.delivery_area_id)
+        .single();
+
       if (!areaError && deliveryArea) {
         deliveryFee = Number(deliveryArea.delivery_fee) || 0;
       }
     }
 
-    
-
-    // Check if customer already exists by phone number, or create new one
     let customerId: string | null = null;
     const customerPhone = orderData.customer_phone.trim();
-    
+
     if (customerPhone) {
-      // Try to find existing customer by phone
-      const { data: existingCustomer } = await withRetry('find_customer', () =>
-        supabaseAdmin
-          .from('customers')
-          .select('id')
-          .eq('phone', customerPhone)
-          .maybeSingle()
-      );
-      
+      const { data: existingCustomer } = await supabaseAdmin
+        .from('customers')
+        .select('id')
+        .eq('phone', customerPhone)
+        .maybeSingle();
+
       if (existingCustomer) {
         customerId = existingCustomer.id;
-        // Update customer info if changed
-        await withRetry('update_customer', () =>
-          supabaseAdmin
-            .from('customers')
-            .update({
-              name: sanitizeText(orderData.customer_name, 100),
-              address: orderData.customer_address ? sanitizeText(orderData.customer_address, 500) : null,
-            })
-            .eq('id', customerId)
-        );
+        await supabaseAdmin
+          .from('customers')
+          .update({
+            name: sanitizeText(orderData.customer_name, 100),
+            address: orderData.customer_address ? sanitizeText(orderData.customer_address, 500) : null,
+          })
+          .eq('id', customerId);
       } else {
-        // Create new customer
-        const { data: newCustomer, error: customerError } = await withRetry('create_customer', () =>
-          supabaseAdmin
-            .from('customers')
-            .insert({
-              name: sanitizeText(orderData.customer_name, 100),
-              phone: customerPhone.slice(0, 20),
-              address: orderData.customer_address ? sanitizeText(orderData.customer_address, 500) : null,
-            })
-            .select('id')
-            .single()
-        );
-        
+        const { data: newCustomer, error: customerError } = await supabaseAdmin
+          .from('customers')
+          .insert({
+            name: sanitizeText(orderData.customer_name, 100),
+            phone: customerPhone.slice(0, 20),
+            address: orderData.customer_address ? sanitizeText(orderData.customer_address, 500) : null,
+          })
+          .select('id')
+          .single();
+
         if (!customerError && newCustomer) {
           customerId = newCustomer.id;
         }
       }
     }
 
-    // Create the order with server-calculated total
-    // Use authenticated user's ID as cashier_id for RLS policies
-    const { data: newOrder, error: orderError } = await withRetry('insert_order', () =>
-      supabaseAdmin
-        .from('orders')
-        .insert({
-        customer_id: customerId, // Link to customers table
+    const { data: newOrder, error: orderError } = await supabaseAdmin
+      .from('orders')
+      .insert({
+        customer_id: customerId,
         customer_name: sanitizeText(orderData.customer_name, 100),
         customer_phone: orderData.customer_phone.replace(/\D/g, '').slice(0, 20),
         customer_address: orderData.customer_address ? sanitizeText(orderData.customer_address, 500) : null,
         delivery_area_id: orderData.delivery_area_id || null,
         type: orderData.type,
         notes: orderData.notes ? sanitizeText(orderData.notes, 500) : null,
-        total_price: serverCalculatedTotal + deliveryFee, // Include delivery fee in total
+        total_price: serverCalculatedTotal + deliveryFee,
         delivery_fee: deliveryFee,
-        cashier_id: user.id, // Always use the authenticated user's ID
+        cashier_id: user.id,
         cashier_name: orderData.cashier_name ? sanitizeText(orderData.cashier_name, 100) : null,
         order_source: orderData.order_source ? sanitizeText(orderData.order_source, 50) : null,
         status: 'pending',
-        })
-        .select()
-        .single()
-    );
+      })
+      .select()
+      .single();
 
     if (orderError) {
       console.error('Error creating order:', orderError);
-      const transient = isTransientError(orderError);
       return new Response(
-        JSON.stringify({
-          error: transient
-            ? 'الخادم مشغول حالياً، الطلب لم يُحفظ. أعد المحاولة بعد لحظات'
-            : 'خطأ في إنشاء الطلب',
-          retryable: transient,
-        }),
-        { status: transient ? 503 : 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        JSON.stringify({ error: 'خطأ في إنشاء الطلب' }),
+        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 
-    // Insert order items
     const orderItems = validatedItems.map(item => ({
       order_id: newOrder.id,
       menu_item_id: item.menu_item_id || null,
@@ -376,23 +279,17 @@ serve(async (req) => {
       notes: item.notes || null,
     }));
 
-    const { error: itemsError } = await withRetry('insert_items', () =>
-      supabaseAdmin.from('order_items').insert(orderItems).select('id')
-    );
+    const { error: itemsError } = await supabaseAdmin
+      .from('order_items')
+      .insert(orderItems)
+      .select('id');
 
     if (itemsError) {
       console.error('Error creating order items:', itemsError);
-      // Rollback: delete the order if items insertion failed
       await supabaseAdmin.from('orders').delete().eq('id', newOrder.id);
-      const transient = isTransientError(itemsError);
       return new Response(
-        JSON.stringify({
-          error: transient
-            ? 'الخادم مشغول حالياً، أعد المحاولة بعد لحظات'
-            : 'خطأ في إضافة عناصر الطلب',
-          retryable: transient,
-        }),
-        { status: transient ? 503 : 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        JSON.stringify({ error: 'خطأ في إضافة عناصر الطلب' }),
+        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 
