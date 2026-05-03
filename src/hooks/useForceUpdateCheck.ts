@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Capacitor } from '@capacitor/core';
+import { App as CapApp } from '@capacitor/app';
 
 export interface UpdateInfo {
   currentBuild: number;
@@ -84,9 +85,30 @@ export function useForceUpdateChecker() {
       if (document.visibilityState === 'visible') checkLatest();
     };
     document.addEventListener('visibilitychange', onVisible);
+
+    // عند استئناف التطبيق من الخلفية أو إعادة فتحه
+    let removeAppStateListener: (() => void) | undefined;
+    let removeResumeListener: (() => void) | undefined;
+    (async () => {
+      try {
+        const h1 = await CapApp.addListener('appStateChange', ({ isActive }) => {
+          if (isActive) checkLatest();
+        });
+        removeAppStateListener = () => h1.remove();
+        const h2 = await CapApp.addListener('resume', () => {
+          checkLatest();
+        });
+        removeResumeListener = () => h2.remove();
+      } catch {
+        // ignore
+      }
+    })();
+
     return () => {
       clearInterval(interval);
       document.removeEventListener('visibilitychange', onVisible);
+      removeAppStateListener?.();
+      removeResumeListener?.();
     };
   }, []);
 }
