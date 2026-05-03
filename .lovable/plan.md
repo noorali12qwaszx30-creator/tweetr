@@ -1,98 +1,85 @@
+# خطة: نظام تحديث إجباري للتطبيق عبر GitHub Releases
 
-## الهدف
-تحويل نظام "تويتر" إلى تطبيق Android حقيقي (.apk) يفتح كتطبيق native (بدون شريط متصفح)، ويستقبل إشعارات فورية لكل طلب جديد حتى لو كان التطبيق مغلق تماماً.
-
-## الحل التقني
-- **Capacitor**: لتغليف تطبيق React الحالي كتطبيق Android native.
-- **Firebase Cloud Messaging (FCM)**: لإرسال إشعارات Push تصل في كل الحالات (مفتوح/خلفية/مغلق).
-- **Edge Function**: ترسل إشعار FCM تلقائياً عند إنشاء طلب جديد في قاعدة البيانات.
+## الفكرة العامة
+كل بناء جديد على GitHub Actions يُنشئ Release برقم متزايد (`build-N`) ويرفع ملف APK كأصل (asset). التطبيق يحمل داخله رقم البناء الذي بُني به (`VITE_APP_BUILD`)، ويستعلم من GitHub API عن أحدث Release. إذا كان رقم Release أكبر من رقمه → تظهر **شاشة كاملة تمنع الاستخدام** بها زر "تحميل التحديث" يفتح رابط APK مباشرة.
 
 ---
 
-## مراحل التنفيذ
+## التغييرات المطلوبة
 
-### المرحلة 1: تجهيز المشروع لـ Capacitor
-- تثبيت حزم Capacitor:
-  - `@capacitor/core`, `@capacitor/cli`
-  - `@capacitor/android`
-  - `@capacitor/push-notifications` (للإشعارات)
-  - `@capacitor/local-notifications` (إشعارات داخلية احتياطية)
-  - `@capacitor/app`, `@capacitor/status-bar`, `@capacitor/splash-screen`
-- إنشاء `capacitor.config.ts` بالإعدادات الصحيحة:
-  - `appId: app.lovable.ffbc149befc04553bf78cf970abd94af`
-  - `appName: tweetr`
-  - تفعيل hot-reload من sandbox للتجربة قبل البناء النهائي
-  - إعداد splash screen وStatus bar بلون البراند البرتقالي
+### 1) GitHub Actions Workflow (`.github/workflows/build-android-apk.yml`)
+- حقن متغيرات بيئة Vite قبل خطوة `npm run build`:
+  - `VITE_APP_BUILD=${{ github.run_number }}`
+  - `VITE_GITHUB_REPO=<owner>/<repo>` (يُحفظ كـ Repository Variable أو يُكتشف تلقائياً من `${{ github.repository }}`)
+- إنشاء Release **في كل push إلى main** (وليس فقط عند `workflow_dispatch`) مع:
+  - `tag_name: build-${{ github.run_number }}`
+  - رفع `app-debug.apk` كأصل باسم ثابت `tweetr.apk` ليصبح رابط التحميل قابلاً للتنبؤ.
+- اختياري: إضافة ملف `latest.json` كأصل يحتوي `{ build, version, apkUrl, mandatory: true, notes }`.
 
-### المرحلة 2: دمج إشعارات Push في الكود
-- إنشاء جدول `device_tokens` في قاعدة البيانات لحفظ توكنات FCM لكل مستخدم/جهاز:
-  - `user_id`, `device_token`, `role`, `platform`, `created_at`
-  - مع RLS صارم
-- Hook جديد `usePushNotifications.ts`:
-  - يطلب صلاحية الإشعارات عند تشغيل التطبيق على Android
-  - يسجل توكن الجهاز في قاعدة البيانات
-  - يستمع للإشعارات الواردة (foreground/background/tap)
-  - يفتح الصفحة المناسبة عند الضغط (مثلاً: طلب جديد → CashierDashboard)
-- تشغيله تلقائياً بعد تسجيل الدخول حسب الدور
+### 2) ملف جديد: `src/hooks/useForceUpdateCheck.ts`
+- يقرأ `import.meta.env.VITE_APP_BUILD` و `VITE_GITHUB_REPO`.
+- عند بدء التطبيق وكل 5 دقائق + عند العودة للتبويب:
+  - `GET https://api.github.com/repos/{repo}/releases/latest`
+  - يستخرج رقم البناء من `tag_name` (مثل `build-42`).
+  - يستخرج رابط الـ APK من `assets[].browser_download_url`.
+- يخزن النتيجة في حالة عامة (Zustand بسيط أو Context) ليستهلكها overlay.
+- يميّز بين بيئة الويب وبيئة Capacitor عبر `Capacitor.isNativePlatform()`:
+  - **على Android فقط**: تحديث إجباري بشاشة حجب + رابط APK.
+  - **على الويب**: يبقى توست `useVersionCheck` الحالي (إعادة تحميل الصفحة).
 
-### المرحلة 3: Edge Function لإرسال الإشعارات
-- إنشاء edge function `send-push-notification`:
-  - تستقبل: `target_role` (cashier/kitchen/...), `title`, `body`, `data`
-  - تجلب جميع `device_tokens` للأدوار المستهدفة
-  - ترسل عبر Firebase HTTP v1 API (يحتاج Service Account JSON كـ secret)
-- Database Trigger على جدول `orders`:
-  - عند `INSERT` → ينادي الـ edge function لإشعار الكاشير والمطبخ
-  - عند `UPDATE` (تغيير حالة) → إشعار للسائق المعني
-- استخدام `pg_net` extension لاستدعاء HTTP من trigger
+### 3) ملف جديد: `src/components/ForceUpdateOverlay.tsx`
+شاشة `fixed inset-0 z-[100]` (أعلى من `OfflineOverlay`) تظهر فقط حين يوجد إصدار أحدث على Android:
+- خلفية برتقالية بهوية Twitter
+- أيقونة تحديث + عنوان "يتوفر تحديث جديد إلزامي"
+- النسخة الحالية / النسخة الجديدة
+- ملاحظات الإصدار (من حقل `body` في GitHub Release)
+- زر كبير: **"تحميل التحديث الآن"** → يفتح رابط APK عبر:
+  - `Browser.open({ url })` من `@capacitor/browser` (لتجنّب فتح WebView داخلي)
+- لا يوجد زر إغلاق ولا تجاوز.
 
-### المرحلة 4: إعدادات Android Native
-- إعداد ملف `AndroidManifest.xml`:
-  - صلاحية `POST_NOTIFICATIONS` (Android 13+)
-  - صلاحية `WAKE_LOCK` و `VIBRATE`
-  - `android:usesCleartextTraffic` للتطوير فقط
-- أيقونة التطبيق وSplash Screen ببراند تويتر البرتقالي
-- إعداد قناة إشعارات Android (notification channel) بصوت تنبيه مخصص
+### 4) دمج في `src/App.tsx`
+- تفعيل `useForceUpdateCheck()` بجانب `useVersionCheck()`.
+- إضافة `<ForceUpdateOverlay />` بعد `<OfflineOverlay />`.
 
-### المرحلة 5: ربط Firebase
-المستخدم يحتاج:
-1. إنشاء مشروع Firebase مجاني (5 دقائق)
-2. تنزيل ملف `google-services.json` ووضعه في `android/app/`
-3. تنزيل Service Account JSON وإضافته كـ secret في Lovable Cloud باسم `FIREBASE_SERVICE_ACCOUNT`
-
-سأقدم له شرح مصور خطوة بخطوة عند الوصول لهذه المرحلة.
-
-### المرحلة 6: بناء ملف APK
-بعد انتهاء كل ما سبق، يحتاج المستخدم تنفيذ هذه الخطوات على حاسوبه (مرة واحدة فقط):
-1. تصدير المشروع من Lovable إلى GitHub (زر Export to GitHub).
-2. سحب المشروع: `git clone <repo>`
-3. تثبيت: `npm install`
-4. إضافة Android: `npx cap add android`
-5. مزامنة: `npx cap sync android`
-6. فتح المشروع: `npx cap open android` (يفتح Android Studio)
-7. من Android Studio: Build → Build Bundle(s)/APK(s) → Build APK
-8. الملف الناتج: `android/app/build/outputs/apk/debug/app-debug.apk`
-
-التحديثات المستقبلية: فقط `git pull && npm run build && npx cap sync` ثم إعادة البناء — أي تغيير في الكود لا يحتاج إعادة بناء كاملة طالما الجهاز متصل بالإنترنت (الكود يحدث online).
+### 5) إضافة تبعية
+- `@capacitor/browser` لفتح رابط التحميل في المتصفح الافتراضي بدلاً من WebView.
 
 ---
 
-## ما يجب تحضيره من طرفك
-1. **حساب Google** (إن لم يكن لديك) لإنشاء مشروع Firebase مجاني.
-2. **حاسوب Windows/Mac/Linux** مع 8GB RAM على الأقل لتشغيل Android Studio (مجاني، حجمه ~5GB).
-3. **حساب GitHub** (مجاني) لتصدير المشروع.
+## التفاصيل التقنية
+
+### كيف يحصل التطبيق على رقم بنائه؟
+عبر متغير Vite يُحقن وقت البناء في GitHub Actions:
+```
+env:
+  VITE_APP_BUILD: ${{ github.run_number }}
+  VITE_GITHUB_REPO: ${{ github.repository }}
+```
+يُقرأ في الكود: `Number(import.meta.env.VITE_APP_BUILD ?? 0)`.
+
+### مقارنة الإصدارات
+```text
+tag_name: "build-42"  →  latestBuild = 42
+currentBuild = VITE_APP_BUILD (e.g. 40)
+if (latestBuild > currentBuild)  → فرض التحديث
+```
+
+### رابط APK مستقر
+داخل خطوة Release في الـ workflow، نعيد تسمية الأصل:
+```
+files: android/app/build/outputs/apk/debug/tweetr.apk
+```
+ليصبح الرابط دائماً:
+`https://github.com/<owner>/<repo>/releases/download/build-N/tweetr.apk`
+
+### حالات الفشل
+- لا إنترنت → لا يحدث شيء (شاشة `OfflineOverlay` تتولى الأمر).
+- GitHub API rate limit (60/ساعة للـ unauthenticated) → الفحص كل 5 دقائق + cache في الذاكرة كافٍ ولا يتجاوز الحد.
+- المستودع خاص → يجب عمل Release عام أو إضافة token (نتجنب هذا — يفترض المستودع عام).
 
 ---
 
-## ما لن أحتاجه منك الآن
-لن أطلب أي مفاتيح أو ملفات حالياً. سأنفذ المراحل 1-4 بالكامل أولاً، ثم في المرحلة 5 أعطيك دليل مصور لإعداد Firebase وأطلب الـ Service Account.
-
----
-
-## نقاط مهمة
-- **التطبيق سيفتح كتطبيق native كامل** — بدون شريط عنوان أو أزرار متصفح.
-- **الإشعارات تصل في كل الحالات**: تطبيق مفتوح، في الخلفية، مغلق تماماً، الجهاز نائم.
-- **الكود يبقى موحداً**: نفس الكود يعمل في الويب وعلى الموبايل، لا حاجة لصيانة نسختين.
-- **لا يحتاج Google Play Store**: الـ APK يُثبت مباشرة على أي جهاز Android (مع تفعيل "تثبيت من مصادر غير معروفة").
-- **التحديثات سريعة**: تغييرات الواجهة تصل فوراً عبر الإنترنت بدون إعادة بناء APK، فقط التغييرات التي تمس الكود الـ native تحتاج بناء جديد.
-
-هل تريد المتابعة بهذه الخطة؟
+## ما أحتاج تأكيده منك
+1. ما **owner/name مستودع GitHub**؟ (مثلاً `username/tweetr`) — لأستطيع وضعه كقيمة افتراضية في حال غياب متغير البيئة.
+2. هل تريد **التحديث الإجباري على الويب أيضاً** (مع زر إعادة تحميل) أم يكفي السلوك الحالي (توست + إعادة تحميل تلقائية بعد 8 ثوانٍ)؟
+3. هل تريد إنشاء Release **تلقائياً عند كل push** أم فقط عند تشغيل يدوي (`workflow_dispatch`) كما هو الآن؟ — التحديث الإجباري لا يعمل إلا إذا أصبح هناك Release جديد فعلاً.
