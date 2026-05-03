@@ -12,10 +12,12 @@ import { ErrorBoundary } from "@/components/ErrorBoundary";
 import { NotificationsBlockOverlay } from "@/components/NotificationsBlockOverlay";
 import { GpsBlockOverlay } from "@/components/GpsBlockOverlay";
 import { OfflineOverlay } from "@/components/OfflineOverlay";
+import { ForceUpdateOverlay } from "@/components/ForceUpdateOverlay";
 import RoleSelector from "./pages/RoleSelector";
 import Dashboard from "./pages/Dashboard";
 import NotFound from "./pages/NotFound";
 import { useVersionCheck } from "@/hooks/useVersionCheck";
+import { useForceUpdateChecker } from "@/hooks/useForceUpdateCheck";
 import { usePushNotifications } from "@/hooks/usePushNotifications";
 import { useDriverLocationTrackerBridge } from "@/hooks/useDriverLocationTracker";
 import { useEffect } from "react";
@@ -26,6 +28,7 @@ const queryClient = new QueryClient();
 
 const AppContent = () => {
   useVersionCheck();
+  useForceUpdateChecker();
   useEffect(() => {
     // Create the notification channel as early as possible so that FCM
     // notifications arriving while the app is killed can be displayed
@@ -70,6 +73,7 @@ const AppContent = () => {
                     <NotificationsBlockOverlay />
                     <GpsBlockOverlay />
                     <OfflineOverlay />
+                    <ForceUpdateOverlay />
                   </ErrorBoundary>
                 </TooltipProvider>
               </ActivityLogProvider>
