@@ -257,6 +257,26 @@ export function useOrderMutations({ setOrders, fetchOrders, playNotificationSoun
     return true;
   };
 
+  const resolveIssue = async (orderId: string) => {
+    const { error } = await supabase
+      .from('orders')
+      .update({
+        issue_reported: false,
+        issue_reason: null,
+        issue_reported_by: null,
+        issue_reported_at: null,
+      })
+      .eq('id', orderId);
+
+    if (error) {
+      console.error('Error resolving issue:', error);
+      toast.error('حدث خطأ في حل المشكلة');
+      return false;
+    }
+    toast.success('تم حل المشكلة');
+    return true;
+  };
+
   return {
     addOrder,
     updateOrderStatus,
@@ -268,5 +288,6 @@ export function useOrderMutations({ setOrders, fetchOrders, playNotificationSoun
     getOrdersByStatus,
     updateOrder,
     reportIssue,
+    resolveIssue,
   };
 }
