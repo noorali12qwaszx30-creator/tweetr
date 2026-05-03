@@ -11,6 +11,7 @@ import { ActivityLogProvider } from "@/contexts/ActivityLogContext";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
 import { NotificationsBlockOverlay } from "@/components/NotificationsBlockOverlay";
 import { GpsBlockOverlay } from "@/components/GpsBlockOverlay";
+import { OfflineOverlay } from "@/components/OfflineOverlay";
 import RoleSelector from "./pages/RoleSelector";
 import Dashboard from "./pages/Dashboard";
 import NotFound from "./pages/NotFound";
@@ -68,6 +69,7 @@ const AppContent = () => {
                     </Routes>
                     <NotificationsBlockOverlay />
                     <GpsBlockOverlay />
+                    <OfflineOverlay />
                   </ErrorBoundary>
                 </TooltipProvider>
               </ActivityLogProvider>
