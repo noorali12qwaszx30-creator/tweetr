@@ -1,15 +1,25 @@
 import { useEffect, useRef } from 'react';
 import { toast } from 'sonner';
+import { Capacitor } from '@capacitor/core';
+import { App as CapApp } from '@capacitor/app';
 
 // يفحص index.html من الخادم بشكل دوري لاكتشاف وجود نسخة جديدة من التطبيق.
 // عند اكتشاف تغيير في ملفات الـ build، يعرض إشعاراً للمستخدم لإعادة التحميل.
 const CHECK_INTERVAL = 60_000; // كل دقيقة
+const RELOAD_GUARD_KEY = 'lv-version-reload-target';
 
 async function fetchCurrentBuildHash(): Promise<string | null> {
   try {
-    const res = await fetch('/index.html', {
+    const url = new URL('/index.html', window.location.origin);
+    url.searchParams.set('_lv', Date.now().toString());
+
+    const res = await fetch(url.toString(), {
       cache: 'no-store',
-      headers: { 'Cache-Control': 'no-cache' },
+      headers: {
+        'Cache-Control': 'no-cache, no-store, must-revalidate',
+        Pragma: 'no-cache',
+        Expires: '0',
+      },
     });
     if (!res.ok) return null;
     const html = await res.text();
@@ -21,35 +31,84 @@ async function fetchCurrentBuildHash(): Promise<string | null> {
   }
 }
 
+function getLoadedBuildHash(): string | null {
+  const currentScript = Array.from(document.scripts).find((script) => {
+    const src = script.getAttribute('src') ?? '';
+    return /\/assets\/index-[A-Za-z0-9_-]+\.js/.test(src);
+  });
+
+  const src = currentScript?.getAttribute('src') ?? null;
+  if (!src) return null;
+
+  const match = src.match(/\/assets\/index-[A-Za-z0-9_-]+\.js/);
+  return match ? match[0] : null;
+}
+
+function buildCacheBustedUrl() {
+  const url = new URL(window.location.href);
+  url.searchParams.set('_lv_reload', Date.now().toString());
+  return url.toString();
+}
+
+function forceHardReload(targetHash: string) {
+  const lastReloadTarget = sessionStorage.getItem(RELOAD_GUARD_KEY);
+  if (lastReloadTarget === targetHash) return;
+
+  sessionStorage.setItem(RELOAD_GUARD_KEY, targetHash);
+
+  const reload = () => {
+    window.location.replace(buildCacheBustedUrl());
+  };
+
+  if ('caches' in window) {
+    caches.keys()
+      .then((keys) => Promise.all(keys.map((key) => caches.delete(key))))
+      .finally(reload);
+    return;
+  }
+
+  reload();
+}
+
 export function useVersionCheck() {
-  const initialHashRef = useRef<string | null>(null);
+  const loadedHashRef = useRef<string | null>(null);
   const notifiedRef = useRef(false);
 
   useEffect(() => {
     let cancelled = false;
 
     const check = async () => {
-      const hash = await fetchCurrentBuildHash();
-      if (cancelled || !hash) return;
+      const latestHash = await fetchCurrentBuildHash();
+      if (cancelled || !latestHash) return;
 
-      if (initialHashRef.current === null) {
-        initialHashRef.current = hash;
+      if (loadedHashRef.current === null) {
+        loadedHashRef.current = getLoadedBuildHash();
+      }
+
+      const loadedHash = loadedHashRef.current;
+      if (!loadedHash) {
+        loadedHashRef.current = latestHash;
         return;
       }
 
-      if (hash !== initialHashRef.current && !notifiedRef.current) {
+      if (latestHash === loadedHash) {
+        sessionStorage.removeItem(RELOAD_GUARD_KEY);
+        return;
+      }
+
+      if (!notifiedRef.current) {
         notifiedRef.current = true;
+
+        if (Capacitor.isNativePlatform()) {
+          forceHardReload(latestHash);
+          return;
+        }
+
         // Auto-reload after 8 seconds for unattended screens (e.g. kitchen)
         const autoReloadTimer = window.setTimeout(() => {
-          const reload = () => window.location.reload();
-          if ('caches' in window) {
-            caches.keys()
-              .then((keys) => Promise.all(keys.map((k) => caches.delete(k))))
-              .finally(reload);
-          } else {
-            reload();
-          }
+          forceHardReload(latestHash);
         }, 8000);
+
         toast.info('يتوفر تحديث جديد للنظام', {
           description: 'اضغط لإعادة التحميل وتطبيق التحديث',
           duration: Infinity,
@@ -57,15 +116,7 @@ export function useVersionCheck() {
             label: 'تحديث الآن',
             onClick: () => {
               window.clearTimeout(autoReloadTimer);
-              // تنظيف caches ثم إعادة تحميل قسرية
-              const reload = () => window.location.reload();
-              if ('caches' in window) {
-                caches.keys()
-                  .then((keys) => Promise.all(keys.map((k) => caches.delete(k))))
-                  .finally(reload);
-              } else {
-                reload();
-              }
+              forceHardReload(latestHash);
             },
           },
         });
@@ -81,10 +132,32 @@ export function useVersionCheck() {
     };
     document.addEventListener('visibilitychange', onVisible);
 
+    let removeAppStateListener: (() => void) | undefined;
+    let removeResumeListener: (() => void) | undefined;
+    if (Capacitor.isNativePlatform()) {
+      (async () => {
+        try {
+          const stateListener = await CapApp.addListener('appStateChange', ({ isActive }) => {
+            if (isActive) check();
+          });
+          removeAppStateListener = () => stateListener.remove();
+
+          const resumeListener = await CapApp.addListener('resume', () => {
+            check();
+          });
+          removeResumeListener = () => resumeListener.remove();
+        } catch {
+          // ignore
+        }
+      })();
+    }
+
     return () => {
       cancelled = true;
       clearInterval(interval);
       document.removeEventListener('visibilitychange', onVisible);
+      removeAppStateListener?.();
+      removeResumeListener?.();
     };
   }, []);
 }
