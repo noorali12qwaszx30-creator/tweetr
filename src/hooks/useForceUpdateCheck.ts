@@ -26,7 +26,17 @@ function getRepo(): string | null {
   return repo && repo.includes('/') ? repo : null;
 }
 
-function getCurrentBuild(): number {
+async function getCurrentBuild(): Promise<number> {
+  if (Capacitor.isNativePlatform()) {
+    try {
+      const info = await CapApp.getInfo();
+      const nativeBuild = Number(info.build ?? 0) || 0;
+      if (nativeBuild > 0) return nativeBuild;
+    } catch {
+      // ignore and fallback to web build env
+    }
+  }
+
   return Number(import.meta.env.VITE_APP_BUILD ?? 0) || 0;
 }
 
@@ -38,8 +48,9 @@ function parseBuildFromTag(tag: string): number {
 async function checkLatest(): Promise<void> {
   const repo = getRepo();
   if (!repo) return;
-  const currentBuild = getCurrentBuild();
-  if (!currentBuild) return; // غير محقون → بناء محلي، تجاهل
+
+  const currentBuild = await getCurrentBuild();
+  if (!currentBuild) return;
 
   try {
     const res = await fetch(`https://api.github.com/repos/${repo}/releases/latest`, {
