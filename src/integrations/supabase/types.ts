@@ -346,6 +346,27 @@ export type Database = {
         }
         Relationships: []
       }
+      delayed_order_alerts: {
+        Row: {
+          alerted_at: string
+          id: string
+          order_id: string
+          order_number: number
+        }
+        Insert: {
+          alerted_at?: string
+          id?: string
+          order_id: string
+          order_number: number
+        }
+        Update: {
+          alerted_at?: string
+          id?: string
+          order_id?: string
+          order_number?: number
+        }
+        Relationships: []
+      }
       delivery_areas: {
         Row: {
           created_at: string
