@@ -6,9 +6,6 @@ import { useRole } from '@/contexts/RoleContext';
 import { useConversations } from '@/hooks/useChat';
 import { usePresence } from '@/hooks/usePresence';
 import { ChatPanel } from './ChatPanel';
-import { IncomingCallScreen } from './IncomingCallScreen';
-import { ActiveCallScreen } from './ActiveCallScreen';
-import { useIncomingCalls } from '@/hooks/useWebRTC';
 import { cn } from '@/lib/utils';
 
 /** Floating chat bubble visible across the app for logged-in users. */
@@ -16,8 +13,6 @@ export function ChatBubble() {
   const { user, isAuthenticated } = useAuth();
   const { role } = useRole();
   const [open, setOpen] = useState(false);
-  const [activeCall, setActiveCall] = useState<{ callId: string; isCaller: boolean; peerName: string } | null>(null);
-  const { incoming, dismiss } = useIncomingCalls();
   // Mount presence + conversations hooks
   usePresence();
   const { conversations } = useConversations();
@@ -50,30 +45,6 @@ export function ChatBubble() {
       {open && (
         <ChatPanel
           onClose={() => setOpen(false)}
-          onStartCall={(callId, peerName) => {
-            setOpen(false);
-            setActiveCall({ callId, isCaller: true, peerName });
-          }}
-        />
-      )}
-
-      {incoming && !activeCall && (
-        <IncomingCallScreen
-          call={incoming}
-          onAccept={() => {
-            setActiveCall({ callId: incoming.id, isCaller: false, peerName: incoming.caller_name });
-            dismiss();
-          }}
-          onReject={() => dismiss()}
-        />
-      )}
-
-      {activeCall && (
-        <ActiveCallScreen
-          callId={activeCall.callId}
-          isCaller={activeCall.isCaller}
-          peerName={activeCall.peerName}
-          onEnd={() => setActiveCall(null)}
         />
       )}
     </>
