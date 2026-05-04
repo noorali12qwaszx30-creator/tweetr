@@ -1,5 +1,5 @@
-import { useEffect, useState } from 'react';
-import { ArrowLeft, Send, Phone, Search, Users, MessageCircle } from 'lucide-react';
+import { useEffect, useRef, useState } from 'react';
+import { ArrowLeft, Send, Search, Users, MessageCircle, Mic, Square, Trash2, Play, Pause } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { ScrollArea } from '@/components/ui/scroll-area';
@@ -7,15 +7,14 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { useAuth } from '@/contexts/AuthContext';
 import { useConversations, useMessages, getOrCreatePrivateConversation, ChatConversation } from '@/hooks/useChat';
 import { usePresence, isOnline, PresenceUser } from '@/hooks/usePresence';
-import { initiateCall } from '@/hooks/useWebRTC';
 import { supabase } from '@/integrations/supabase/client';
 import { cn } from '@/lib/utils';
 import { formatDistanceToNow } from 'date-fns';
 import { ar } from 'date-fns/locale';
+import { toast } from 'sonner';
 
 interface Props {
   onClose: () => void;
-  onStartCall: (callId: string, peerName: string) => void;
 }
 
 const ROLE_LABEL: Record<string, string> = {
@@ -27,7 +26,7 @@ const ROLE_LABEL: Record<string, string> = {
   takeaway: 'تيك أواي',
 };
 
-export function ChatPanel({ onClose, onStartCall }: Props) {
+export function ChatPanel({ onClose }: Props) {
   const { user } = useAuth();
   const { conversations } = useConversations();
   const presence = usePresence();
@@ -60,7 +59,6 @@ export function ChatPanel({ onClose, onStartCall }: Props) {
 
   if (!user) return null;
 
-  // Merge presence (live status) with full user list
   const presenceMap = new Map(presence.map((p) => [p.user_id, p]));
   const merged: PresenceUser[] = allUsers.map((u) => presenceMap.get(u.user_id) ?? u);
   const filteredPeople = merged
@@ -85,30 +83,10 @@ export function ChatPanel({ onClose, onStartCall }: Props) {
     });
   };
 
-  const callUser = async (peer: PresenceUser) => {
-    const callId = await initiateCall(user.id, user.fullName || user.username, peer.user_id, peer.user_name);
-    onStartCall(callId, peer.user_name);
-  };
-
   return (
     <div className="fixed inset-x-0 bottom-0 sm:bottom-20 sm:left-4 sm:right-auto sm:w-[380px] z-[55] bg-card border border-border rounded-t-2xl sm:rounded-2xl shadow-2xl flex flex-col h-[80dvh] sm:h-[600px] max-h-[90dvh]">
       {activeConv ? (
-        <ConversationView
-          conv={activeConv}
-          onBack={() => setActiveConv(null)}
-          onCall={() => {
-            if (activeConv.other_user_id && activeConv.other_user_name) {
-              const peer: PresenceUser = {
-                user_id: activeConv.other_user_id,
-                user_name: activeConv.other_user_name,
-                user_role: null,
-                status: 'online',
-                last_seen_at: new Date().toISOString(),
-              };
-              callUser(peer);
-            }
-          }}
-        />
+        <ConversationView conv={activeConv} onBack={() => setActiveConv(null)} />
       ) : (
         <>
           <div className="flex items-center justify-between p-3 border-b border-border">
@@ -174,7 +152,11 @@ export function ChatPanel({ onClose, onStartCall }: Props) {
                   <p className="p-6 text-center text-muted-foreground text-sm">لا يوجد مستخدمون</p>
                 ) : (
                   filteredPeople.map((p) => (
-                    <div key={p.user_id} className="flex items-center gap-3 p-3 border-b border-border">
+                    <button
+                      key={p.user_id}
+                      onClick={() => openPrivate(p)}
+                      className="w-full text-right flex items-center gap-3 p-3 border-b border-border hover:bg-muted/50"
+                    >
                       <div className="relative">
                         <div className="w-10 h-10 rounded-full bg-secondary flex items-center justify-center text-secondary-foreground font-bold">
                           {p.user_name.charAt(0)}
@@ -188,13 +170,7 @@ export function ChatPanel({ onClose, onStartCall }: Props) {
                         <p className="font-medium text-foreground truncate">{p.user_name}</p>
                         <p className="text-xs text-muted-foreground">{p.user_role ? ROLE_LABEL[p.user_role] : ''}</p>
                       </div>
-                      <Button size="icon" variant="ghost" onClick={() => openPrivate(p)} aria-label="رسالة">
-                        <MessageCircle className="w-4 h-4" />
-                      </Button>
-                      <Button size="icon" variant="ghost" onClick={() => callUser(p)} aria-label="مكالمة">
-                        <Phone className="w-4 h-4 text-green-600" />
-                      </Button>
-                    </div>
+                    </button>
                   ))
                 )}
               </ScrollArea>
@@ -206,10 +182,17 @@ export function ChatPanel({ onClose, onStartCall }: Props) {
   );
 }
 
-function ConversationView({ conv, onBack, onCall }: { conv: ChatConversation; onBack: () => void; onCall: () => void }) {
+function ConversationView({ conv, onBack }: { conv: ChatConversation; onBack: () => void }) {
   const { user } = useAuth();
   const { messages, sendMessage } = useMessages(conv.id);
   const [input, setInput] = useState('');
+  const [recording, setRecording] = useState(false);
+  const [recordTime, setRecordTime] = useState(0);
+  const [uploading, setUploading] = useState(false);
+  const mediaRef = useRef<MediaRecorder | null>(null);
+  const chunksRef = useRef<Blob[]>([]);
+  const timerRef = useRef<any>(null);
+  const cancelRef = useRef(false);
   const title = conv.type === 'private' ? conv.other_user_name : conv.name;
 
   useEffect(() => {
@@ -225,6 +208,53 @@ function ConversationView({ conv, onBack, onCall }: { conv: ChatConversation; on
     await sendMessage(v);
   };
 
+  const startRecording = async () => {
+    if (!user) return;
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      const mr = new MediaRecorder(stream);
+      chunksRef.current = [];
+      cancelRef.current = false;
+      mr.ondataavailable = (e) => e.data.size > 0 && chunksRef.current.push(e.data);
+      mr.onstop = async () => {
+        stream.getTracks().forEach((t) => t.stop());
+        if (cancelRef.current) return;
+        const blob = new Blob(chunksRef.current, { type: 'audio/webm' });
+        if (blob.size < 500) return;
+        setUploading(true);
+        try {
+          const path = `${user.id}/${Date.now()}.webm`;
+          const { error: upErr } = await supabase.storage.from('chat-voice').upload(path, blob, {
+            contentType: 'audio/webm',
+            upsert: false,
+          });
+          if (upErr) throw upErr;
+          const { data } = supabase.storage.from('chat-voice').getPublicUrl(path);
+          await sendMessage(data.publicUrl, 'voice');
+        } catch (err: any) {
+          toast.error('فشل إرسال الرسالة الصوتية');
+        } finally {
+          setUploading(false);
+        }
+      };
+      mediaRef.current = mr;
+      mr.start();
+      setRecording(true);
+      setRecordTime(0);
+      timerRef.current = setInterval(() => setRecordTime((t) => t + 1), 1000);
+    } catch {
+      toast.error('تعذّر الوصول للميكروفون');
+    }
+  };
+
+  const stopRecording = (cancel = false) => {
+    cancelRef.current = cancel;
+    clearInterval(timerRef.current);
+    setRecording(false);
+    setRecordTime(0);
+    mediaRef.current?.stop();
+  };
+
   return (
     <>
       <div className="flex items-center gap-2 p-3 border-b border-border">
@@ -234,11 +264,6 @@ function ConversationView({ conv, onBack, onCall }: { conv: ChatConversation; on
         <div className="flex-1">
           <p className="font-bold text-foreground">{title}</p>
         </div>
-        {conv.type === 'private' && (
-          <Button variant="ghost" size="icon" onClick={onCall} aria-label="مكالمة">
-            <Phone className="w-4 h-4 text-green-600" />
-          </Button>
-        )}
       </div>
       <ScrollArea className="flex-1 p-3">
         <div className="space-y-2">
@@ -250,10 +275,14 @@ function ConversationView({ conv, onBack, onCall }: { conv: ChatConversation; on
                   <span className="text-[10px] text-muted-foreground px-2">{m.sender_name}</span>
                 )}
                 <div className={cn(
-                  'max-w-[80%] rounded-2xl px-3 py-2 text-sm break-words',
+                  'max-w-[85%] rounded-2xl px-3 py-2 text-sm break-words',
                   mine ? 'bg-primary text-primary-foreground' : 'bg-muted text-foreground',
                 )}>
-                  {m.content}
+                  {m.message_type === 'voice' ? (
+                    <VoicePlayer url={m.content} mine={mine} />
+                  ) : (
+                    m.content
+                  )}
                 </div>
                 <span className="text-[10px] text-muted-foreground px-2 mt-0.5">
                   {new Date(m.created_at).toLocaleTimeString('ar', { hour: '2-digit', minute: '2-digit' })}
@@ -264,17 +293,102 @@ function ConversationView({ conv, onBack, onCall }: { conv: ChatConversation; on
           <div id="chat-bottom" />
         </div>
       </ScrollArea>
-      <form onSubmit={onSubmit} className="p-2 border-t border-border flex gap-2">
-        <Input
-          value={input}
-          onChange={(e) => setInput(e.target.value)}
-          placeholder="اكتب رسالة..."
-          className="flex-1"
-        />
-        <Button type="submit" size="icon" disabled={!input.trim()}>
-          <Send className="w-4 h-4" />
-        </Button>
-      </form>
+      {recording ? (
+        <div className="p-2 border-t border-border flex items-center gap-2 bg-muted/30">
+          <Button type="button" size="icon" variant="ghost" onClick={() => stopRecording(true)} aria-label="إلغاء">
+            <Trash2 className="w-4 h-4 text-destructive" />
+          </Button>
+          <div className="flex-1 flex items-center gap-2">
+            <span className="w-2 h-2 rounded-full bg-red-500 animate-pulse" />
+            <span className="text-sm font-mono">
+              {Math.floor(recordTime / 60)}:{String(recordTime % 60).padStart(2, '0')}
+            </span>
+            <span className="text-xs text-muted-foreground">جارٍ التسجيل...</span>
+          </div>
+          <Button type="button" size="icon" onClick={() => stopRecording(false)} aria-label="إرسال">
+            <Send className="w-4 h-4" />
+          </Button>
+        </div>
+      ) : (
+        <form onSubmit={onSubmit} className="p-2 border-t border-border flex gap-2">
+          <Input
+            value={input}
+            onChange={(e) => setInput(e.target.value)}
+            placeholder={uploading ? 'جارٍ الإرسال...' : 'اكتب رسالة...'}
+            className="flex-1"
+            disabled={uploading}
+          />
+          {input.trim() ? (
+            <Button type="submit" size="icon" disabled={uploading}>
+              <Send className="w-4 h-4" />
+            </Button>
+          ) : (
+            <Button
+              type="button"
+              size="icon"
+              onClick={startRecording}
+              disabled={uploading}
+              aria-label="رسالة صوتية"
+            >
+              <Mic className="w-4 h-4" />
+            </Button>
+          )}
+        </form>
+      )}
     </>
+  );
+}
+
+function VoicePlayer({ url, mine }: { url: string; mine: boolean }) {
+  const audioRef = useRef<HTMLAudioElement | null>(null);
+  const [playing, setPlaying] = useState(false);
+  const [duration, setDuration] = useState(0);
+  const [current, setCurrent] = useState(0);
+
+  const toggle = () => {
+    const a = audioRef.current;
+    if (!a) return;
+    if (a.paused) {
+      a.play();
+      setPlaying(true);
+    } else {
+      a.pause();
+      setPlaying(false);
+    }
+  };
+
+  const fmt = (s: number) =>
+    isFinite(s) ? `${Math.floor(s / 60)}:${String(Math.floor(s % 60)).padStart(2, '0')}` : '0:00';
+
+  return (
+    <div className="flex items-center gap-2 min-w-[180px]">
+      <button
+        type="button"
+        onClick={toggle}
+        className={cn(
+          'w-8 h-8 rounded-full flex items-center justify-center shrink-0',
+          mine ? 'bg-primary-foreground/20' : 'bg-foreground/10',
+        )}
+      >
+        {playing ? <Pause className="w-4 h-4" /> : <Play className="w-4 h-4" />}
+      </button>
+      <div className="flex-1">
+        <div className={cn('h-1 rounded-full', mine ? 'bg-primary-foreground/30' : 'bg-foreground/20')}>
+          <div
+            className={cn('h-full rounded-full', mine ? 'bg-primary-foreground' : 'bg-foreground/60')}
+            style={{ width: duration ? `${(current / duration) * 100}%` : '0%' }}
+          />
+        </div>
+        <span className="text-[10px] opacity-80">{fmt(current)} / {fmt(duration)}</span>
+      </div>
+      <audio
+        ref={audioRef}
+        src={url}
+        preload="metadata"
+        onLoadedMetadata={(e) => setDuration((e.target as HTMLAudioElement).duration)}
+        onTimeUpdate={(e) => setCurrent((e.target as HTMLAudioElement).currentTime)}
+        onEnded={() => setPlaying(false)}
+      />
+    </div>
   );
 }

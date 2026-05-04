@@ -1,6 +1,5 @@
-// Sends push notifications for new chat messages and incoming calls.
-// Body for messages: { conversation_id, sender_id, sender_name, content }
-// Body for calls:    { type: 'call', call_id, callee_id, caller_name }
+// Sends push notifications for new chat messages.
+// Body: { conversation_id, sender_id, sender_name, content }
 
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.57.4";
 
@@ -19,25 +18,6 @@ Deno.serve(async (req) => {
   try {
     const body = await req.json();
     const supabase = createClient(SUPABASE_URL, SERVICE_ROLE);
-
-    // INCOMING CALL
-    if (body.type === "call") {
-      const { callee_id, caller_name, call_id } = body;
-      await fetch(PUSH_URL, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          target_user_ids: [String(callee_id)],
-          target_roles: [],
-          title: "📞 مكالمة واردة",
-          body: `${caller_name} يتصل بك`,
-          data: { type: "incoming_call", call_id: String(call_id) },
-        }),
-      });
-      return new Response(JSON.stringify({ ok: true }), {
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
-    }
 
     // NEW MESSAGE
     const { conversation_id, sender_id, sender_name, content } = body;
