@@ -27,14 +27,6 @@ export const toEnglishNumbers = (value: string | number): string => {
 };
 
 /**
- * Formats a number with English numerals and optional decimal places
- */
-export const formatPrice = (price: number, decimals: number = 0): string => {
-  const formatted = price.toFixed(decimals);
-  return toEnglishNumbers(formatted);
-};
-
-/**
  * Formats a number with commas for thousands and English numerals
  */
 export const formatNumberWithCommas = (num: number): string => {

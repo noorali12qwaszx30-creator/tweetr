@@ -1,8 +1,8 @@
 import { useMemo } from 'react';
 import { Order } from '@/types';
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, LineChart, Line } from 'recharts';
-import { Clock, TrendingUp } from 'lucide-react';
-import { toEnglishNumbers, formatNumberWithCommas } from '@/lib/formatNumber';
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
+import { Clock } from 'lucide-react';
+import { toEnglishNumbers } from '@/lib/formatNumber';
 
 interface OrdersChartProps {
   orders: Order[];
