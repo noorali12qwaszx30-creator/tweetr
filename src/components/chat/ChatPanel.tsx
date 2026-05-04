@@ -8,6 +8,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useConversations, useMessages, getOrCreatePrivateConversation, ChatConversation } from '@/hooks/useChat';
 import { usePresence, isOnline, PresenceUser } from '@/hooks/usePresence';
 import { initiateCall } from '@/hooks/useWebRTC';
+import { supabase } from '@/integrations/supabase/client';
 import { cn } from '@/lib/utils';
 import { formatDistanceToNow } from 'date-fns';
 import { ar } from 'date-fns/locale';
@@ -33,11 +34,43 @@ export function ChatPanel({ onClose, onStartCall }: Props) {
   const [tab, setTab] = useState<'chats' | 'people'>('chats');
   const [activeConv, setActiveConv] = useState<ChatConversation | null>(null);
   const [search, setSearch] = useState('');
+  const [allUsers, setAllUsers] = useState<PresenceUser[]>([]);
+
+  useEffect(() => {
+    if (!user) return;
+    (async () => {
+      const { data: profiles } = await supabase
+        .from('profiles')
+        .select('user_id, full_name, username, is_active')
+        .eq('is_active', true);
+      const { data: roles } = await supabase.from('user_roles').select('user_id, role');
+      const roleMap = new Map((roles ?? []).map((r: any) => [r.user_id, r.role]));
+      const list: PresenceUser[] = (profiles ?? [])
+        .filter((p: any) => p.user_id !== user.id)
+        .map((p: any) => ({
+          user_id: p.user_id,
+          user_name: p.full_name || p.username || 'مستخدم',
+          user_role: roleMap.get(p.user_id) ?? null,
+          status: 'offline',
+          last_seen_at: new Date(0).toISOString(),
+        }));
+      setAllUsers(list);
+    })();
+  }, [user?.id]);
 
   if (!user) return null;
 
-  const others = presence.filter((p) => p.user_id !== user.id);
-  const filteredPeople = others.filter((p) => p.user_name.toLowerCase().includes(search.toLowerCase()));
+  // Merge presence (live status) with full user list
+  const presenceMap = new Map(presence.map((p) => [p.user_id, p]));
+  const merged: PresenceUser[] = allUsers.map((u) => presenceMap.get(u.user_id) ?? u);
+  const filteredPeople = merged
+    .filter((p) => p.user_name.toLowerCase().includes(search.toLowerCase()))
+    .sort((a, b) => {
+      const ao = isOnline(a) ? 0 : 1;
+      const bo = isOnline(b) ? 0 : 1;
+      if (ao !== bo) return ao - bo;
+      return a.user_name.localeCompare(b.user_name, 'ar');
+    });
 
   const openPrivate = async (peer: PresenceUser) => {
     const id = await getOrCreatePrivateConversation(user.id, peer.user_id);
