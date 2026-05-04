@@ -1,5 +1,4 @@
 import { useState } from 'react';
-import { AIAssistantChat } from '@/components/admin/AIAssistantChat';
 import { useRole } from '@/contexts/RoleContext';
 import { useAuth } from '@/contexts/AuthContext';
 import { useSupabaseOrders, OrderWithItems } from '@/hooks/useSupabaseOrders';
@@ -13,7 +12,7 @@ import { AdminMonitoringTab } from '@/components/admin/AdminMonitoringTab';
 import { AdminSettingsTab } from '@/components/admin/AdminSettingsTab';
 import { BottomNavigation } from '@/components/shared/BottomNavigation';
 import { toast } from 'sonner';
-import { ShieldCheck, Loader2, Home, UtensilsCrossed, Package, BarChart3, Eye, Settings, Bot } from 'lucide-react';
+import { ShieldCheck, Loader2, Home, UtensilsCrossed, Package, BarChart3, Eye, Settings } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 
 type MainTab = 'home' | 'menu' | 'orders' | 'stats' | 'monitoring' | 'settings';
@@ -26,7 +25,6 @@ export default function AdminDashboard() {
   const [activeTab, setActiveTab] = useState<MainTab>('home');
   const [selectedOrder, setSelectedOrder] = useState<OrderWithItems | null>(null);
   const [isDeletingOrders, setIsDeletingOrders] = useState(false);
-  const [aiChatOpen, setAiChatOpen] = useState(false);
 
   const handleDeleteAllOrders = async () => {
     setIsDeletingOrders(true);
@@ -150,16 +148,6 @@ export default function AdminDashboard() {
           </div>
         </div>
       )}
-
-      <button
-        onClick={() => setAiChatOpen(true)}
-        className="fixed bottom-20 left-4 z-50 w-14 h-14 rounded-full bg-primary text-primary-foreground shadow-lg hover:shadow-xl transition-all hover:scale-105 flex items-center justify-center animate-pulse"
-        style={{ animationDuration: '3s' }}
-      >
-        <Bot className="w-6 h-6" />
-      </button>
-
-      <AIAssistantChat open={aiChatOpen} onOpenChange={setAiChatOpen} />
     </div>
   );
 }
