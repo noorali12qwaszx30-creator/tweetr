@@ -163,7 +163,7 @@ export function useMessages(conversationId: string | null) {
   }, [conversationId, user?.id]);
 
   const sendMessage = useCallback(
-    async (content: string) => {
+    async (content: string, message_type: string = 'text') => {
       if (!user?.id || !conversationId || !content.trim()) return;
       await supabase.from('chat_messages').insert({
         conversation_id: conversationId,
@@ -171,11 +171,17 @@ export function useMessages(conversationId: string | null) {
         sender_name: user.fullName || user.username,
         sender_role: user.role,
         content: content.trim(),
+        message_type,
       });
       // Trigger push for participants (best-effort)
       supabase.functions
         .invoke('send-chat-notification', {
-          body: { conversation_id: conversationId, sender_id: user.id, sender_name: user.fullName || user.username, content: content.trim() },
+          body: {
+            conversation_id: conversationId,
+            sender_id: user.id,
+            sender_name: user.fullName || user.username,
+            content: message_type === 'voice' ? '🎤 رسالة صوتية' : content.trim(),
+          },
         })
         .catch(() => {});
     },
