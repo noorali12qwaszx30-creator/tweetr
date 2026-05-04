@@ -18,7 +18,7 @@ export function usePresence() {
   // Heartbeat
   useEffect(() => {
     if (!user?.id) return;
-    const upsert = async (status: 'online' | 'offline' = 'online') => {
+    const upsert = async (status: 'online' | 'offline' | 'away' = 'online') => {
       await supabase.from('user_presence').upsert({
         user_id: user.id,
         user_name: user.fullName || user.username,
