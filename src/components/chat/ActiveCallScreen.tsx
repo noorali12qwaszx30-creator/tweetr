@@ -12,7 +12,7 @@ interface Props {
 
 /** Fullscreen active call UI with mute/end. */
 export function ActiveCallScreen({ callId, isCaller, peerName, onEnd }: Props) {
-  const { remoteAudioRef, muted, connected, toggleMute, endCall } = useCallSession(
+  const { remoteAudioRef, muted, connected, statusText, toggleMute, endCall } = useCallSession(
     { callId, isCaller },
     onEnd,
   );
@@ -34,7 +34,7 @@ export function ActiveCallScreen({ callId, isCaller, peerName, onEnd }: Props) {
         </div>
         <h2 className="text-2xl font-bold">{peerName}</h2>
         <p className="text-sm opacity-80">
-          {connected ? fmt(seconds) : isCaller ? 'جارٍ الاتصال...' : 'جارٍ الاتصال...'}
+          {connected ? fmt(seconds) : statusText}
         </p>
       </div>
       <audio ref={remoteAudioRef} autoPlay />

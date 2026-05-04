@@ -14,6 +14,10 @@ export interface IncomingCall {
 const ICE_SERVERS = [
   { urls: 'stun:stun.l.google.com:19302' },
   { urls: 'stun:stun1.l.google.com:19302' },
+  // Free TURN (OpenRelay by metered.ca) — required to traverse strict NATs (4G/LTE)
+  { urls: 'turn:openrelay.metered.ca:80', username: 'openrelayproject', credential: 'openrelayproject' },
+  { urls: 'turn:openrelay.metered.ca:443', username: 'openrelayproject', credential: 'openrelayproject' },
+  { urls: 'turn:openrelay.metered.ca:443?transport=tcp', username: 'openrelayproject', credential: 'openrelayproject' },
 ];
 
 /** Watches for incoming calls for the current user. */
@@ -63,10 +67,17 @@ export function useCallSession(session: CallSession | null, onEnd: () => void) {
   const remoteAudioRef = useRef<HTMLAudioElement | null>(null);
   const [muted, setMuted] = useState(false);
   const [connected, setConnected] = useState(false);
+  const [statusText, setStatusText] = useState<string>('جارٍ الاتصال...');
 
   useEffect(() => {
     if (!session) return;
     let cancelled = false;
+    const role: 'caller' | 'callee' = session.isCaller ? 'caller' : 'callee';
+    const otherRole: 'caller' | 'callee' = session.isCaller ? 'callee' : 'caller';
+    const appliedCandidates = new Set<string>();
+    let heartbeatIv: any;
+    let watchdogIv: any;
+    let lastPeerPing = Date.now();
 
     const start = async () => {
       const pc = new RTCPeerConnection({ iceServers: ICE_SERVERS });
@@ -85,25 +96,39 @@ export function useCallSession(session: CallSession | null, onEnd: () => void) {
         }
       };
       pc.onconnectionstatechange = () => {
-        if (pc.connectionState === 'connected') setConnected(true);
-        if (['failed', 'disconnected', 'closed'].includes(pc.connectionState)) onEnd();
-      };
-      pc.onicecandidate = async (e) => {
-        if (e.candidate) {
-          // Append candidate to call
-          const { data } = await supabase
-            .from('chat_calls')
-            .select('ice_candidates')
-            .eq('id', session.callId)
-            .maybeSingle();
-          const arr = (data?.ice_candidates as any[]) || [];
-          arr.push({ from: session.isCaller ? 'caller' : 'callee', candidate: e.candidate.toJSON() });
-          await supabase.from('chat_calls').update({ ice_candidates: arr }).eq('id', session.callId);
+        if (pc.connectionState === 'connected') {
+          setConnected(true);
+          setStatusText('متصل');
+        }
+        if (pc.connectionState === 'disconnected') setStatusText('إعادة المحاولة...');
+        if (['failed', 'closed'].includes(pc.connectionState)) {
+          setStatusText('انقطع الاتصال');
+          onEnd();
         }
       };
+      pc.oniceconnectionstatechange = () => {
+        if (pc.iceConnectionState === 'checking') setStatusText('جارٍ الاتصال...');
+        if (pc.iceConnectionState === 'connected' || pc.iceConnectionState === 'completed') {
+          setConnected(true);
+          setStatusText('متصل');
+        }
+        if (pc.iceConnectionState === 'failed') {
+          setStatusText('فشل الاتصال');
+          onEnd();
+        }
+      };
+      pc.onicecandidate = async (e) => {
+        if (!e.candidate) return;
+        // Insert candidate as its own row to avoid update races
+        await (supabase as any).from('chat_ice_candidates').insert({
+          call_id: session.callId,
+          from_role: role,
+          candidate: e.candidate.toJSON(),
+        });
+      };
 
-      // Subscribe to remote signaling
-      const ch = supabase
+      // Subscribe to remote signaling (call status / answer)
+      const callCh = supabase
         .channel(`call-${session.callId}`)
         .on(
           'postgres_changes',
@@ -114,22 +139,44 @@ export function useCallSession(session: CallSession | null, onEnd: () => void) {
               onEnd();
               return;
             }
+            // Heartbeat from peer
+            const peerPing = session.isCaller ? row.callee_last_ping_at : row.caller_last_ping_at;
+            if (peerPing) lastPeerPing = new Date(peerPing).getTime();
             if (session.isCaller && row.webrtc_answer && !pc.currentRemoteDescription) {
               await pc.setRemoteDescription(new RTCSessionDescription(row.webrtc_answer));
-            }
-            // Apply ICE candidates from the other side
-            const cands = (row.ice_candidates as any[]) || [];
-            for (const c of cands) {
-              const fromOther = session.isCaller ? c.from === 'callee' : c.from === 'caller';
-              if (fromOther) {
-                try {
-                  await pc.addIceCandidate(c.candidate);
-                } catch {}
-              }
             }
           },
         )
         .subscribe();
+
+      // Subscribe to ICE candidates inserted by the peer
+      const iceCh = supabase
+        .channel(`ice-${session.callId}`)
+        .on(
+          'postgres_changes',
+          { event: 'INSERT', schema: 'public', table: 'chat_ice_candidates', filter: `call_id=eq.${session.callId}` },
+          async (payload) => {
+            const row: any = payload.new;
+            if (row.from_role !== otherRole) return;
+            if (appliedCandidates.has(row.id)) return;
+            appliedCandidates.add(row.id);
+            try {
+              await pc.addIceCandidate(row.candidate);
+            } catch {}
+          },
+        )
+        .subscribe();
+
+      // Backfill any candidates already present
+      const { data: existingCands } = await (supabase as any)
+        .from('chat_ice_candidates')
+        .select('id, from_role, candidate')
+        .eq('call_id', session.callId);
+      for (const c of existingCands ?? []) {
+        if (c.from_role !== otherRole || appliedCandidates.has(c.id)) continue;
+        appliedCandidates.add(c.id);
+        try { await pc.addIceCandidate(c.candidate); } catch {}
+      }
 
       if (session.isCaller) {
         const offer = await pc.createOffer();
@@ -156,12 +203,35 @@ export function useCallSession(session: CallSession | null, onEnd: () => void) {
         }
       }
 
+      // Heartbeat: write our ping every 3s
+      const pingCol = session.isCaller ? 'caller_last_ping_at' : 'callee_last_ping_at';
+      const sendPing = async () => {
+        await (supabase as any)
+          .from('chat_calls')
+          .update({ [pingCol]: new Date().toISOString() })
+          .eq('id', session.callId);
+      };
+      sendPing();
+      heartbeatIv = setInterval(sendPing, 3000);
+
+      // Watchdog: if peer ping older than 12s after connected, end call
+      lastPeerPing = Date.now();
+      watchdogIv = setInterval(() => {
+        if (Date.now() - lastPeerPing > 12000 && (pc.connectionState === 'connected' || pc.iceConnectionState === 'connected')) {
+          setStatusText('انقطع الاتصال');
+          onEnd();
+        }
+      }, 2000);
+
       if (cancelled) {
         pc.close();
         return;
       }
 
-      return () => supabase.removeChannel(ch);
+      return () => {
+        supabase.removeChannel(callCh);
+        supabase.removeChannel(iceCh);
+      };
     };
 
     let cleanup: any;
@@ -171,6 +241,8 @@ export function useCallSession(session: CallSession | null, onEnd: () => void) {
     return () => {
       cancelled = true;
       cleanup?.();
+      clearInterval(heartbeatIv);
+      clearInterval(watchdogIv);
       pcRef.current?.close();
       localStreamRef.current?.getTracks().forEach((t) => t.stop());
       pcRef.current = null;
@@ -193,7 +265,7 @@ export function useCallSession(session: CallSession | null, onEnd: () => void) {
     onEnd();
   }, [session, onEnd]);
 
-  return { remoteAudioRef, muted, connected, toggleMute, endCall };
+  return { remoteAudioRef, muted, connected, statusText, toggleMute, endCall };
 }
 
 /** Initiates a call to another user. Returns the call id. */

@@ -227,8 +227,10 @@ export type Database = {
         Row: {
           answered_at: string | null
           callee_id: string
+          callee_last_ping_at: string | null
           callee_name: string
           caller_id: string
+          caller_last_ping_at: string | null
           caller_name: string
           duration_seconds: number | null
           ended_at: string | null
@@ -242,8 +244,10 @@ export type Database = {
         Insert: {
           answered_at?: string | null
           callee_id: string
+          callee_last_ping_at?: string | null
           callee_name: string
           caller_id: string
+          caller_last_ping_at?: string | null
           caller_name: string
           duration_seconds?: number | null
           ended_at?: string | null
@@ -257,8 +261,10 @@ export type Database = {
         Update: {
           answered_at?: string | null
           callee_id?: string
+          callee_last_ping_at?: string | null
           callee_name?: string
           caller_id?: string
+          caller_last_ping_at?: string | null
           caller_name?: string
           duration_seconds?: number | null
           ended_at?: string | null
@@ -303,6 +309,38 @@ export type Database = {
           updated_at?: string
         }
         Relationships: []
+      }
+      chat_ice_candidates: {
+        Row: {
+          call_id: string
+          candidate: Json
+          created_at: string
+          from_role: string
+          id: string
+        }
+        Insert: {
+          call_id: string
+          candidate: Json
+          created_at?: string
+          from_role: string
+          id?: string
+        }
+        Update: {
+          call_id?: string
+          candidate?: Json
+          created_at?: string
+          from_role?: string
+          id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "chat_ice_candidates_call_id_fkey"
+            columns: ["call_id"]
+            isOneToOne: false
+            referencedRelation: "chat_calls"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       chat_messages: {
         Row: {
