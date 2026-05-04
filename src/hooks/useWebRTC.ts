@@ -136,7 +136,7 @@ export function useCallSession(session: CallSession | null, onEnd: () => void) {
         await pc.setLocalDescription(offer);
         await supabase
           .from('chat_calls')
-          .update({ webrtc_offer: offer })
+          .update({ webrtc_offer: offer as any })
           .eq('id', session.callId);
       } else {
         // Callee: load offer, create answer
@@ -151,7 +151,7 @@ export function useCallSession(session: CallSession | null, onEnd: () => void) {
           await pc.setLocalDescription(ans);
           await supabase
             .from('chat_calls')
-            .update({ webrtc_answer: ans, status: 'accepted', answered_at: new Date().toISOString() })
+            .update({ webrtc_answer: ans as any, status: 'accepted', answered_at: new Date().toISOString() })
             .eq('id', session.callId);
         }
       }
