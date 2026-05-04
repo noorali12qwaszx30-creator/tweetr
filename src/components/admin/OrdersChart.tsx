@@ -1,7 +1,7 @@
 import { useMemo } from 'react';
 import { Order } from '@/types';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
-import { Clock } from 'lucide-react';
+import { Clock, TrendingUp } from 'lucide-react';
 import { toEnglishNumbers } from '@/lib/formatNumber';
 
 interface OrdersChartProps {
@@ -89,80 +89,6 @@ export function OrdersChart({ orders, title = 'الطلبات حسب الساع�
           </BarChart>
         </ResponsiveContainer>
       )}
-    </div>
-  );
-}
-
-interface WeeklyChartProps {
-  orders: Order[];
-}
-
-export function WeeklyChart({ orders }: WeeklyChartProps) {
-  const weeklyData = useMemo(() => {
-    const days = ['الأحد', 'الاثنين', 'الثلاثاء', 'الأربعاء', 'الخميس', 'الجمعة', 'السبت'];
-    const dayStats: Record<number, { orders: number; revenue: number }> = {};
-    
-    for (let i = 0; i < 7; i++) {
-      dayStats[i] = { orders: 0, revenue: 0 };
-    }
-    
-    orders.forEach(order => {
-      const day = new Date(order.createdAt).getDay();
-      dayStats[day].orders++;
-      if (order.status === 'delivered') {
-        // Revenue = totalPrice - deliveryFee (excluding delivery fees)
-        dayStats[day].revenue += order.totalPrice - (order.deliveryFee || 0);
-      }
-    });
-
-    return days.map((name, idx) => ({
-      name,
-      orders: dayStats[idx].orders,
-      revenue: dayStats[idx].revenue,
-    }));
-  }, [orders]);
-
-  return (
-    <div className="bg-card border border-border rounded-xl p-4 shadow-soft">
-      <h3 className="font-bold mb-4 flex items-center gap-2">
-        <TrendingUp className="w-5 h-5 text-primary" />
-        أداء الأسبوع
-      </h3>
-      
-      <ResponsiveContainer width="100%" height={200}>
-        <LineChart data={weeklyData} margin={{ top: 5, right: 5, left: -20, bottom: 5 }}>
-          <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
-          <XAxis 
-            dataKey="name" 
-            tick={{ fontSize: 10, fill: 'hsl(var(--muted-foreground))' }}
-            tickLine={false}
-          />
-          <YAxis 
-            tick={{ fontSize: 10, fill: 'hsl(var(--muted-foreground))' }}
-            tickLine={false}
-            axisLine={false}
-          />
-          <Tooltip 
-            contentStyle={{ 
-              background: 'hsl(var(--card))', 
-              border: '1px solid hsl(var(--border))',
-              borderRadius: '8px',
-              direction: 'rtl'
-            }}
-            formatter={(value: number, name: string) => [
-              name === 'orders' ? `${toEnglishNumbers(value)} طلب` : `${formatNumberWithCommas(value)} د.ع`,
-              name === 'orders' ? 'الطلبات' : 'الإيراد'
-            ]}
-          />
-          <Line 
-            type="monotone" 
-            dataKey="orders" 
-            stroke="hsl(var(--primary))" 
-            strokeWidth={2}
-            dot={{ fill: 'hsl(var(--primary))' }}
-          />
-        </LineChart>
-      </ResponsiveContainer>
     </div>
   );
 }
