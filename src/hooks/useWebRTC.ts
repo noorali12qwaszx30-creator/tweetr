@@ -145,6 +145,20 @@ export function useCallSession(session: CallSession | null, onEnd: () => void) {
             if (session.isCaller && row.webrtc_answer && !pc.currentRemoteDescription) {
               await pc.setRemoteDescription(new RTCSessionDescription(row.webrtc_answer));
             }
+            // Callee: offer might arrive AFTER we mounted (race). Handle it now.
+            if (!session.isCaller && row.webrtc_offer && !pc.currentRemoteDescription) {
+              try {
+                await pc.setRemoteDescription(new RTCSessionDescription(row.webrtc_offer));
+                const ans = await pc.createAnswer();
+                await pc.setLocalDescription(ans);
+                await supabase
+                  .from('chat_calls')
+                  .update({ webrtc_answer: ans as any, status: 'accepted', answered_at: new Date().toISOString() })
+                  .eq('id', session.callId);
+              } catch (err) {
+                console.error('callee answer error', err);
+              }
+            }
           },
         )
         .subscribe();
