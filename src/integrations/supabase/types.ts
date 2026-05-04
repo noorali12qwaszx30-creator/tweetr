@@ -223,60 +223,6 @@ export type Database = {
         }
         Relationships: []
       }
-      chat_calls: {
-        Row: {
-          answered_at: string | null
-          callee_id: string
-          callee_last_ping_at: string | null
-          callee_name: string
-          caller_id: string
-          caller_last_ping_at: string | null
-          caller_name: string
-          duration_seconds: number | null
-          ended_at: string | null
-          ice_candidates: Json | null
-          id: string
-          started_at: string
-          status: string
-          webrtc_answer: Json | null
-          webrtc_offer: Json | null
-        }
-        Insert: {
-          answered_at?: string | null
-          callee_id: string
-          callee_last_ping_at?: string | null
-          callee_name: string
-          caller_id: string
-          caller_last_ping_at?: string | null
-          caller_name: string
-          duration_seconds?: number | null
-          ended_at?: string | null
-          ice_candidates?: Json | null
-          id?: string
-          started_at?: string
-          status?: string
-          webrtc_answer?: Json | null
-          webrtc_offer?: Json | null
-        }
-        Update: {
-          answered_at?: string | null
-          callee_id?: string
-          callee_last_ping_at?: string | null
-          callee_name?: string
-          caller_id?: string
-          caller_last_ping_at?: string | null
-          caller_name?: string
-          duration_seconds?: number | null
-          ended_at?: string | null
-          ice_candidates?: Json | null
-          id?: string
-          started_at?: string
-          status?: string
-          webrtc_answer?: Json | null
-          webrtc_offer?: Json | null
-        }
-        Relationships: []
-      }
       chat_conversations: {
         Row: {
           created_at: string
@@ -309,38 +255,6 @@ export type Database = {
           updated_at?: string
         }
         Relationships: []
-      }
-      chat_ice_candidates: {
-        Row: {
-          call_id: string
-          candidate: Json
-          created_at: string
-          from_role: string
-          id: string
-        }
-        Insert: {
-          call_id: string
-          candidate: Json
-          created_at?: string
-          from_role: string
-          id?: string
-        }
-        Update: {
-          call_id?: string
-          candidate?: Json
-          created_at?: string
-          from_role?: string
-          id?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "chat_ice_candidates_call_id_fkey"
-            columns: ["call_id"]
-            isOneToOne: false
-            referencedRelation: "chat_calls"
-            referencedColumns: ["id"]
-          },
-        ]
       }
       chat_messages: {
         Row: {
