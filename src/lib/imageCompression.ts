@@ -50,16 +50,3 @@ export async function compressImage(file: File, maxSize = 800, quality = 0.7): P
     reader.readAsDataURL(file);
   });
 }
-
-export const POST_TYPE_EXPIRY_HOURS: Record<string, number> = {
-  traffic: 1,
-  police: 3,
-  closed_road: 6,
-  accident: 4,
-  weather: 6,
-  pothole: 168,
-  fuel: 12,
-  closed_shop: 12,
-  tip: 720,
-  general: 24,
-};
