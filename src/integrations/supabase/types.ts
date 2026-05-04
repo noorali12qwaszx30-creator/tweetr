@@ -223,6 +223,160 @@ export type Database = {
         }
         Relationships: []
       }
+      chat_calls: {
+        Row: {
+          answered_at: string | null
+          callee_id: string
+          callee_name: string
+          caller_id: string
+          caller_name: string
+          duration_seconds: number | null
+          ended_at: string | null
+          ice_candidates: Json | null
+          id: string
+          started_at: string
+          status: string
+          webrtc_answer: Json | null
+          webrtc_offer: Json | null
+        }
+        Insert: {
+          answered_at?: string | null
+          callee_id: string
+          callee_name: string
+          caller_id: string
+          caller_name: string
+          duration_seconds?: number | null
+          ended_at?: string | null
+          ice_candidates?: Json | null
+          id?: string
+          started_at?: string
+          status?: string
+          webrtc_answer?: Json | null
+          webrtc_offer?: Json | null
+        }
+        Update: {
+          answered_at?: string | null
+          callee_id?: string
+          callee_name?: string
+          caller_id?: string
+          caller_name?: string
+          duration_seconds?: number | null
+          ended_at?: string | null
+          ice_candidates?: Json | null
+          id?: string
+          started_at?: string
+          status?: string
+          webrtc_answer?: Json | null
+          webrtc_offer?: Json | null
+        }
+        Relationships: []
+      }
+      chat_conversations: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          id: string
+          last_message_at: string | null
+          name: string | null
+          role_filter: string | null
+          type: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          last_message_at?: string | null
+          name?: string | null
+          role_filter?: string | null
+          type: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          last_message_at?: string | null
+          name?: string | null
+          role_filter?: string | null
+          type?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      chat_messages: {
+        Row: {
+          content: string
+          conversation_id: string
+          created_at: string
+          id: string
+          message_type: string
+          sender_id: string
+          sender_name: string
+          sender_role: string | null
+        }
+        Insert: {
+          content: string
+          conversation_id: string
+          created_at?: string
+          id?: string
+          message_type?: string
+          sender_id: string
+          sender_name: string
+          sender_role?: string | null
+        }
+        Update: {
+          content?: string
+          conversation_id?: string
+          created_at?: string
+          id?: string
+          message_type?: string
+          sender_id?: string
+          sender_name?: string
+          sender_role?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "chat_messages_conversation_id_fkey"
+            columns: ["conversation_id"]
+            isOneToOne: false
+            referencedRelation: "chat_conversations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      chat_participants: {
+        Row: {
+          conversation_id: string
+          id: string
+          joined_at: string
+          last_read_at: string | null
+          user_id: string
+        }
+        Insert: {
+          conversation_id: string
+          id?: string
+          joined_at?: string
+          last_read_at?: string | null
+          user_id: string
+        }
+        Update: {
+          conversation_id?: string
+          id?: string
+          joined_at?: string
+          last_read_at?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "chat_participants_conversation_id_fkey"
+            columns: ["conversation_id"]
+            isOneToOne: false
+            referencedRelation: "chat_conversations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       customer_notes: {
         Row: {
           created_at: string
@@ -1111,6 +1265,33 @@ export type Database = {
         }
         Relationships: []
       }
+      user_presence: {
+        Row: {
+          last_seen_at: string
+          status: string
+          updated_at: string
+          user_id: string
+          user_name: string
+          user_role: string | null
+        }
+        Insert: {
+          last_seen_at?: string
+          status?: string
+          updated_at?: string
+          user_id: string
+          user_name: string
+          user_role?: string | null
+        }
+        Update: {
+          last_seen_at?: string
+          status?: string
+          updated_at?: string
+          user_id?: string
+          user_name?: string
+          user_role?: string | null
+        }
+        Relationships: []
+      }
       user_roles: {
         Row: {
           created_at: string
@@ -1157,6 +1338,10 @@ export type Database = {
           _role: Database["public"]["Enums"]["app_role"]
           _user_id: string
         }
+        Returns: boolean
+      }
+      is_chat_participant: {
+        Args: { _conversation_id: string; _user_id: string }
         Returns: boolean
       }
       reset_order_sequence: { Args: never; Returns: undefined }

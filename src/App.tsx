@@ -16,6 +16,7 @@ import { ForceUpdateOverlay } from "@/components/ForceUpdateOverlay";
 import RoleSelector from "./pages/RoleSelector";
 import Dashboard from "./pages/Dashboard";
 import NotFound from "./pages/NotFound";
+import { ChatBubble } from "@/components/chat/ChatBubble";
 import { useVersionCheck } from "@/hooks/useVersionCheck";
 import { useForceUpdateChecker } from "@/hooks/useForceUpdateCheck";
 import { usePushNotifications } from "@/hooks/usePushNotifications";
@@ -74,6 +75,7 @@ const AppContent = () => {
                     <GpsBlockOverlay />
                     <OfflineOverlay />
                     <ForceUpdateOverlay />
+                    <ChatBubble />
                   </ErrorBoundary>
                 </TooltipProvider>
               </ActivityLogProvider>

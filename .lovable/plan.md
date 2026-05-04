@@ -1,85 +1,158 @@
-# خطة: نظام تحديث إجباري للتطبيق عبر GitHub Releases
 
-## الفكرة العامة
-كل بناء جديد على GitHub Actions يُنشئ Release برقم متزايد (`build-N`) ويرفع ملف APK كأصل (asset). التطبيق يحمل داخله رقم البناء الذي بُني به (`VITE_APP_BUILD`)، ويستعلم من GitHub API عن أحدث Release. إذا كان رقم Release أكبر من رقمه → تظهر **شاشة كاملة تمنع الاستخدام** بها زر "تحميل التحديث" يفتح رابط APK مباشرة.
+# نظام المراسلة الفورية والمكالمات
 
----
+## نظرة عامة
 
-## التغييرات المطلوبة
+إضافة نظام تواصل داخلي متكامل بين جميع المستخدمين (مدير، كاشير، مطبخ، توصيل، ميداني، تيك أواي) على شكل **زر عائم (Floating Bubble)** يظهر في كل الشاشات، يدعم:
 
-### 1) GitHub Actions Workflow (`.github/workflows/build-android-apk.yml`)
-- حقن متغيرات بيئة Vite قبل خطوة `npm run build`:
-  - `VITE_APP_BUILD=${{ github.run_number }}`
-  - `VITE_GITHUB_REPO=<owner>/<repo>` (يُحفظ كـ Repository Variable أو يُكتشف تلقائياً من `${{ github.repository }}`)
-- إنشاء Release **في كل push إلى main** (وليس فقط عند `workflow_dispatch`) مع:
-  - `tag_name: build-${{ github.run_number }}`
-  - رفع `app-debug.apk` كأصل باسم ثابت `tweetr.apk` ليصبح رابط التحميل قابلاً للتنبؤ.
-- اختياري: إضافة ملف `latest.json` كأصل يحتوي `{ build, version, apkUrl, mandatory: true, notes }`.
-
-### 2) ملف جديد: `src/hooks/useForceUpdateCheck.ts`
-- يقرأ `import.meta.env.VITE_APP_BUILD` و `VITE_GITHUB_REPO`.
-- عند بدء التطبيق وكل 5 دقائق + عند العودة للتبويب:
-  - `GET https://api.github.com/repos/{repo}/releases/latest`
-  - يستخرج رقم البناء من `tag_name` (مثل `build-42`).
-  - يستخرج رابط الـ APK من `assets[].browser_download_url`.
-- يخزن النتيجة في حالة عامة (Zustand بسيط أو Context) ليستهلكها overlay.
-- يميّز بين بيئة الويب وبيئة Capacitor عبر `Capacitor.isNativePlatform()`:
-  - **على Android فقط**: تحديث إجباري بشاشة حجب + رابط APK.
-  - **على الويب**: يبقى توست `useVersionCheck` الحالي (إعادة تحميل الصفحة).
-
-### 3) ملف جديد: `src/components/ForceUpdateOverlay.tsx`
-شاشة `fixed inset-0 z-[100]` (أعلى من `OfflineOverlay`) تظهر فقط حين يوجد إصدار أحدث على Android:
-- خلفية برتقالية بهوية Twitter
-- أيقونة تحديث + عنوان "يتوفر تحديث جديد إلزامي"
-- النسخة الحالية / النسخة الجديدة
-- ملاحظات الإصدار (من حقل `body` في GitHub Release)
-- زر كبير: **"تحميل التحديث الآن"** → يفتح رابط APK عبر:
-  - `Browser.open({ url })` من `@capacitor/browser` (لتجنّب فتح WebView داخلي)
-- لا يوجد زر إغلاق ولا تجاوز.
-
-### 4) دمج في `src/App.tsx`
-- تفعيل `useForceUpdateCheck()` بجانب `useVersionCheck()`.
-- إضافة `<ForceUpdateOverlay />` بعد `<OfflineOverlay />`.
-
-### 5) إضافة تبعية
-- `@capacitor/browser` لفتح رابط التحميل في المتصفح الافتراضي بدلاً من WebView.
+- **محادثات خاصة** (1-on-1) بين أي مستخدمَين
+- **محادثة المجموعة العامة** (كل المستخدمين)
+- **مجموعات حسب الدور** (مثلاً: "كل السائقين"، "المطبخ والكاشير")
+- **مكالمات صوتية** تستيقظ حتى عند إغلاق التطبيق (عبر Push Notification عالي الأولوية)
+- **شارة عدّاد** للرسائل غير المقروءة
+- **حالة الاتصال** (متصل / غير متصل / يكتب الآن...)
 
 ---
 
-## التفاصيل التقنية
+## الميزات الرئيسية
 
-### كيف يحصل التطبيق على رقم بنائه؟
-عبر متغير Vite يُحقن وقت البناء في GitHub Actions:
-```
-env:
-  VITE_APP_BUILD: ${{ github.run_number }}
-  VITE_GITHUB_REPO: ${{ github.repository }}
-```
-يُقرأ في الكود: `Number(import.meta.env.VITE_APP_BUILD ?? 0)`.
+### 1. الزر العائم (Chat Bubble)
+- أيقونة دائرية برتقالية ثابتة في الزاوية السفلية اليسرى من كل الشاشات
+- شارة حمراء تعرض عدد الرسائل غير المقروءة
+- عند الضغط: يفتح نافذة محادثة بحجم منبثق (Drawer) قابلة للسحب
+- يختفي تلقائياً في صفحة المطبخ (شاشة 42 بوصة) ولوحة تسجيل الدخول
 
-### مقارنة الإصدارات
+### 2. واجهة المحادثة
+- **تبويبات**: محادثات خاصة | مجموعات | مكالمات
+- **قائمة المستخدمين** مع حالة الاتصال (نقطة خضراء/رمادية) ودورهم
+- **شاشة المحادثة**: فقاعات رسائل (مرسل/مستقبل)، طابع زمني، علامة قراءة (✓✓)
+- **إرسال**: نص فقط (لا صور/ملفات في المرحلة الأولى لتقليل التعقيد)
+- **مؤشر "يكتب الآن..."** عبر Realtime Presence
+
+### 3. المكالمات الصوتية
+- زر مكالمة بجانب اسم كل مستخدم
+- إشعار Push عالي الأولوية (`priority: high`, `sound: ringtone`) يستيقظ التطبيق ويرنّ حتى لو كان مغلقاً (عبر Firebase الموجود مسبقاً)
+- شاشة مكالمة واردة بملء الشاشة (قبول/رفض) مع نغمة رنين متكررة
+- المكالمة الفعلية: استخدام **WebRTC** للصوت المباشر بين الجهازين
+- زر إنهاء، كتم، مكبر صوت
+
+### 4. الإشعارات
+- إشعار Push لكل رسالة جديدة (يستخدم نظام `send-push-notification` الموجود)
+- صوت تنبيه مختلف للرسائل والمكالمات
+- إشعار داخل التطبيق (Toast) إذا كان المستخدم في شاشة أخرى
+
+---
+
+## التصميم التقني
+
+### قاعدة البيانات (جداول جديدة)
+
 ```text
-tag_name: "build-42"  →  latestBuild = 42
-currentBuild = VITE_APP_BUILD (e.g. 40)
-if (latestBuild > currentBuild)  → فرض التحديث
+chat_conversations
+├── id (uuid)
+├── type ('private' | 'group' | 'role_group')
+├── name (للمجموعات)
+├── role_filter (للمجموعات حسب الدور)
+└── created_at, updated_at
+
+chat_participants
+├── conversation_id
+├── user_id
+├── last_read_at      ← لحساب غير المقروءة
+└── joined_at
+
+chat_messages
+├── id, conversation_id
+├── sender_id, sender_name
+├── content (text)
+├── created_at
+└── is_call_event (bool) ← لتسجيل أحداث المكالمات
+
+chat_calls
+├── id, caller_id, callee_id
+├── status ('ringing' | 'accepted' | 'rejected' | 'ended' | 'missed')
+├── started_at, ended_at
+└── webrtc_signal (jsonb) ← لتبادل WebRTC SDP/ICE
+
+user_presence
+├── user_id
+├── status ('online' | 'offline')
+├── last_seen_at
+└── current_route
 ```
 
-### رابط APK مستقر
-داخل خطوة Release في الـ workflow، نعيد تسمية الأصل:
-```
-files: android/app/build/outputs/apk/debug/tweetr.apk
-```
-ليصبح الرابط دائماً:
-`https://github.com/<owner>/<repo>/releases/download/build-N/tweetr.apk`
+**RLS**: المستخدم يرى فقط المحادثات التي هو طرف فيها. الأدمن يرى الكل.
 
-### حالات الفشل
-- لا إنترنت → لا يحدث شيء (شاشة `OfflineOverlay` تتولى الأمر).
-- GitHub API rate limit (60/ساعة للـ unauthenticated) → الفحص كل 5 دقائق + cache في الذاكرة كافٍ ولا يتجاوز الحد.
-- المستودع خاص → يجب عمل Release عام أو إضافة token (نتجنب هذا — يفترض المستودع عام).
+### Realtime
+- تفعيل Supabase Realtime على: `chat_messages`, `chat_calls`, `user_presence`
+- استخدام **Presence Channel** للحالة المباشرة و"يكتب الآن"
+
+### المكالمات (WebRTC)
+- إشارات WebRTC (offer/answer/ICE) تمرّ عبر جدول `chat_calls` (signaling عبر Realtime)
+- صوت P2P مباشر بين الجهازين (بدون خادم وسيط ـ يكفي STUN عام من Google)
+- Push Notification يحتوي `type: 'incoming_call'` يفتح شاشة المكالمة عند فتح التطبيق
+
+### Edge Functions (جديدة)
+- `send-chat-message`: يحفظ الرسالة + يرسل Push للمستلم/المجموعة
+- `initiate-call`: ينشئ سجل مكالمة + يرسل Push عالي الأولوية للمستلم
+- `update-call-status`: قبول/رفض/إنهاء المكالمة
+
+### الواجهة الأمامية (مكونات React)
+
+```text
+src/components/chat/
+├── FloatingChatBubble.tsx       ← الزر العائم العام
+├── ChatDrawer.tsx               ← النافذة المنبثقة
+├── ConversationList.tsx         ← قائمة المحادثات
+├── ChatWindow.tsx               ← شاشة المحادثة
+├── MessageBubble.tsx            ← فقاعة رسالة
+├── UserListItem.tsx             ← مستخدم + حالة + زر مكالمة
+├── IncomingCallScreen.tsx       ← شاشة مكالمة واردة (fullscreen)
+├── ActiveCallScreen.tsx         ← شاشة المكالمة الجارية
+└── CallButton.tsx
+
+src/hooks/
+├── useChat.ts                   ← منطق الرسائل + Realtime
+├── usePresence.ts               ← حالة المستخدمين
+├── useWebRTC.ts                 ← منطق المكالمات
+└── useUnreadCount.ts            ← عدّاد الإشعارات
+```
+
+يُضاف `<FloatingChatBubble />` في `Dashboard.tsx` (أعلى مستوى بعد تسجيل الدخول).
 
 ---
 
-## ما أحتاج تأكيده منك
-1. ما **owner/name مستودع GitHub**؟ (مثلاً `username/tweetr`) — لأستطيع وضعه كقيمة افتراضية في حال غياب متغير البيئة.
-2. هل تريد **التحديث الإجباري على الويب أيضاً** (مع زر إعادة تحميل) أم يكفي السلوك الحالي (توست + إعادة تحميل تلقائية بعد 8 ثوانٍ)؟
-3. هل تريد إنشاء Release **تلقائياً عند كل push** أم فقط عند تشغيل يدوي (`workflow_dispatch`) كما هو الآن؟ — التحديث الإجباري لا يعمل إلا إذا أصبح هناك Release جديد فعلاً.
+## مراحل التنفيذ
+
+**المرحلة 1 — البنية الأساسية والمحادثات النصية:**
+1. إنشاء جداول قاعدة البيانات + RLS + Realtime
+2. Edge Function للإرسال + Push notifications
+3. الزر العائم + نافذة المحادثة + قائمة المستخدمين
+4. محادثات خاصة + مجموعة عامة + مجموعات حسب الدور
+5. عدّاد غير مقروءة + Presence (متصل/غير متصل)
+6. مؤشر "يكتب الآن"
+
+**المرحلة 2 — المكالمات الصوتية:**
+1. جدول المكالمات + Edge Function `initiate-call`
+2. Push عالي الأولوية مع نغمة رنين
+3. شاشة مكالمة واردة بملء الشاشة + قبول/رفض
+4. WebRTC P2P للصوت
+5. شاشة المكالمة الجارية (كتم، مكبر، إنهاء)
+6. سجل المكالمات الفائتة
+
+---
+
+## ملاحظات وقيود
+
+- **WebRTC على المتصفح يعمل مباشرة**؛ على تطبيق Capacitor الأندرويد قد يحتاج إذن `RECORD_AUDIO` (سيتم إضافته في `AndroidManifest`).
+- **استيقاظ التطبيق وهو مغلق**: نعتمد على Firebase Push عالي الأولوية الموجود حالياً + علم `wake_lock` في حمولة الإشعار.
+- **أيفون/iOS**: المكالمات وهو مغلق تحتاج CallKit (غير متوفّر هنا)؛ نظراً لأن المشروع أندرويد بحت (وفق `build-android-apk.yml`) فهذا غير معني.
+- لا صور/ملفات/مكالمات فيديو في هذه المرحلة (يمكن إضافتها لاحقاً).
+
+---
+
+## ما الذي تريد تأكيده قبل البدء؟
+
+1. **هل تريد المرحلتين معاً** أم نبدأ بالمراسلة النصية فقط ثم نضيف المكالمات لاحقاً؟ (المكالمات أعقد بكثير)
+2. **مجموعات حسب الدور**: هل تكفي 3 (كل المستخدمين / السائقين / المطبخ+الكاشير) أم تريد إدارة مجموعات مخصصة من الأدمن؟
+3. **حذف الرسائل**: هل المستخدم يحذف رسائله؟ أم الأدمن فقط؟
