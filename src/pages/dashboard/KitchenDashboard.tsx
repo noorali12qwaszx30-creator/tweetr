@@ -9,6 +9,7 @@ import { LogoutConfirmButton } from '@/components/LogoutConfirmButton';
 import { ConnectionIndicator } from '@/components/shared/ConnectionIndicator';
 import { BatchPrepBar } from '@/components/kitchen/BatchPrepBar';
 import { Capacitor } from '@capacitor/core';
+import { KeepAwake } from '@capacitor-community/keep-awake';
 
 export default function KitchenDashboard() {
   const { orders, loading, realtimeConnected, refetch } = useSupabaseOrders();
@@ -24,6 +25,41 @@ export default function KitchenDashboard() {
       unlockAudio();
     }
   }, [audioUnlocked, unlockAudio]);
+
+  // Keep the kitchen screen always on (no sleep/dim).
+  useEffect(() => {
+    let wakeLock: any = null;
+    let released = false;
+
+    const enable = async () => {
+      if (Capacitor.isNativePlatform()) {
+        try { await KeepAwake.keepAwake(); } catch (e) { console.warn('[KeepAwake] native failed', e); }
+      } else if ('wakeLock' in navigator) {
+        try {
+          // @ts-ignore
+          wakeLock = await navigator.wakeLock.request('screen');
+        } catch (e) { console.warn('[WakeLock] web failed', e); }
+      }
+    };
+
+    enable();
+
+    // Re-acquire on tab visibility change (browser releases wake lock on hide)
+    const onVisible = () => {
+      if (document.visibilityState === 'visible' && !released) enable();
+    };
+    document.addEventListener('visibilitychange', onVisible);
+
+    return () => {
+      released = true;
+      document.removeEventListener('visibilitychange', onVisible);
+      if (Capacitor.isNativePlatform()) {
+        KeepAwake.allowSleep().catch(() => {});
+      } else if (wakeLock) {
+        try { wakeLock.release(); } catch {}
+      }
+    };
+  }, []);
 
   // Auto-unlock on any user interaction anywhere on the page
   useEffect(() => {
