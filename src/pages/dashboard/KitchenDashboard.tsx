@@ -8,6 +8,7 @@ import { KitchenOrderCard } from '@/components/KitchenOrderCard';
 import { LogoutConfirmButton } from '@/components/LogoutConfirmButton';
 import { ConnectionIndicator } from '@/components/shared/ConnectionIndicator';
 import { BatchPrepBar } from '@/components/kitchen/BatchPrepBar';
+import { Capacitor } from '@capacitor/core';
 
 export default function KitchenDashboard() {
   const { orders, loading, realtimeConnected, refetch } = useSupabaseOrders();
@@ -15,6 +16,14 @@ export default function KitchenDashboard() {
 
   // Arabic voice announcements - always on (no toggle)
   useKitchenVoiceAnnouncer(orders);
+
+  // On native Android (kiosk install) the device TTS is always ready —
+  // auto-unlock so the "tap to enable sound" overlay never appears.
+  useEffect(() => {
+    if (Capacitor.isNativePlatform() && !audioUnlocked) {
+      unlockAudio();
+    }
+  }, [audioUnlocked, unlockAudio]);
 
   // Auto-unlock on any user interaction anywhere on the page
   useEffect(() => {

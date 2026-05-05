@@ -1,6 +1,10 @@
 import { useCallback, useRef, useSyncExternalStore } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { numberToArabicWords } from '@/lib/formatNumber';
+import { Capacitor } from '@capacitor/core';
+import { TextToSpeech } from '@capacitor-community/text-to-speech';
+
+const IS_NATIVE = Capacitor.isNativePlatform();
 
 // Module-level audio unlock state shared across all hook instances.
 let _audioUnlocked = false;
@@ -33,6 +37,11 @@ export function useArabicSpeech() {
     // Set unlocked FIRST so the UI hides immediately on the user gesture,
     // even if any of the audio init steps below throw.
     _setUnlocked(true);
+    // On native Android the TTS engine is always ready — no unlock needed.
+    if (IS_NATIVE) {
+      try { await TextToSpeech.stop(); } catch {}
+      return;
+    }
     try {
       // 1) Unlock HTMLAudio
       const a = new Audio();
@@ -68,6 +77,8 @@ export function useArabicSpeech() {
 
 
   const fetchAudio = useCallback(async (text: string): Promise<string | null> => {
+    // On native we use device TTS — skip the network roundtrip entirely.
+    if (IS_NATIVE) return null;
     if (cacheRef.current.has(text)) return cacheRef.current.get(text)!;
     if (elevenlabsBrokenRef.current) return null;
     try {
@@ -103,6 +114,27 @@ export function useArabicSpeech() {
   const speakWithBrowser = useCallback((text: string): Promise<void> => {
     return new Promise(resolve => {
       try {
+        // Native path: use the device's built-in Arabic TTS engine.
+        // This works even if the WebView audio context is suspended.
+        if (IS_NATIVE) {
+          TextToSpeech.speak({
+            text,
+            lang: 'ar-SA',
+            rate: 1.0,
+            pitch: 1.0,
+            volume: 1.0,
+            category: 'ambient',
+            queueStrategy: 1, // add to queue
+          })
+            .then(() => resolve())
+            .catch(err => {
+              console.warn('[ArabicSpeech] native TTS failed', err);
+              resolve();
+            });
+          // Safety timeout
+          setTimeout(() => resolve(), Math.max(5000, text.length * 150));
+          return;
+        }
         if (typeof window === 'undefined' || !('speechSynthesis' in window)) {
           resolve();
           return;
