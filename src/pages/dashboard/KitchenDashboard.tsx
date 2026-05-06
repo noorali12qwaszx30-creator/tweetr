@@ -3,6 +3,7 @@ import { RefreshCw, ChefHat, Volume2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useSupabaseOrders } from '@/hooks/useSupabaseOrders';
 import { useKitchenVoiceAnnouncer } from '@/hooks/useKitchenVoiceAnnouncer';
+import { useLateOrderSiren } from '@/hooks/useLateOrderSiren';
 import { useArabicSpeech } from '@/hooks/useArabicSpeech';
 import { KitchenOrderCard } from '@/components/KitchenOrderCard';
 import { LogoutConfirmButton } from '@/components/LogoutConfirmButton';
@@ -17,6 +18,9 @@ export default function KitchenDashboard() {
 
   // Arabic voice announcements - always on (no toggle)
   useKitchenVoiceAnnouncer(orders);
+
+  // Loud 6-second siren when an order crosses 30 minutes (once per order)
+  useLateOrderSiren(orders, audioUnlocked);
 
   // On native Android (kiosk install) the device TTS is always ready —
   // auto-unlock so the "tap to enable sound" overlay never appears.
