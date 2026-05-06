@@ -85,7 +85,7 @@ export default function KitchenDashboard() {
     .sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime());
 
   return (
-    <div className="flex flex-col h-dvh bg-background relative" dir="rtl">
+    <div className="flex flex-col h-dvh kitchen-bg relative" dir="rtl">
       {/* Audio unlock overlay - mandatory tap to satisfy autoplay policy on TV/kiosk */}
       {!audioUnlocked && (
         <div className="fixed inset-0 z-[100] bg-background/95 backdrop-blur flex flex-col items-center justify-center gap-6 p-8">
@@ -118,7 +118,7 @@ export default function KitchenDashboard() {
           onClick={() => refetch()}
           variant="outline"
           size="sm"
-          className="gap-1 text-xs px-3 py-1.5 h-auto shadow-md bg-card/95 backdrop-blur"
+          className="gap-1 text-xs px-3 py-1.5 h-auto rounded-xl border-border/60 kitchen-glass"
         >
           <RefreshCw className="w-4 h-4" />
           تحديث
@@ -132,21 +132,33 @@ export default function KitchenDashboard() {
       {/* Main content */}
       <main className="container p-3 flex-1 overflow-auto">
         {loading ? (
-          <div className="flex items-center justify-center h-[60vh]">
-            <div className="text-center">
-              <div className="w-16 h-16 border-4 border-primary/30 border-t-primary rounded-full animate-spin mx-auto mb-4" />
-              <p className="text-xl text-muted-foreground">جاري تحميل الطلبات...</p>
-            </div>
+          <div className="grid grid-cols-6 gap-3 auto-rows-[calc((100vh-6rem)/3)]">
+            {Array.from({ length: 6 }).map((_, i) => (
+              <div
+                key={i}
+                className="rounded-2xl border border-border/40 kitchen-glass overflow-hidden animate-pulse"
+              >
+                <div className="h-10 bg-muted/40" />
+                <div className="p-3 space-y-2">
+                  <div className="h-3 rounded bg-muted/50 w-3/4" />
+                  <div className="h-3 rounded bg-muted/40 w-1/2" />
+                  <div className="h-3 rounded bg-muted/40 w-2/3" />
+                </div>
+              </div>
+            ))}
           </div>
         ) : activeOrders.length === 0 ? (
           <div className="flex flex-col items-center justify-center h-[60vh] text-center">
-            <div className="w-32 h-32 rounded-full bg-muted flex items-center justify-center mb-6">
-              <ChefHat className="w-16 h-16 text-muted-foreground" />
+            <div className="relative mb-6">
+              <div className="absolute inset-0 rounded-full bg-primary/20 blur-2xl" />
+              <div className="relative w-32 h-32 rounded-full kitchen-glass border border-border/60 flex items-center justify-center shadow-elevated">
+                <ChefHat className="w-16 h-16 text-primary" />
+              </div>
             </div>
-            <h2 className="text-3xl font-bold text-muted-foreground mb-2">
-              لا توجد طلبات قيد التجهيز
+            <h2 className="text-2xl font-black text-foreground mb-2">
+              المطبخ هادئ الآن
             </h2>
-            <p className="text-xl text-muted-foreground">
+            <p className="text-base text-muted-foreground">
               ستظهر الطلبات الجديدة هنا تلقائياً
             </p>
           </div>

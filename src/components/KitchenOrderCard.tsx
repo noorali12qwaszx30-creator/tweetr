@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { Bike, ShoppingBag, UtensilsCrossed, Sparkles } from 'lucide-react';
 import { Card } from '@/components/ui/card';
 import { OrderTimer } from '@/components/OrderTimer';
 import { OrderWithItems } from '@/hooks/useSupabaseOrders';
@@ -12,6 +13,7 @@ type Urgency = 'normal' | 'reminder' | 'warning' | 'critical';
 
 const ITEMS_PER_PAGE = 5;
 const FLIP_INTERVAL_MS = 4000;
+const FRESH_GLOW_MS = 8000;
 
 function computeUrgency(createdAt: string): Urgency {
   const timeStr = createdAt.endsWith('Z') || createdAt.includes('+') ? createdAt : createdAt + 'Z';
@@ -26,6 +28,10 @@ function computeUrgency(createdAt: string): Urgency {
 export function KitchenOrderCard({ order }: KitchenOrderCardProps) {
   const [urgency, setUrgency] = useState<Urgency>(() => computeUrgency(order.created_at));
   const [showBack, setShowBack] = useState(false);
+  const [isFresh, setIsFresh] = useState(() => {
+    const t = order.created_at.endsWith('Z') || order.created_at.includes('+') ? order.created_at : order.created_at + 'Z';
+    return Date.now() - new Date(t).getTime() < FRESH_GLOW_MS;
+  });
 
   useEffect(() => {
     const tick = () => setUrgency(computeUrgency(order.created_at));
@@ -34,78 +40,67 @@ export function KitchenOrderCard({ order }: KitchenOrderCardProps) {
     return () => clearInterval(id);
   }, [order.created_at]);
 
-  // Split items into front (first 5) and back (the rest)
+  useEffect(() => {
+    if (!isFresh) return;
+    const id = setTimeout(() => setIsFresh(false), FRESH_GLOW_MS);
+    return () => clearTimeout(id);
+  }, [isFresh]);
+
   const frontItems = order.items.slice(0, ITEMS_PER_PAGE);
   const backItems = order.items.slice(ITEMS_PER_PAGE);
   const hasOverflow = backItems.length > 0;
 
-  // Auto-flip every few seconds when there's overflow
   useEffect(() => {
-    if (!hasOverflow) {
-      setShowBack(false);
-      return;
-    }
+    if (!hasOverflow) { setShowBack(false); return; }
     const id = setInterval(() => setShowBack(prev => !prev), FLIP_INTERVAL_MS);
     return () => clearInterval(id);
   }, [hasOverflow]);
 
-  // Base type-based colors (used only when not urgent)
-  const typeBg =
-    order.type === 'delivery'
-      ? 'bg-info/5 border-info/40'
-      : order.type === 'pickup'
-      ? 'bg-accent/5 border-accent/40'
-      : 'bg-success/5 border-success/40';
+  // Tone tokens by type (used when no urgency override)
+  const typeTone =
+    order.type === 'delivery' ? { bar: 'from-info/15 to-info/0', accent: 'bg-info/15 text-info border-info/30', icon: Bike, label: 'توصيل' }
+    : order.type === 'pickup' ? { bar: 'from-accent/15 to-accent/0', accent: 'bg-accent/15 text-accent-foreground border-accent/40', icon: ShoppingBag, label: 'استلام' }
+    : { bar: 'from-success/15 to-success/0', accent: 'bg-success/15 text-success border-success/40', icon: UtensilsCrossed, label: 'سفري' };
 
-  const typeBar =
-    order.type === 'delivery'
-      ? 'bg-info/40 border-b-2 border-info'
-      : order.type === 'pickup'
-      ? 'bg-accent/40 border-b-2 border-accent'
-      : 'bg-success/40 border-b-2 border-success';
-
-  // Urgency overrides — escalate the whole card visually
+  // Urgency overrides
   const urgencyCardClass =
     urgency === 'critical'
-      ? 'bg-destructive/20 border-destructive border-[3px] shadow-lg shadow-destructive/40 animate-pulse'
+      ? 'border-destructive/70 ring-2 ring-destructive/40 shadow-[0_10px_40px_-10px_hsl(var(--destructive)/0.55)] animate-kitchen-shake'
       : urgency === 'warning'
-      ? 'bg-warning/15 border-warning border-[3px] animate-pulse'
+      ? 'border-warning/70 ring-1 ring-warning/30 shadow-[0_10px_30px_-12px_hsl(var(--warning)/0.45)]'
       : urgency === 'reminder'
-      ? 'bg-warning/5 border-warning/50'
-      : typeBg;
+      ? 'border-warning/40'
+      : 'border-border/60';
 
-  const urgencyBarClass =
-    urgency === 'critical'
-      ? 'bg-destructive/40 border-b-2 border-destructive'
-      : urgency === 'warning'
-      ? 'bg-warning/40 border-b-2 border-warning'
-      : urgency === 'reminder'
-      ? 'bg-warning/20 border-b-2 border-warning/60'
-      : typeBar;
+  const headerGradient =
+    urgency === 'critical' ? 'from-destructive/20 to-destructive/0'
+    : urgency === 'warning' ? 'from-warning/20 to-warning/0'
+    : urgency === 'reminder' ? 'from-warning/10 to-warning/0'
+    : typeTone.bar;
 
-  const pulseStyle =
-    urgency === 'critical'
-      ? { animationDuration: '0.5s' }
-      : urgency === 'warning'
-      ? { animationDuration: '1.5s' }
-      : undefined;
+  const TypeIcon = typeTone.icon;
 
   const renderItemsList = (items: typeof order.items) => (
-    <ul className="space-y-0.5 flex-1 p-2 overflow-auto">
+    <ul className="flex-1 px-3 py-2 overflow-auto space-y-1">
       {items.map(item => (
-        <li key={item.id} className="text-sm">
-          <div className="flex items-start gap-1">
-            <div className="flex-1">
-              <span className="font-bold text-foreground text-base">{item.menu_item_name}</span>
-              <span className="font-black text-primary mr-1">
+        <li
+          key={item.id}
+          className="flex items-start gap-2 px-2 py-1.5 rounded-lg hover:bg-muted/40 transition-colors"
+        >
+          <span className="mt-1 w-1.5 h-1.5 rounded-full bg-primary/70 shrink-0" />
+          <div className="flex-1 min-w-0">
+            <div className="flex items-baseline gap-1.5 flex-wrap">
+              <span className="font-bold text-foreground text-[15px] leading-tight">{item.menu_item_name}</span>
+              <span className="font-black text-primary text-base tabular-nums">
                 ×{toEnglishNumbers(item.quantity.toString())}
               </span>
-              {item.notes && (
-                <p className="text-warning text-[10px] mt-0.5 font-medium">
-                  ⚠️ {item.notes}
-                </p>
-              )}
             </div>
+            {item.notes && (
+              <p className="text-warning text-[11px] mt-0.5 font-bold flex items-start gap-1">
+                <span>⚠️</span>
+                <span>{item.notes}</span>
+              </p>
+            )}
           </div>
         </li>
       ))}
@@ -113,41 +108,47 @@ export function KitchenOrderCard({ order }: KitchenOrderCardProps) {
   );
 
   const renderTopBar = (pageLabel?: string) => (
-    <div className={`flex items-center justify-between px-3 py-2 shrink-0 ${urgencyBarClass}`}>
-      <div className="flex items-center gap-1 min-w-0">
-        <span className="text-base font-black text-primary whitespace-nowrap">
-          #{toEnglishNumbers(order.order_number.toString())}
-        </span>
-        <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full whitespace-nowrap ${
-          order.type === 'delivery' ? 'bg-info/30 text-info' : order.type === 'pickup' ? 'bg-accent/30 text-accent-foreground' : 'bg-success/30 text-success'
-        }`}>
-          {order.type === 'delivery' ? 'توصيل' : order.type === 'pickup' ? 'استلام' : 'سفري'}
-        </span>
-        {pageLabel && (
-          <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-full bg-primary/20 text-primary whitespace-nowrap">
-            {pageLabel}
+    <div className={`relative shrink-0 bg-gradient-to-l ${headerGradient}`}>
+      <div className="flex items-center justify-between px-3 py-2">
+        <div className="flex items-center gap-1.5 min-w-0">
+          <span className="inline-flex items-center px-2.5 py-1 rounded-xl bg-primary text-primary-foreground text-sm font-black tabular-nums shadow-button">
+            #{toEnglishNumbers(order.order_number.toString())}
           </span>
-        )}
+          <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold border ${typeTone.accent}`}>
+            <TypeIcon className="w-3 h-3" />
+            {typeTone.label}
+          </span>
+          {pageLabel && (
+            <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-md bg-foreground/10 text-foreground tabular-nums">
+              {pageLabel}
+            </span>
+          )}
+        </div>
+        <OrderTimer startTime={order.created_at} compact />
       </div>
-      <OrderTimer startTime={order.created_at} />
+      <div className="h-px bg-border/60" />
     </div>
   );
 
   const orderNotesBlock = order.notes && (
-    <div className="mx-2 mb-2 p-1.5 bg-warning/10 border border-warning/30 rounded shrink-0">
-      <p className="text-warning text-[10px] font-bold">
-        ⚠️ {order.notes}
-      </p>
+    <div className="mx-3 mb-2 p-1.5 bg-warning/10 border border-warning/30 rounded-lg shrink-0">
+      <p className="text-warning text-[11px] font-bold leading-tight">⚠️ {order.notes}</p>
     </div>
   );
 
-  // No overflow → render the original simple card
+  const baseCardClass = `
+    rounded-2xl border kitchen-glass overflow-hidden
+    h-full flex flex-col transition-all duration-300
+    hover:-translate-y-0.5 hover:shadow-elevated
+    animate-kitchen-in
+    ${isFresh ? 'animate-kitchen-glow' : ''}
+    ${urgencyCardClass}
+  `;
+
   if (!hasOverflow) {
     return (
-      <Card
-        className={`rounded-2xl border-2 hover:shadow-elevated transition-colors duration-300 h-full flex flex-col overflow-hidden ${urgencyCardClass}`}
-        style={pulseStyle}
-      >
+      <Card className={baseCardClass}>
+        {isFresh && <FreshRibbon />}
         {order.is_edited && <EditedRibbon />}
         {renderTopBar()}
         {renderItemsList(frontItems)}
@@ -156,15 +157,11 @@ export function KitchenOrderCard({ order }: KitchenOrderCardProps) {
     );
   }
 
-  // Overflow → 3D flip card
   const totalPages = 2;
   const currentPage = showBack ? 2 : 1;
 
   return (
-    <div
-      className="h-full w-full"
-      style={{ perspective: '1200px' }}
-    >
+    <div className="h-full w-full" style={{ perspective: '1200px' }}>
       <div
         className="relative h-full w-full transition-transform duration-700"
         style={{
@@ -172,35 +169,20 @@ export function KitchenOrderCard({ order }: KitchenOrderCardProps) {
           transform: showBack ? 'rotateY(180deg)' : 'rotateY(0deg)',
         }}
       >
-        {/* Front face */}
-        <div
-          className="absolute inset-0"
-          style={{ backfaceVisibility: 'hidden', WebkitBackfaceVisibility: 'hidden' }}
-        >
-          <Card
-            className={`rounded-2xl border-2 hover:shadow-elevated transition-colors duration-300 h-full flex flex-col overflow-hidden ${urgencyCardClass}`}
-            style={pulseStyle}
-          >
+        <div className="absolute inset-0" style={{ backfaceVisibility: 'hidden', WebkitBackfaceVisibility: 'hidden' }}>
+          <Card className={baseCardClass}>
+            {isFresh && <FreshRibbon />}
             {order.is_edited && <EditedRibbon />}
             {renderTopBar(`${toEnglishNumbers(currentPage.toString())}/${toEnglishNumbers(totalPages.toString())}`)}
             {renderItemsList(frontItems)}
             {orderNotesBlock}
           </Card>
         </div>
-
-        {/* Back face */}
         <div
           className="absolute inset-0"
-          style={{
-            backfaceVisibility: 'hidden',
-            WebkitBackfaceVisibility: 'hidden',
-            transform: 'rotateY(180deg)',
-          }}
+          style={{ backfaceVisibility: 'hidden', WebkitBackfaceVisibility: 'hidden', transform: 'rotateY(180deg)' }}
         >
-          <Card
-            className={`rounded-2xl border-2 hover:shadow-elevated transition-colors duration-300 h-full flex flex-col overflow-hidden ${urgencyCardClass}`}
-            style={pulseStyle}
-          >
+          <Card className={baseCardClass}>
             {order.is_edited && <EditedRibbon />}
             {renderTopBar(`${toEnglishNumbers('2')}/${toEnglishNumbers(totalPages.toString())}`)}
             {renderItemsList(backItems)}
@@ -213,14 +195,21 @@ export function KitchenOrderCard({ order }: KitchenOrderCardProps) {
 }
 
 function EditedRibbon() {
-  // Red banner sits at the very top of the affected order card only —
-  // not at a screen corner — so kitchen staff immediately see WHICH order changed.
   return (
     <div
-      className="w-full bg-destructive text-destructive-foreground text-center font-black text-sm py-1.5 shrink-0 animate-pulse border-b-2 border-destructive-foreground/40 z-20"
+      className="w-full bg-destructive text-destructive-foreground text-center font-black text-sm py-1.5 shrink-0 animate-pulse border-b border-destructive-foreground/30 z-20"
       style={{ animationDuration: '1s' }}
     >
       ✏️ تم تعديل هذا الطلب — يرجى المراجعة
+    </div>
+  );
+}
+
+function FreshRibbon() {
+  return (
+    <div className="w-full bg-gradient-to-l from-primary to-primary-glow text-primary-foreground text-center text-[11px] font-black py-1 shrink-0 inline-flex items-center justify-center gap-1.5">
+      <Sparkles className="w-3 h-3" />
+      طلب جديد
     </div>
   );
 }

@@ -306,3 +306,49 @@
     opacity: 1;
   }
 }
+
+/* ===== Premium Kitchen Dashboard animations ===== */
+@keyframes kitchen-card-in {
+  0%   { opacity: 0; transform: translateY(14px) scale(0.97); }
+  100% { opacity: 1; transform: translateY(0)    scale(1);    }
+}
+.animate-kitchen-in { animation: kitchen-card-in 0.45s cubic-bezier(0.22, 1, 0.36, 1) both; }
+
+@keyframes kitchen-glow {
+  0%, 100% { box-shadow: 0 0 0 0 hsl(var(--primary) / 0.0), 0 8px 30px -8px hsl(25 30% 20% / 0.15); }
+  50%      { box-shadow: 0 0 0 6px hsl(var(--primary) / 0.18), 0 14px 40px -10px hsl(var(--primary) / 0.35); }
+}
+.animate-kitchen-glow { animation: kitchen-glow 2.4s ease-in-out 2; }
+
+@keyframes kitchen-shake {
+  0%, 100% { transform: translateX(0); }
+  20%      { transform: translateX(-4px); }
+  40%      { transform: translateX(4px); }
+  60%      { transform: translateX(-3px); }
+  80%      { transform: translateX(3px); }
+}
+.animate-kitchen-shake { animation: kitchen-shake 0.6s ease-in-out infinite; animation-delay: 0s; animation-iteration-count: infinite; }
+
+/* Frosted glass surface for kitchen cards */
+.kitchen-glass {
+  background: linear-gradient(180deg, hsl(0 0% 100% / 0.85) 0%, hsl(0 0% 100% / 0.7) 100%);
+  backdrop-filter: blur(14px) saturate(140%);
+  -webkit-backdrop-filter: blur(14px) saturate(140%);
+}
+.dark .kitchen-glass {
+  background: linear-gradient(180deg, hsl(25 22% 14% / 0.85) 0%, hsl(25 22% 11% / 0.75) 100%);
+}
+
+/* Soft ambient page background */
+.kitchen-bg {
+  background:
+    radial-gradient(1200px 600px at 10% -10%, hsl(25 95% 60% / 0.07), transparent 60%),
+    radial-gradient(1000px 500px at 100% 0%,  hsl(199 89% 60% / 0.06), transparent 60%),
+    linear-gradient(180deg, #f8fafc 0%, #f1f5f9 100%);
+}
+.dark .kitchen-bg {
+  background:
+    radial-gradient(1200px 600px at 10% -10%, hsl(25 95% 50% / 0.10), transparent 60%),
+    radial-gradient(1000px 500px at 100% 0%,  hsl(199 89% 40% / 0.08), transparent 60%),
+    linear-gradient(180deg, hsl(25 25% 7%) 0%, hsl(25 22% 9%) 100%);
+}
