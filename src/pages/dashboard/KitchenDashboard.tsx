@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { RefreshCw, ChefHat, Volume2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useSupabaseOrders } from '@/hooks/useSupabaseOrders';
@@ -84,6 +84,33 @@ export default function KitchenDashboard() {
     .filter(o => o.status === 'preparing' || o.status === 'pending')
     .sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime());
 
+  // Auto-rotate pages when orders exceed grid capacity (6x3 = 18)
+  const ORDERS_PER_PAGE = 18;
+  const ROTATION_MS = 8000;
+  const pages = useMemo(() => {
+    const out: typeof activeOrders[] = [];
+    for (let i = 0; i < activeOrders.length; i += ORDERS_PER_PAGE) {
+      out.push(activeOrders.slice(i, i + ORDERS_PER_PAGE));
+    }
+    return out.length ? out : [[]];
+  }, [activeOrders]);
+  const totalPages = pages.length;
+  const [currentPage, setCurrentPage] = useState(0);
+
+  useEffect(() => {
+    if (currentPage >= totalPages) setCurrentPage(0);
+  }, [totalPages, currentPage]);
+
+  useEffect(() => {
+    if (totalPages <= 1) return;
+    const id = setInterval(() => {
+      setCurrentPage(p => (p + 1) % totalPages);
+    }, ROTATION_MS);
+    return () => clearInterval(id);
+  }, [totalPages]);
+
+  const visibleOrders = pages[Math.min(currentPage, totalPages - 1)] ?? [];
+
   return (
     <div className="flex flex-col h-dvh kitchen-bg relative" dir="rtl">
       {/* Audio unlock overlay - mandatory tap to satisfy autoplay policy on TV/kiosk */}
@@ -129,8 +156,17 @@ export default function KitchenDashboard() {
       {/* Batch prep summary bar (replaces header) */}
       <BatchPrepBar orders={activeOrders} />
 
+      {totalPages > 1 && (
+        <div className="px-3 pt-1 flex items-center justify-center gap-2 text-[11px] font-bold text-muted-foreground">
+          <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-primary/10 text-primary border border-primary/30">
+            <span className="w-1.5 h-1.5 rounded-full bg-primary animate-pulse" />
+            صفحة {currentPage + 1} / {totalPages} • تدوير تلقائي
+          </span>
+        </div>
+      )}
+
       {/* Main content */}
-      <main className="container p-3 flex-1 overflow-auto">
+      <main className="container p-3 flex-1 overflow-hidden">
         {loading ? (
           <div className="grid grid-cols-6 gap-3 auto-rows-[calc((100vh-6rem)/3)]">
             {Array.from({ length: 6 }).map((_, i) => (
@@ -163,8 +199,11 @@ export default function KitchenDashboard() {
             </p>
           </div>
         ) : (
-          <div className="grid grid-cols-6 gap-3 auto-rows-[calc((100vh-6rem)/3)]">
-            {activeOrders.map(order => (
+          <div
+            key={currentPage}
+            className="grid grid-cols-6 gap-3 auto-rows-[calc((100vh-6rem)/3)] animate-fade-in"
+          >
+            {visibleOrders.map(order => (
               <KitchenOrderCard key={order.id} order={order} />
             ))}
           </div>

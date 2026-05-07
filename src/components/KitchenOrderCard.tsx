@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Bike, ShoppingBag, UtensilsCrossed, Sparkles } from 'lucide-react';
+import { Bike, ShoppingBag, UtensilsCrossed, Sparkles, Pencil } from 'lucide-react';
 import { Card } from '@/components/ui/card';
 import { OrderTimer } from '@/components/OrderTimer';
 import { OrderWithItems } from '@/hooks/useSupabaseOrders';
@@ -148,11 +148,11 @@ export function KitchenOrderCard({ order }: KitchenOrderCardProps) {
   if (!hasOverflow) {
     return (
       <Card className={baseCardClass}>
-        {isFresh && <FreshRibbon />}
-        {order.is_edited && <EditedRibbon />}
         {renderTopBar()}
         {renderItemsList(frontItems)}
         {orderNotesBlock}
+        {isFresh && <FreshBadge />}
+        {order.is_edited && <EditedBadge />}
       </Card>
     );
   }
@@ -171,11 +171,11 @@ export function KitchenOrderCard({ order }: KitchenOrderCardProps) {
       >
         <div className="absolute inset-0" style={{ backfaceVisibility: 'hidden', WebkitBackfaceVisibility: 'hidden' }}>
           <Card className={baseCardClass}>
-            {isFresh && <FreshRibbon />}
-            {order.is_edited && <EditedRibbon />}
             {renderTopBar(`${toEnglishNumbers(currentPage.toString())}/${toEnglishNumbers(totalPages.toString())}`)}
             {renderItemsList(frontItems)}
             {orderNotesBlock}
+            {isFresh && <FreshBadge />}
+            {order.is_edited && <EditedBadge />}
           </Card>
         </div>
         <div
@@ -183,10 +183,10 @@ export function KitchenOrderCard({ order }: KitchenOrderCardProps) {
           style={{ backfaceVisibility: 'hidden', WebkitBackfaceVisibility: 'hidden', transform: 'rotateY(180deg)' }}
         >
           <Card className={baseCardClass}>
-            {order.is_edited && <EditedRibbon />}
             {renderTopBar(`${toEnglishNumbers('2')}/${toEnglishNumbers(totalPages.toString())}`)}
             {renderItemsList(backItems)}
             {orderNotesBlock}
+            {order.is_edited && <EditedBadge />}
           </Card>
         </div>
       </div>
@@ -194,22 +194,24 @@ export function KitchenOrderCard({ order }: KitchenOrderCardProps) {
   );
 }
 
-function EditedRibbon() {
+function EditedBadge() {
   return (
     <div
-      className="w-full bg-destructive text-destructive-foreground text-center font-black text-sm py-1.5 shrink-0 animate-pulse border-b border-destructive-foreground/30 z-20"
+      className="absolute top-1.5 left-1.5 z-30 inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-destructive text-destructive-foreground text-[10px] font-black shadow-button border border-destructive-foreground/40 animate-pulse pointer-events-none"
       style={{ animationDuration: '1s' }}
+      title="تم تعديل هذا الطلب"
     >
-      ✏️ تم تعديل هذا الطلب — يرجى المراجعة
+      <Pencil className="w-3 h-3" />
+      معدّل
     </div>
   );
 }
 
-function FreshRibbon() {
+function FreshBadge() {
   return (
-    <div className="w-full bg-gradient-to-l from-primary to-primary-glow text-primary-foreground text-center text-[11px] font-black py-1 shrink-0 inline-flex items-center justify-center gap-1.5">
+    <div className="absolute top-1.5 right-1.5 z-30 inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-gradient-to-l from-primary to-primary-glow text-primary-foreground text-[10px] font-black shadow-button pointer-events-none">
       <Sparkles className="w-3 h-3" />
-      طلب جديد
+      جديد
     </div>
   );
 }
