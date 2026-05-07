@@ -197,7 +197,7 @@ export function KitchenOrderCard({ order }: KitchenOrderCardProps) {
 function EditedBadge() {
   return (
     <div
-      className="absolute top-1.5 left-1.5 z-30 inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-destructive text-destructive-foreground text-[10px] font-black shadow-button border border-destructive-foreground/40 animate-pulse pointer-events-none"
+      className="absolute bottom-1.5 left-1.5 z-30 inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-destructive text-destructive-foreground text-[10px] font-black shadow-button border border-destructive-foreground/40 animate-pulse pointer-events-none"
       style={{ animationDuration: '1s' }}
       title="تم تعديل هذا الطلب"
     >
