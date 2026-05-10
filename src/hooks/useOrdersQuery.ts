@@ -9,8 +9,10 @@ interface UseOrdersQueryOptions {
   orderTypeFilter?: 'delivery' | 'takeaway' | 'all';
 }
 
-const FALLBACK_POLLING_INTERVAL = 30000;
-const SILENT_REFRESH_INTERVAL = 3000;
+// Cost-optimized polling intervals.
+// Silent refresh only runs when Realtime is disconnected (acts as a safety net).
+const FALLBACK_POLLING_INTERVAL = 60000;
+const SILENT_REFRESH_INTERVAL = 30000;
 
 export function useOrdersQuery(options: UseOrdersQueryOptions = {}) {
   const { orderTypeFilter = 'all' } = options;
@@ -218,7 +220,11 @@ export function useOrdersQuery(options: UseOrdersQueryOptions = {}) {
     Promise.all([fetchMenuItems(), fetchOrders()]);
     setupRealtimeChannel();
 
-    silentRefreshIntervalRef.current = setInterval(() => fetchOrders(true), SILENT_REFRESH_INTERVAL);
+    // Silent background refresh ONLY runs when Realtime is not connected.
+    // This avoids hammering the database when realtime already keeps state fresh.
+    silentRefreshIntervalRef.current = setInterval(() => {
+      if (!realtimeConnected) fetchOrders(true);
+    }, SILENT_REFRESH_INTERVAL);
 
     return () => {
       if (channelRef.current) supabase.removeChannel(channelRef.current);
@@ -227,7 +233,7 @@ export function useOrdersQuery(options: UseOrdersQueryOptions = {}) {
       if (reconnectTimeoutRef.current) clearTimeout(reconnectTimeoutRef.current);
       if (silentRefreshIntervalRef.current) clearInterval(silentRefreshIntervalRef.current);
     };
-  }, [fetchMenuItems, fetchOrders, setupRealtimeChannel]);
+  }, [fetchMenuItems, fetchOrders, setupRealtimeChannel, realtimeConnected]);
 
   return {
     orders,

@@ -28,7 +28,7 @@ export function usePresence() {
       });
     };
     upsert('online');
-    const heartbeat = setInterval(() => upsert('online'), 30000);
+    const heartbeat = setInterval(() => upsert('online'), 60000);
     const onHide = () => upsert(document.hidden ? 'away' : 'online');
     document.addEventListener('visibilitychange', onHide);
     const onUnload = () => {
