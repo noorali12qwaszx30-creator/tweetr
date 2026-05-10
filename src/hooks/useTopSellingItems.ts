@@ -28,8 +28,8 @@ export function useTopSellingItems(limit: number = 20) {
 
   useEffect(() => {
     fetchTop();
-    // Refresh every 5 minutes — top sellers don't change second-by-second
-    const interval = setInterval(fetchTop, 5 * 60 * 1000);
+    // Refresh every 60 seconds to keep the list updated
+    const interval = setInterval(fetchTop, 60000);
     return () => clearInterval(interval);
   }, [fetchTop]);
 
