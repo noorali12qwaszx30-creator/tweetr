@@ -50,8 +50,8 @@ export function useDriverLocations() {
       })
       .subscribe();
 
-    // Refresh every 20s as polling fallback
-    const interval = window.setInterval(load, 20000);
+    // Refresh every 60s as polling fallback (Realtime handles live updates)
+    const interval = window.setInterval(load, 60000);
 
     return () => {
       cancelled = true;

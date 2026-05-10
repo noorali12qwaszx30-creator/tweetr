@@ -72,8 +72,8 @@ export function useNotificationsEnforcer(): {
 
     check();
 
-    // Re-check every 4 seconds while the app is open.
-    intervalRef.current = window.setInterval(check, 4000);
+    // Re-check every 15 seconds while the app is open.
+    intervalRef.current = window.setInterval(check, 15000);
 
     // Re-check immediately when the app returns to the foreground (e.g.
     // after the user came back from the system settings screen).
