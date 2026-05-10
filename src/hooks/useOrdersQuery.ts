@@ -10,7 +10,8 @@ interface UseOrdersQueryOptions {
 }
 
 const FALLBACK_POLLING_INTERVAL = 30000;
-const SILENT_REFRESH_INTERVAL = 3000;
+const SILENT_REFRESH_INTERVAL = 8000;
+const ORDERS_QUERY_LIMIT = 300;
 
 export function useOrdersQuery(options: UseOrdersQueryOptions = {}) {
   const { orderTypeFilter = 'all' } = options;
@@ -54,7 +55,8 @@ export function useOrdersQuery(options: UseOrdersQueryOptions = {}) {
       .from('orders')
       .select(`*, order_items (*)`)
       .eq('is_archived', false)
-      .order('created_at', { ascending: false });
+      .order('created_at', { ascending: false })
+      .limit(ORDERS_QUERY_LIMIT);
 
     if (error) {
       console.error('Error fetching orders:', error);
