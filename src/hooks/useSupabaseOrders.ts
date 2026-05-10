@@ -60,6 +60,7 @@ export interface OrderWithItems extends DbOrder {
 
 interface UseSupabaseOrdersOptions {
   orderTypeFilter?: 'delivery' | 'takeaway' | 'all';
+  deliveryPersonId?: string;
 }
 
 export function useSupabaseOrders(options: UseSupabaseOrdersOptions = {}) {

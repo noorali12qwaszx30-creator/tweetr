@@ -7,6 +7,7 @@ import { DbMenuItem, DbOrder, DbOrderItem, OrderWithItems } from './useSupabaseO
 
 interface UseOrdersQueryOptions {
   orderTypeFilter?: 'delivery' | 'takeaway' | 'all';
+  deliveryPersonId?: string;
 }
 
 const FALLBACK_POLLING_INTERVAL = 30000;
@@ -14,7 +15,7 @@ const SILENT_REFRESH_INTERVAL = 8000;
 const ORDERS_QUERY_LIMIT = 300;
 
 export function useOrdersQuery(options: UseOrdersQueryOptions = {}) {
-  const { orderTypeFilter = 'all' } = options;
+  const { orderTypeFilter = 'all', deliveryPersonId } = options;
   const [orders, setOrders] = useState<OrderWithItems[]>([]);
   const [menuItems, setMenuItems] = useState<DbMenuItem[]>([]);
   const [loading, setLoading] = useState(true);
@@ -51,10 +52,19 @@ export function useOrdersQuery(options: UseOrdersQueryOptions = {}) {
     if (!silent) {
       setLoading((prev) => prev && true);
     }
-    const { data, error } = await supabase
+    let query = supabase
       .from('orders')
       .select(`*, order_items (*)`)
-      .eq('is_archived', false)
+      .eq('is_archived', false);
+
+    if (deliveryPersonId) {
+      // Server-side scope: only this driver's orders + ready orders awaiting pickup
+      query = query.or(
+        `delivery_person_id.eq.${deliveryPersonId},and(status.eq.ready,pending_delivery_acceptance.eq.false,delivery_person_id.is.null)`
+      );
+    }
+
+    const { data, error } = await query
       .order('created_at', { ascending: false })
       .limit(ORDERS_QUERY_LIMIT);
 
@@ -71,7 +81,7 @@ export function useOrdersQuery(options: UseOrdersQueryOptions = {}) {
 
     setOrders(ordersWithItems);
     if (!silent) setLoading(false);
-  }, []);
+  }, [deliveryPersonId]);
 
   const showNotification = useCallback((key: string, type: 'success' | 'info' | 'warning' | 'error', message: string, sound?: string) => {
     if (!shownNotificationsRef.current.has(key)) {

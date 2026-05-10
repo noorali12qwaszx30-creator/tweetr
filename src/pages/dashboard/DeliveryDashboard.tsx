@@ -62,7 +62,7 @@ type TabType = 'orders' | 'delivering' | 'history' | 'stats' | 'hub' | 'settings
 export default function DeliveryDashboard() {
   const { role } = useRole();
   const { user } = useAuth();
-  const { orders, updateOrderStatus, acceptDelivery, rejectDelivery, returnOrder, reportIssue, loading, realtimeConnected } = useSupabaseOrders({ orderTypeFilter: 'delivery' });
+  const { orders, updateOrderStatus, acceptDelivery, rejectDelivery, returnOrder, reportIssue, loading, realtimeConnected } = useSupabaseOrders({ orderTypeFilter: 'delivery', deliveryPersonId: user?.id });
   const { reasons } = useCancellationReasons();
   const { reasons: issueReasons } = useIssueReasons();
   const { permission, isSupported, requestPermission, showNotification } = useNotificationPermission();
