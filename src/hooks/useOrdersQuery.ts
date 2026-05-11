@@ -115,9 +115,36 @@ export function useOrdersQuery(options: UseOrdersQueryOptions = {}) {
     });
   }, [showNotification]);
 
-  const handleOrderUpdate = useCallback((newOrder: DbOrder, oldOrder: Partial<DbOrder>) => {
+  const handleOrderUpdate = useCallback(async (newOrder: DbOrder, oldOrder: Partial<DbOrder>) => {
     const shouldNotify = orderTypeFilterRef.current === 'all' || newOrder.type === orderTypeFilterRef.current;
-    setOrders(prev => prev.map(o => o.id === newOrder.id ? { ...o, ...newOrder } : o));
+
+    // If the order is not in our local state yet (e.g. just assigned to this driver),
+    // fetch its items and add it instead of silently dropping the update.
+    let needsInsert = false;
+    setOrders(prev => {
+      if (!prev.some(o => o.id === newOrder.id)) {
+        needsInsert = true;
+        return prev;
+      }
+      return prev.map(o => o.id === newOrder.id ? { ...o, ...newOrder } : o);
+    });
+
+    if (needsInsert) {
+      const { data: itemsData } = await supabase
+        .from('order_items')
+        .select('*')
+        .eq('order_id', newOrder.id);
+      const orderWithItems: OrderWithItems = {
+        ...newOrder,
+        items: (itemsData || []) as DbOrderItem[],
+      };
+      setOrders(prev => {
+        if (prev.some(o => o.id === newOrder.id)) {
+          return prev.map(o => o.id === newOrder.id ? orderWithItems : o);
+        }
+        return [orderWithItems, ...prev];
+      });
+    }
 
     if (!shouldNotify) return;
 
