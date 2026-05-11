@@ -230,8 +230,6 @@ export function useOrdersQuery(options: UseOrdersQueryOptions = {}) {
     Promise.all([fetchMenuItems(), fetchOrders()]);
     setupRealtimeChannel();
 
-    silentRefreshIntervalRef.current = setInterval(() => fetchOrders(true), SILENT_REFRESH_INTERVAL);
-
     return () => {
       if (channelRef.current) supabase.removeChannel(channelRef.current);
       if (itemsChannelRef.current) supabase.removeChannel(itemsChannelRef.current);
@@ -240,6 +238,27 @@ export function useOrdersQuery(options: UseOrdersQueryOptions = {}) {
       if (silentRefreshIntervalRef.current) clearInterval(silentRefreshIntervalRef.current);
     };
   }, [fetchMenuItems, fetchOrders, setupRealtimeChannel]);
+
+  // Silent background refresh — only when realtime is NOT connected,
+  // to avoid races that overwrite recent optimistic updates (e.g. accept order)
+  useEffect(() => {
+    if (realtimeConnected) {
+      if (silentRefreshIntervalRef.current) {
+        clearInterval(silentRefreshIntervalRef.current);
+        silentRefreshIntervalRef.current = null;
+      }
+      return;
+    }
+    if (!silentRefreshIntervalRef.current) {
+      silentRefreshIntervalRef.current = setInterval(() => fetchOrders(true), SILENT_REFRESH_INTERVAL);
+    }
+    return () => {
+      if (silentRefreshIntervalRef.current) {
+        clearInterval(silentRefreshIntervalRef.current);
+        silentRefreshIntervalRef.current = null;
+      }
+    };
+  }, [realtimeConnected, fetchOrders]);
 
   return {
     orders,
