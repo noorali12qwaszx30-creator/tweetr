@@ -15,9 +15,8 @@ export function useDriverArchivedOrders(driverId: string | undefined) {
       return;
     }
     const { data, error } = await supabase
-      .from('orders')
+      .from('orders_history')
       .select('*, order_items (*)')
-      .eq('is_archived', true)
       .eq('delivery_person_id', driverId)
       .order('delivered_at', { ascending: false })
       .limit(2000);
