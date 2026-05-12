@@ -33,7 +33,10 @@ type TabType = 'orders' | 'ready' | 'delivering' | 'map' | 'history' | 'admin';
 export default function FieldDashboard() {
   const { role } = useRole();
   const { user } = useAuth();
-  const { orders, updateOrderStatus, assignDelivery, cancelOrder, loading, realtimeConnected } = useSupabaseOrders({ orderTypeFilter: 'all' });
+  const { orders, updateOrderStatus, assignDelivery, cancelOrder, loading, realtimeConnected } = useSupabaseOrders({
+    orderTypeFilter: 'all',
+    typeIn: ['delivery', 'pickup'],
+  });
   const [activeTab, setActiveTab] = useState<TabType>('orders');
   const [selectorOpen, setSelectorOpen] = useState(false);
   const [selectedOrder, setSelectedOrder] = useState<OrderWithItems | null>(null);

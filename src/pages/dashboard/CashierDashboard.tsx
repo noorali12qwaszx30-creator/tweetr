@@ -87,7 +87,10 @@ type TabType = 'menu' | 'orders' | 'search' | 'map' | 'reports' | 'settings';
 export default function CashierDashboard() {
   const { role } = useRole();
   const { user } = useAuth();
-  const { orders, addOrder, updateOrder, updateOrderStatus, cancelOrder, resolveIssue, loading, realtimeConnected } = useSupabaseOrders({ orderTypeFilter: 'all' });
+  const { orders, addOrder, updateOrder, updateOrderStatus, cancelOrder, resolveIssue, loading, realtimeConnected } = useSupabaseOrders({
+    orderTypeFilter: 'all',
+    cashierId: user?.id,
+  });
   const { menuItems, categories, loading: menuLoading, updateDisplayOrder } = useMenuItems();
   const { items: topSellingItems } = useTopSellingItems(20);
   const { activeAreas, loading: areasLoading } = useDeliveryAreas();

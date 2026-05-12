@@ -61,6 +61,9 @@ export interface OrderWithItems extends DbOrder {
 interface UseSupabaseOrdersOptions {
   orderTypeFilter?: 'delivery' | 'takeaway' | 'all';
   deliveryPersonId?: string;
+  statusIn?: Array<'pending' | 'preparing' | 'ready' | 'delivering' | 'delivered' | 'cancelled'>;
+  typeIn?: Array<'delivery' | 'takeaway' | 'pickup'>;
+  cashierId?: string;
 }
 
 export function useSupabaseOrders(options: UseSupabaseOrdersOptions = {}) {

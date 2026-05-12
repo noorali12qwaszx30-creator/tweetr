@@ -8,14 +8,20 @@ import { DbMenuItem, DbOrder, DbOrderItem, OrderWithItems } from './useSupabaseO
 interface UseOrdersQueryOptions {
   orderTypeFilter?: 'delivery' | 'takeaway' | 'all';
   deliveryPersonId?: string;
+  /** Server-side status filter (e.g. ['pending','preparing','ready']) */
+  statusIn?: Array<'pending' | 'preparing' | 'ready' | 'delivering' | 'delivered' | 'cancelled'>;
+  /** Server-side type filter (e.g. ['delivery','pickup']) */
+  typeIn?: Array<'delivery' | 'takeaway' | 'pickup'>;
+  /** Server-side cashier filter (own orders only) */
+  cashierId?: string;
 }
 
-const FALLBACK_POLLING_INTERVAL = 30000;
-const SILENT_REFRESH_INTERVAL = 8000;
+const FALLBACK_POLLING_INTERVAL = 60000;
+const SILENT_REFRESH_INTERVAL = 20000;
 const ORDERS_PAGE_SIZE = 1000;
 
 export function useOrdersQuery(options: UseOrdersQueryOptions = {}) {
-  const { orderTypeFilter = 'all', deliveryPersonId } = options;
+  const { orderTypeFilter = 'all', deliveryPersonId, statusIn, typeIn, cashierId } = options;
   const [orders, setOrders] = useState<OrderWithItems[]>([]);
   const [menuItems, setMenuItems] = useState<DbMenuItem[]>([]);
   const [loading, setLoading] = useState(true);
@@ -61,6 +67,16 @@ export function useOrdersQuery(options: UseOrdersQueryOptions = {}) {
         .select(`*, order_items (*)`)
         .eq('is_archived', false);
 
+      if (statusIn && statusIn.length > 0) {
+        query = query.in('status', statusIn);
+      }
+      if (typeIn && typeIn.length > 0) {
+        query = query.in('type', typeIn);
+      }
+      if (cashierId) {
+        query = query.eq('cashier_id', cashierId);
+      }
+
       if (deliveryPersonId) {
         // Server-side scope: only this driver's orders + ready orders awaiting pickup
         query = query.or(
@@ -92,7 +108,7 @@ export function useOrdersQuery(options: UseOrdersQueryOptions = {}) {
 
     setOrders(ordersWithItems);
     if (!silent) setLoading(false);
-  }, [deliveryPersonId]);
+  }, [deliveryPersonId, statusIn?.join(','), typeIn?.join(','), cashierId]);
 
   const showNotification = useCallback((key: string, type: 'success' | 'info' | 'warning' | 'error', message: string, sound?: string) => {
     if (!shownNotificationsRef.current.has(key)) {
