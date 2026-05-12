@@ -109,6 +109,7 @@ export default function CashierDashboard() {
   const [editingOrder, setEditingOrder] = useState<OrderWithItems | null>(null);
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const [confirmDialogOpen, setConfirmDialogOpen] = useState(false);
+  const [isSubmittingOrder, setIsSubmittingOrder] = useState(false);
 
   const sensors = useSensors(
     useSensor(PointerSensor, {
@@ -190,7 +191,9 @@ export default function CashierDashboard() {
     executeSubmit();
   };
 
-  const executeSubmit = () => {
+  const executeSubmit = async () => {
+    if (isSubmittingOrder) return;
+
     const orderData = {
       customer_name: customerName.trim(),
       customer_phone: customerPhone || '',
@@ -210,36 +213,66 @@ export default function CashierDashboard() {
     const isEditing = editingOrder;
     const editingOrderId = editingOrder?.id;
     const roleName = role ? ROLE_LABELS[role] : 'كاشير';
+    const snapshot = {
+      customerName,
+      customerPhone,
+      customerAddress,
+      selectedAreaId,
+      orderNotes,
+      orderSource,
+      orderType,
+      cart: [...cart],
+      editingOrder,
+    };
 
-    clearForm();
-    if (isEditing) setEditingOrder(null);
+    setIsSubmittingOrder(true);
     setConfirmDialogOpen(false);
 
     toast.info(isEditing ? 'جاري حفظ التعديلات...' : 'جاري إرسال الطلب...', { duration: 1500 });
 
-    (async () => {
-      try {
-        let result;
-        if (isEditing && editingOrderId) {
-          result = await updateOrder(editingOrderId, orderData);
-        } else {
-          result = await addOrder({
-            ...orderData,
-            type: orderType,
-            cashier_name: roleName,
-          });
-        }
-
-        if (result) {
-          toast.success(isEditing ? 'تم حفظ التعديلات بنجاح' : 'تم إرسال الطلب بنجاح');
-        } else {
-          toast.error('حدث خطأ أثناء إرسال الطلب');
-        }
-      } catch (error) {
-        console.error('Order submission error:', error);
-        toast.error('حدث خطأ في الاتصال');
+    try {
+      let result;
+      if (isEditing && editingOrderId) {
+        result = await updateOrder(editingOrderId, orderData);
+      } else {
+        result = await addOrder({
+          ...orderData,
+          type: orderType,
+          cashier_name: roleName,
+        });
       }
-    })();
+
+      if (result) {
+        clearForm();
+        if (isEditing) setEditingOrder(null);
+        toast.success(isEditing ? 'تم حفظ التعديلات بنجاح' : 'تم إرسال الطلب بنجاح');
+      } else {
+        setCustomerName(snapshot.customerName);
+        setCustomerPhone(snapshot.customerPhone);
+        setCustomerAddress(snapshot.customerAddress);
+        setSelectedAreaId(snapshot.selectedAreaId);
+        setOrderNotes(snapshot.orderNotes);
+        setOrderSource(snapshot.orderSource);
+        setOrderType(snapshot.orderType);
+        setCartItems(snapshot.cart);
+        setEditingOrder(snapshot.editingOrder);
+        toast.error('حدث خطأ أثناء إرسال الطلب');
+      }
+    } catch (error) {
+      console.error('Order submission error:', error);
+      setCustomerName(snapshot.customerName);
+      setCustomerPhone(snapshot.customerPhone);
+      setCustomerAddress(snapshot.customerAddress);
+      setSelectedAreaId(snapshot.selectedAreaId);
+      setOrderNotes(snapshot.orderNotes);
+      setOrderSource(snapshot.orderSource);
+      setOrderType(snapshot.orderType);
+      setCartItems(snapshot.cart);
+      setEditingOrder(snapshot.editingOrder);
+      toast.error('حدث خطأ في الاتصال');
+    } finally {
+      setIsSubmittingOrder(false);
+    }
   };
 
   const handleEditOrder = (order: OrderWithItems) => {
@@ -504,9 +537,9 @@ export default function CashierDashboard() {
                     <Trash2 className="w-3 h-3 ml-1" />
                     {editingOrder ? 'إلغاء التعديل' : 'مسح'}
                   </Button>
-                  <Button size="sm" className={`flex-1 ${editingOrder ? 'bg-warning hover:bg-warning/90' : ''}`} onClick={submitOrder}>
+                  <Button size="sm" className={`flex-1 ${editingOrder ? 'bg-warning hover:bg-warning/90' : ''}`} onClick={submitOrder} disabled={isSubmittingOrder}>
                     <Send className="w-3 h-3 ml-1" />
-                    {editingOrder ? 'حفظ التعديلات' : 'إرسال'}
+                    {isSubmittingOrder ? 'جاري الإرسال...' : editingOrder ? 'حفظ التعديلات' : 'إرسال'}
                   </Button>
                 </div>
               </div>
