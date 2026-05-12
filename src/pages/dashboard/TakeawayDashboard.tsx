@@ -137,59 +137,50 @@ export default function TakeawayDashboard() {
       editingOrder,
     };
 
-    setIsSubmittingOrder(true);
+    // Optimistic UX: clear immediately and process in background
+    clearCart();
+    setOrderNotes('');
+    if (isEditing) setEditingOrder(null);
+    toast.success(isEditing ? 'تم حفظ التعديلات' : 'تم رفع الطلب', { duration: 1200 });
 
-    toast.info(isEditing ? 'جاري حفظ التعديلات...' : 'جاري رفع الطلب...', { duration: 1500 });
-
-    try {
-      if (isEditing && editingId) {
-        const result = await updateOrder(editingId, {
-          customer_name: editingOrder!.customer_name,
-          customer_phone: editingOrder!.customer_phone,
-          customer_address: editingOrder!.customer_address || undefined,
-          notes: orderNotes || undefined,
-          items,
-        });
-        if (result) {
-          clearCart();
-          setOrderNotes('');
-          setEditingOrder(null);
-          toast.success('تم حفظ التعديلات بنجاح');
-        } else {
-          setCartItems(snapshot.cart);
-          setOrderNotes(snapshot.orderNotes);
-          setEditingOrder(snapshot.editingOrder);
-        }
-      } else {
-        const result = await addOrder({
-          customer_name: 'زبون سفري',
-          customer_phone: '',
-          customer_address: 'عنوان المطعم',
-          type: 'takeaway',
-          notes: orderNotes || undefined,
-          cashier_name: role ? ROLE_LABELS[role] : 'سفري',
-          items,
-        });
-        if (result) {
-          clearCart();
-          setOrderNotes('');
-          setEditingOrder(null);
-          toast.success('تم رفع الطلب بنجاح');
-        } else {
-          setCartItems(snapshot.cart);
-          setOrderNotes(snapshot.orderNotes);
-          setEditingOrder(snapshot.editingOrder);
-        }
-      }
-    } catch (error) {
-      console.error('Order submit error:', error);
+    const restoreSnapshot = () => {
       setCartItems(snapshot.cart);
       setOrderNotes(snapshot.orderNotes);
       setEditingOrder(snapshot.editingOrder);
-      toast.error('حدث خطأ');
-    } finally {
-      setIsSubmittingOrder(false);
-    }
+    };
+
+    (async () => {
+      try {
+        let result;
+        if (isEditing && editingId) {
+          result = await updateOrder(editingId, {
+            customer_name: editingOrder!.customer_name,
+            customer_phone: editingOrder!.customer_phone,
+            customer_address: editingOrder!.customer_address || undefined,
+            notes: orderNotes || undefined,
+            items,
+          });
+        } else {
+          result = await addOrder({
+            customer_name: 'زبون سفري',
+            customer_phone: '',
+            customer_address: 'عنوان المطعم',
+            type: 'takeaway',
+            notes: orderNotes || undefined,
+            cashier_name: role ? ROLE_LABELS[role] : 'سفري',
+            items,
+          });
+        }
+        if (!result) {
+          toast.error('فشل الإرسال، تم استرجاع البيانات');
+          restoreSnapshot();
+        }
+      } catch (error) {
+        console.error('Order submit error:', error);
+        toast.error('خطأ في الاتصال، تم استرجاع البيانات');
+        restoreSnapshot();
+      }
+    })();
   };
 
   const handleEditOrder = (order: OrderWithItems) => {
