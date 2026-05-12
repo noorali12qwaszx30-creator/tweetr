@@ -177,53 +177,69 @@ export function DriverStatsTab({
       {/* Today's KPIs */}
       <div>
         <h3 className="text-xs font-bold text-muted-foreground mb-2 px-1">اليوم</h3>
-        <div className="grid grid-cols-2 gap-2 sm:gap-3">
-          <div className="bg-gradient-to-br from-success/10 to-success/5 border border-success/20 rounded-2xl p-3 shadow-soft">
+        <div className="grid grid-cols-2 gap-2 sm:gap-3 auto-rows-fr">
+          <div className="bg-card border border-success/30 rounded-2xl p-3 shadow-soft min-h-[120px] flex flex-col justify-between">
             <div className="flex items-center justify-between mb-1">
-              <CheckCircle2 className="w-4 h-4 text-success" />
+              <div className="w-8 h-8 rounded-lg bg-success/15 flex items-center justify-center">
+                <CheckCircle2 className="w-4 h-4 text-success" />
+              </div>
               <span className={`text-[10px] font-bold flex items-center gap-0.5 ${ordersComp.color}`}>
                 {ordersComp.icon} {ordersComp.label}
               </span>
             </div>
-            <p className="text-xs text-muted-foreground">طلبات اليوم</p>
-            <p className="text-2xl font-bold text-success">{toEnglishNumbers(stats.todayDelivered.length)}</p>
-            <p className="text-[10px] text-muted-foreground mt-0.5">أمس: {toEnglishNumbers(stats.yesterdayDelivered.length)}</p>
+            <div>
+              <p className="text-xs text-muted-foreground">طلبات اليوم</p>
+              <p className="text-2xl font-bold text-success leading-tight">{toEnglishNumbers(stats.todayDelivered.length)}</p>
+              <p className="text-[10px] text-muted-foreground mt-0.5">أمس: {toEnglishNumbers(stats.yesterdayDelivered.length)}</p>
+            </div>
           </div>
 
-          <div className="bg-gradient-to-br from-primary/10 to-primary/5 border border-primary/20 rounded-2xl p-3 shadow-soft">
+          <div className="bg-card border border-primary/30 rounded-2xl p-3 shadow-soft min-h-[120px] flex flex-col justify-between">
             <div className="flex items-center justify-between mb-1">
-              <DollarSign className="w-4 h-4 text-primary" />
+              <div className="w-8 h-8 rounded-lg bg-primary/15 flex items-center justify-center">
+                <DollarSign className="w-4 h-4 text-primary" />
+              </div>
               <span className={`text-[10px] font-bold flex items-center gap-0.5 ${earningsComp.color}`}>
                 {earningsComp.icon} {earningsComp.label}
               </span>
             </div>
-            <p className="text-xs text-muted-foreground">أرباح اليوم</p>
-            <p className="text-2xl font-bold text-primary">{formatNumberWithCommas(stats.todayEarnings)}</p>
-            <p className="text-[10px] text-muted-foreground mt-0.5">د.ع • أمس: {formatNumberWithCommas(stats.yesterdayEarnings)}</p>
+            <div>
+              <p className="text-xs text-muted-foreground">أرباح اليوم</p>
+              <p className="text-2xl font-bold text-primary leading-tight">{formatNumberWithCommas(stats.todayEarnings)}</p>
+              <p className="text-[10px] text-muted-foreground mt-0.5">د.ع • أمس: {formatNumberWithCommas(stats.yesterdayEarnings)}</p>
+            </div>
           </div>
 
-          <div className="bg-gradient-to-br from-info/10 to-info/5 border border-info/20 rounded-2xl p-3 shadow-soft">
+          <div className="bg-card border border-info/30 rounded-2xl p-3 shadow-soft min-h-[120px] flex flex-col justify-between">
             <div className="flex items-center justify-between mb-1">
-              <Clock className="w-4 h-4 text-info" />
+              <div className="w-8 h-8 rounded-lg bg-info/15 flex items-center justify-center">
+                <Clock className="w-4 h-4 text-info" />
+              </div>
               <span className={`text-[10px] font-bold flex items-center gap-0.5 ${timeComp.color}`}>
                 {timeComp.icon} {timeComp.label}
               </span>
             </div>
-            <p className="text-xs text-muted-foreground">متوسط وقت التوصيل</p>
-            <p className="text-2xl font-bold text-info">{toEnglishNumbers(stats.todayAvgTime)} <span className="text-sm">د</span></p>
-            <p className="text-[10px] text-muted-foreground mt-0.5">أمس: {toEnglishNumbers(stats.yesterdayAvgTime)} د</p>
+            <div>
+              <p className="text-xs text-muted-foreground">متوسط وقت التوصيل</p>
+              <p className="text-2xl font-bold text-info leading-tight">{toEnglishNumbers(stats.todayAvgTime)} <span className="text-sm">د</span></p>
+              <p className="text-[10px] text-muted-foreground mt-0.5">أمس: {toEnglishNumbers(stats.yesterdayAvgTime)} د</p>
+            </div>
           </div>
 
-          <div className="bg-gradient-to-br from-warning/10 to-warning/5 border border-warning/20 rounded-2xl p-3 shadow-soft">
+          <div className="bg-card border border-warning/30 rounded-2xl p-3 shadow-soft min-h-[120px] flex flex-col justify-between">
             <div className="flex items-center justify-between mb-1">
-              <Target className="w-4 h-4 text-warning" />
+              <div className="w-8 h-8 rounded-lg bg-warning/15 flex items-center justify-center">
+                <Target className="w-4 h-4 text-warning" />
+              </div>
               <span className={`text-[10px] font-bold ${stats.successRate >= 90 ? 'text-success' : stats.successRate >= 70 ? 'text-warning' : 'text-destructive'}`}>
                 {toEnglishNumbers(stats.successRate)}%
               </span>
             </div>
-            <p className="text-xs text-muted-foreground">نسبة النجاح</p>
-            <p className="text-2xl font-bold text-warning">{toEnglishNumbers(stats.successRate)}<span className="text-sm">%</span></p>
-            <p className="text-[10px] text-muted-foreground mt-0.5">إلغاءات: {toEnglishNumbers(stats.todayCancelled.length)}</p>
+            <div>
+              <p className="text-xs text-muted-foreground">نسبة النجاح</p>
+              <p className="text-2xl font-bold text-warning leading-tight">{toEnglishNumbers(stats.successRate)}<span className="text-sm">%</span></p>
+              <p className="text-[10px] text-muted-foreground mt-0.5">إلغاءات: {toEnglishNumbers(stats.todayCancelled.length)}</p>
+            </div>
           </div>
         </div>
       </div>
