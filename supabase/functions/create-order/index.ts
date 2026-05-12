@@ -11,6 +11,7 @@ interface OrderItem {
 }
 
 interface OrderRequest {
+  request_id?: string;
   customer_name: string;
   customer_phone: string;
   customer_address?: string;
@@ -25,6 +26,74 @@ interface OrderRequest {
 
 function sanitizeText(input: string, maxLength: number): string {
   return input.replace(/<[^>]*>/g, '').replace(/[<>]/g, '').trim().slice(0, maxLength);
+}
+
+function delay(ms: number) {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+function isTransientError(error: any): boolean {
+  const message = `${error?.message || error?.name || error || ''}`.toLowerCase();
+  const status = Number(error?.status || error?.code || 0);
+  return (
+    status === 408 ||
+    status === 429 ||
+    status >= 500 ||
+    message.includes('internal server error') ||
+    message.includes('unexpected token') ||
+    message.includes('timeout') ||
+    message.includes('network') ||
+    message.includes('fetch') ||
+    message.includes('authunknownerror')
+  );
+}
+
+async function runQueryWithRetry<T extends { error?: any }>(
+  label: string,
+  queryFactory: () => Promise<T>,
+  attempts = 3,
+): Promise<T> {
+  let lastResult: T | null = null;
+
+  for (let attempt = 0; attempt < attempts; attempt++) {
+    const result = await queryFactory();
+    lastResult = result;
+
+    if (!result?.error) {
+      return result;
+    }
+
+    if (!isTransientError(result.error) || attempt === attempts - 1) {
+      return result;
+    }
+
+    console.warn(`${label} attempt ${attempt + 1} failed:`, result.error);
+    await delay(250 * (attempt + 1));
+  }
+
+  return lastResult as T;
+}
+
+async function getUserWithRetry(client: ReturnType<typeof createClient>, attempts = 3) {
+  let lastResponse: Awaited<ReturnType<typeof client.auth.getUser>> | null = null;
+
+  for (let attempt = 0; attempt < attempts; attempt++) {
+    const response = await client.auth.getUser();
+    lastResponse = response;
+
+    if (response.data.user && !response.error) {
+      return response;
+    }
+
+    if (!isTransientError(response.error) || attempt === attempts - 1) {
+      return response;
+    }
+
+    console.warn(`getUser attempt ${attempt + 1} failed:`, response.error);
+    await delay(300 * (attempt + 1));
+  }
+
+  return lastResponse!;
 }
 
 serve(async (req) => {
@@ -53,7 +122,7 @@ serve(async (req) => {
       global: { headers: { Authorization: authHeader } }
     });
 
-    const { data: { user }, error: userError } = await supabaseUser.auth.getUser();
+    const { data: { user }, error: userError } = await getUserWithRetry(supabaseUser);
     if (userError || !user) {
       console.error('Auth error:', userError);
       return new Response(
@@ -63,6 +132,7 @@ serve(async (req) => {
     }
 
     const orderData: OrderRequest = await req.json();
+    const orderId = orderData.request_id?.trim() || crypto.randomUUID();
 
     if (!orderData.customer_name || orderData.customer_name.trim().length < 2) {
       return new Response(
@@ -113,19 +183,16 @@ serve(async (req) => {
 
     if (menuItemIds.length > 0) {
       // Retry transient backend errors (up to 3 attempts) before giving up
-      let menuItems: Array<{ id: string; name: string; price: number; is_available: boolean }> | null = null;
-      let menuError: any = null;
-      for (let attempt = 0; attempt < 3; attempt++) {
-        const res = await supabaseAdmin
+      const menuRes = await runQueryWithRetry(
+        'menu_items fetch',
+        () => supabaseAdmin
           .from('menu_items')
           .select('id, name, price, is_available')
-          .in('id', menuItemIds);
-        menuItems = res.data as any;
-        menuError = res.error;
-        if (!menuError) break;
-        console.warn(`menu_items fetch attempt ${attempt + 1} failed:`, menuError);
-        await new Promise((r) => setTimeout(r, 200 * (attempt + 1)));
-      }
+          .in('id', menuItemIds),
+      );
+
+      const menuItems = menuRes.data as Array<{ id: string; name: string; price: number; is_available: boolean }> | null;
+      const menuError = menuRes.error;
 
       const menuItemMap = new Map((menuItems || []).map((m) => [m.id, m]));
       // If fetch failed entirely, fall back to client-provided values (still bounded by price validation below)
@@ -208,11 +275,14 @@ serve(async (req) => {
 
     let deliveryFee = 0;
     if (orderData.delivery_area_id && orderData.type === 'delivery') {
-      const { data: deliveryArea, error: areaError } = await supabaseAdmin
-        .from('delivery_areas')
-        .select('delivery_fee')
-        .eq('id', orderData.delivery_area_id)
-        .single();
+      const { data: deliveryArea, error: areaError } = await runQueryWithRetry(
+        'delivery area fetch',
+        () => supabaseAdmin
+          .from('delivery_areas')
+          .select('delivery_fee')
+          .eq('id', orderData.delivery_area_id)
+          .single(),
+      );
 
       if (!areaError && deliveryArea) {
         deliveryFee = Number(deliveryArea.delivery_fee) || 0;
@@ -223,31 +293,40 @@ serve(async (req) => {
     const customerPhone = orderData.customer_phone.trim();
 
     if (customerPhone) {
-      const { data: existingCustomer } = await supabaseAdmin
-        .from('customers')
-        .select('id')
-        .eq('phone', customerPhone)
-        .maybeSingle();
+      const { data: existingCustomer } = await runQueryWithRetry(
+        'customer lookup',
+        () => supabaseAdmin
+          .from('customers')
+          .select('id')
+          .eq('phone', customerPhone)
+          .maybeSingle(),
+      );
 
       if (existingCustomer) {
         customerId = existingCustomer.id;
-        await supabaseAdmin
-          .from('customers')
-          .update({
-            name: sanitizeText(orderData.customer_name, 100),
-            address: orderData.customer_address ? sanitizeText(orderData.customer_address, 500) : null,
-          })
-          .eq('id', customerId);
+        await runQueryWithRetry(
+          'customer update',
+          () => supabaseAdmin
+            .from('customers')
+            .update({
+              name: sanitizeText(orderData.customer_name, 100),
+              address: orderData.customer_address ? sanitizeText(orderData.customer_address, 500) : null,
+            })
+            .eq('id', customerId),
+        );
       } else {
-        const { data: newCustomer, error: customerError } = await supabaseAdmin
-          .from('customers')
-          .insert({
-            name: sanitizeText(orderData.customer_name, 100),
-            phone: customerPhone.slice(0, 20),
-            address: orderData.customer_address ? sanitizeText(orderData.customer_address, 500) : null,
-          })
-          .select('id')
-          .single();
+        const { data: newCustomer, error: customerError } = await runQueryWithRetry(
+          'customer insert',
+          () => supabaseAdmin
+            .from('customers')
+            .insert({
+              name: sanitizeText(orderData.customer_name, 100),
+              phone: customerPhone.slice(0, 20),
+              address: orderData.customer_address ? sanitizeText(orderData.customer_address, 500) : null,
+            })
+            .select('id')
+            .single(),
+        );
 
         if (!customerError && newCustomer) {
           customerId = newCustomer.id;
@@ -255,27 +334,78 @@ serve(async (req) => {
       }
     }
 
-    const { data: newOrder, error: orderError } = await supabaseAdmin
-      .from('orders')
-      .insert({
-        customer_id: customerId,
-        customer_name: sanitizeText(orderData.customer_name, 100),
-        customer_phone: orderData.customer_phone.replace(/\D/g, '').slice(0, 20),
-        customer_address: orderData.customer_address ? sanitizeText(orderData.customer_address, 500) : null,
-        delivery_area_id: orderData.delivery_area_id || null,
-        type: orderData.type,
-        notes: orderData.notes ? sanitizeText(orderData.notes, 500) : null,
-        total_price: serverCalculatedTotal + deliveryFee,
-        delivery_fee: deliveryFee,
-        cashier_id: user.id,
-        cashier_name: orderData.cashier_name ? sanitizeText(orderData.cashier_name, 100) : null,
-        order_source: orderData.order_source ? sanitizeText(orderData.order_source, 50) : null,
-        status: 'pending',
-      })
-      .select()
-      .single();
+    const { data: existingOrder } = await runQueryWithRetry(
+      'existing order lookup',
+      () => supabaseAdmin
+        .from('orders')
+        .select('id, order_number, customer_id, customer_name, customer_phone, customer_address, delivery_area_id, type, notes, total_price, delivery_fee, cashier_id, cashier_name, delivery_person_id, delivery_person_name, pending_delivery_acceptance, cancellation_reason, created_at, updated_at, delivered_at, cancelled_at, is_edited, edited_at, has_issue, issue_reason, issue_reported_at, issue_reported_by, order_source, status')
+        .eq('id', orderId)
+        .maybeSingle(),
+    );
+
+    if (existingOrder) {
+      const { data: existingItems } = await runQueryWithRetry(
+        'existing order items lookup',
+        () => supabaseAdmin
+          .from('order_items')
+          .select('id')
+          .eq('order_id', orderId)
+          .limit(1),
+      );
+
+      if ((existingItems?.length || 0) > 0) {
+        console.log('Order already created, returning existing order:', orderId);
+        return new Response(
+          JSON.stringify({ order: existingOrder }),
+          { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+    }
+
+    const { data: insertedOrder, error: orderError } = await runQueryWithRetry(
+      'create order',
+      () => supabaseAdmin
+        .from('orders')
+        .insert({
+          id: orderId,
+          customer_id: customerId,
+          customer_name: sanitizeText(orderData.customer_name, 100),
+          customer_phone: orderData.customer_phone.replace(/\D/g, '').slice(0, 20),
+          customer_address: orderData.customer_address ? sanitizeText(orderData.customer_address, 500) : null,
+          delivery_area_id: orderData.delivery_area_id || null,
+          type: orderData.type,
+          notes: orderData.notes ? sanitizeText(orderData.notes, 500) : null,
+          total_price: serverCalculatedTotal + deliveryFee,
+          delivery_fee: deliveryFee,
+          cashier_id: user.id,
+          cashier_name: orderData.cashier_name ? sanitizeText(orderData.cashier_name, 100) : null,
+          order_source: orderData.order_source ? sanitizeText(orderData.order_source, 50) : null,
+          status: 'pending',
+        })
+        .select()
+        .single(),
+    );
+
+    let newOrder = insertedOrder;
 
     if (orderError) {
+      if (String(orderError?.code || '') === '23505') {
+        const { data: duplicateOrder } = await runQueryWithRetry(
+          'duplicate order lookup',
+          () => supabaseAdmin
+            .from('orders')
+            .select('*')
+            .eq('id', orderId)
+            .single(),
+        );
+
+        if (duplicateOrder) {
+          newOrder = duplicateOrder;
+        }
+      }
+    }
+
+    if (!newOrder) {
       console.error('Error creating order:', orderError);
       return new Response(
         JSON.stringify({ error: 'خطأ في إنشاء الطلب' }),
@@ -284,6 +414,7 @@ serve(async (req) => {
     }
 
     const orderItems = validatedItems.map(item => ({
+      id: crypto.randomUUID(),
       order_id: newOrder.id,
       menu_item_id: item.menu_item_id || null,
       menu_item_name: item.menu_item_name,
@@ -292,18 +423,35 @@ serve(async (req) => {
       notes: item.notes || null,
     }));
 
-    const { error: itemsError } = await supabaseAdmin
-      .from('order_items')
-      .insert(orderItems)
-      .select('id');
+    const { data: existingOrderItems } = await runQueryWithRetry(
+      'pre-insert order items lookup',
+      () => supabaseAdmin
+        .from('order_items')
+        .select('id')
+        .eq('order_id', newOrder.id)
+        .limit(1),
+    );
 
-    if (itemsError) {
-      console.error('Error creating order items:', itemsError);
-      await supabaseAdmin.from('orders').delete().eq('id', newOrder.id);
-      return new Response(
-        JSON.stringify({ error: 'خطأ في إضافة عناصر الطلب' }),
-        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+    if ((existingOrderItems?.length || 0) === 0) {
+      const { error: itemsError } = await runQueryWithRetry(
+        'create order items',
+        () => supabaseAdmin
+          .from('order_items')
+          .insert(orderItems)
+          .select('id'),
       );
+
+      if (itemsError) {
+        console.error('Error creating order items:', itemsError);
+        await runQueryWithRetry(
+          'rollback order after items failure',
+          () => supabaseAdmin.from('orders').delete().eq('id', newOrder.id),
+        );
+        return new Response(
+          JSON.stringify({ error: 'خطأ في إضافة عناصر الطلب' }),
+          { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
     }
 
     console.log('Order created:', newOrder.id);

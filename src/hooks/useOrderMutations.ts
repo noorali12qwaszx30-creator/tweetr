@@ -9,9 +9,51 @@ interface UseOrderMutationsProps {
   playNotificationSound: (sound: any) => void;
 }
 
+function isTransientInvokeError(error: any) {
+  const message = `${error?.message || error?.name || error || ''}`.toLowerCase();
+  const status = Number(error?.context?.status || error?.status || 0);
+  return (
+    status === 408 ||
+    status === 429 ||
+    status >= 500 ||
+    message.includes('failed to fetch') ||
+    message.includes('fetch') ||
+    message.includes('network') ||
+    message.includes('timeout') ||
+    message.includes('internal') ||
+    message.includes('functionshttperror') ||
+    message.includes('auth')
+  );
+}
+
+async function invokeWithRetry<T>(
+  fn: () => Promise<{ data: T | null; error: any }>,
+  attempts = 3,
+) {
+  let lastResult: { data: T | null; error: any } = { data: null, error: null };
+
+  for (let attempt = 0; attempt < attempts; attempt++) {
+    const result = await fn();
+    lastResult = result;
+
+    if (!result.error) {
+      return result;
+    }
+
+    if (!isTransientInvokeError(result.error) || attempt === attempts - 1) {
+      return result;
+    }
+
+    await new Promise((resolve) => setTimeout(resolve, 300 * (attempt + 1)));
+  }
+
+  return lastResult;
+}
+
 export function useOrderMutations({ setOrders, fetchOrders, playNotificationSound }: UseOrderMutationsProps) {
   
   const addOrder = async (orderData: {
+    request_id?: string;
     customer_name: string;
     customer_phone: string;
     customer_address?: string;
@@ -24,16 +66,23 @@ export function useOrderMutations({ setOrders, fetchOrders, playNotificationSoun
     items: { menu_item_id?: string; menu_item_name: string; menu_item_price: number; quantity: number; notes?: string }[];
   }) => {
     try {
-      const { data, error } = await supabase.functions.invoke('create-order', { body: orderData });
+      const requestId = orderData.request_id || crypto.randomUUID();
+      const { data, error } = await invokeWithRetry(
+        () => supabase.functions.invoke('create-order', {
+          body: { ...orderData, request_id: requestId },
+        }),
+      );
 
       if (error) {
         console.error('Error creating order:', error);
+        await fetchOrders(true);
         toast.error('حدث خطأ في إنشاء الطلب، حاول مرة أخرى');
         return null;
       }
 
       if (data?.error) {
         console.error('Server error:', data.error);
+        await fetchOrders(true);
         toast.error(data.error);
         return null;
       }
@@ -52,12 +101,13 @@ export function useOrderMutations({ setOrders, fetchOrders, playNotificationSoun
           })),
         };
         setOrders(prev => [newOrderWithItems, ...prev]);
-        setTimeout(() => fetchOrders(), 500);
+        setTimeout(() => fetchOrders(true), 500);
       }
 
       return data.order;
     } catch (err) {
       console.error('Unexpected error creating order:', err);
+      await fetchOrders(true);
       toast.error('حدث خطأ غير متوقع');
       return null;
     }
@@ -208,18 +258,22 @@ export function useOrderMutations({ setOrders, fetchOrders, playNotificationSoun
     items?: { menu_item_id?: string; menu_item_name: string; menu_item_price: number; quantity: number; notes?: string }[];
   }) => {
     try {
-      const { data, error } = await supabase.functions.invoke('update-order', {
-        body: { order_id: orderId, ...orderData },
-      });
+      const { data, error } = await invokeWithRetry(
+        () => supabase.functions.invoke('update-order', {
+          body: { order_id: orderId, ...orderData },
+        }),
+      );
 
       if (error) {
         console.error('Error updating order:', error);
+        await fetchOrders(true);
         toast.error('حدث خطأ في تعديل الطلب');
         return null;
       }
 
       if (data?.error) {
         console.error('Server error:', data.error);
+        await fetchOrders(true);
         toast.error(data.error);
         return null;
       }

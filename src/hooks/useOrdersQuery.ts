@@ -128,20 +128,27 @@ export function useOrdersQuery(options: UseOrdersQueryOptions = {}) {
     // Retry items fetch — items are inserted right after the order, so the
     // first read can race the insert on the writer side.
     let itemsData: DbOrderItem[] = [];
+    let freshOrder: DbOrder = newOrder;
     for (let attempt = 0; attempt < 4; attempt++) {
-      const { data } = await supabase
-        .from('order_items')
-        .select('*')
-        .eq('order_id', newOrder.id);
-      if (data && data.length > 0) {
-        itemsData = data as DbOrderItem[];
+      const { data: full } = await supabase
+        .from('orders')
+        .select('*, order_items (*)')
+        .eq('id', newOrder.id)
+        .maybeSingle();
+      const items = ((full as any)?.order_items || []) as DbOrderItem[];
+      if (full) {
+        const { order_items: _oi, ...rest } = full as any;
+        freshOrder = { ...newOrder, ...rest } as DbOrder;
+      }
+      if (items.length > 0) {
+        itemsData = items;
         break;
       }
       await new Promise((r) => setTimeout(r, 250 * (attempt + 1)));
     }
 
     const orderWithItems: OrderWithItems = {
-      ...newOrder,
+      ...freshOrder,
       items: itemsData,
     };
 
@@ -165,6 +172,25 @@ export function useOrdersQuery(options: UseOrdersQueryOptions = {}) {
       }
       return prev.map(o => o.id === newOrder.id ? { ...o, ...newOrder } : o);
     });
+
+    if (!needsInsert) {
+      const { data: full } = await supabase
+        .from('orders')
+        .select('*, order_items (*)')
+        .eq('id', newOrder.id)
+        .maybeSingle();
+
+      if (full) {
+        const items = (((full as any)?.order_items || []) as DbOrderItem[]);
+        const { order_items: _oi, ...rest } = full as any;
+        const hydratedOrder: OrderWithItems = {
+          ...(rest as DbOrder),
+          items,
+        };
+
+        setOrders(prev => prev.map(o => o.id === newOrder.id ? hydratedOrder : o));
+      }
+    }
 
     if (needsInsert) {
       // Retry — RLS visibility for newly-assigned driver can lag a moment.
@@ -239,6 +265,10 @@ export function useOrdersQuery(options: UseOrdersQueryOptions = {}) {
   }, [showNotification]);
 
   const handleOrderDelete = useCallback((deletedOrder: DbOrder) => {
+    if (!['delivered', 'cancelled'].includes(deletedOrder.status)) {
+      fetchOrders(true);
+      return;
+    }
     setOrders(prev => prev.filter(o => o.id !== deletedOrder.id));
   }, []);
 

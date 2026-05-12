@@ -75,6 +75,7 @@ export default function TakeawayDashboard() {
   const [showCompletedOrders, setShowCompletedOrders] = useState(false);
   const [showCancelledOrders, setShowCancelledOrders] = useState(false);
   const [editingOrder, setEditingOrder] = useState<OrderWithItems | null>(null);
+  const [isSubmittingOrder, setIsSubmittingOrder] = useState(false);
 
   const sensors = useSensors(
     useSensor(PointerSensor, {
@@ -113,6 +114,8 @@ export default function TakeawayDashboard() {
     : [...filteredItems].sort((a, b) => (a.display_order || 0) - (b.display_order || 0));
 
   const submitOrder = async () => {
+    if (isSubmittingOrder) return;
+
     if (cart.length === 0) {
       toast.error('السلة فارغة');
       return;
@@ -128,10 +131,13 @@ export default function TakeawayDashboard() {
 
     const isEditing = !!editingOrder;
     const editingId = editingOrder?.id;
+    const snapshot = {
+      cart: [...cart],
+      orderNotes,
+      editingOrder,
+    };
 
-    clearCart();
-    setOrderNotes('');
-    if (isEditing) setEditingOrder(null);
+    setIsSubmittingOrder(true);
 
     toast.info(isEditing ? 'جاري حفظ التعديلات...' : 'جاري رفع الطلب...', { duration: 1500 });
 
@@ -144,7 +150,16 @@ export default function TakeawayDashboard() {
           notes: orderNotes || undefined,
           items,
         });
-        if (result) toast.success('تم حفظ التعديلات بنجاح');
+        if (result) {
+          clearCart();
+          setOrderNotes('');
+          setEditingOrder(null);
+          toast.success('تم حفظ التعديلات بنجاح');
+        } else {
+          setCartItems(snapshot.cart);
+          setOrderNotes(snapshot.orderNotes);
+          setEditingOrder(snapshot.editingOrder);
+        }
       } else {
         const result = await addOrder({
           customer_name: 'زبون سفري',
@@ -155,11 +170,25 @@ export default function TakeawayDashboard() {
           cashier_name: role ? ROLE_LABELS[role] : 'سفري',
           items,
         });
-        if (result) toast.success('تم رفع الطلب بنجاح');
+        if (result) {
+          clearCart();
+          setOrderNotes('');
+          setEditingOrder(null);
+          toast.success('تم رفع الطلب بنجاح');
+        } else {
+          setCartItems(snapshot.cart);
+          setOrderNotes(snapshot.orderNotes);
+          setEditingOrder(snapshot.editingOrder);
+        }
       }
     } catch (error) {
       console.error('Order submit error:', error);
+      setCartItems(snapshot.cart);
+      setOrderNotes(snapshot.orderNotes);
+      setEditingOrder(snapshot.editingOrder);
       toast.error('حدث خطأ');
+    } finally {
+      setIsSubmittingOrder(false);
     }
   };
 
@@ -275,6 +304,7 @@ export default function TakeawayDashboard() {
               onRemoveItem={removeFromCart}
               onClear={editingOrder ? cancelEdit : () => { clearCart(); setOrderNotes(''); }}
               onSubmit={submitOrder}
+              isSubmitting={isSubmittingOrder}
               title={editingOrder ? `تعديل الطلب #${toEnglishNumbers(editingOrder.order_number)}` : 'طلب سفري'}
               variant="warning"
             />
