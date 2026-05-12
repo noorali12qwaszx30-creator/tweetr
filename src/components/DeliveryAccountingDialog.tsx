@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
@@ -32,18 +32,55 @@ export function DeliveryAccountingDialog({ orders, onOrdersUpdated }: DeliveryAc
   const [open, setOpen] = useState(false);
   const [resettingDriver, setResettingDriver] = useState<string | null>(null);
   const { drivers, loading } = useDeliveryDrivers();
+  const [archivedOrders, setArchivedOrders] = useState<OrderWithItems[]>([]);
+
+  // Include archived (post daily-reset) orders so the Field totals match
+  // what each driver sees in their stats (which also include archived).
+  useEffect(() => {
+    if (!open) return;
+    let cancelled = false;
+    (async () => {
+      const { data, error } = await supabase
+        .from('orders')
+        .select('*, order_items (*)')
+        .eq('is_archived', true)
+        .not('delivery_person_id', 'is', null)
+        .limit(5000);
+      if (error) {
+        console.error('Error fetching archived orders for accounting:', error);
+        return;
+      }
+      if (cancelled) return;
+      const mapped = (data || []).map((o: any) => ({
+        ...o,
+        items: (o.order_items || []),
+      })) as OrderWithItems[];
+      setArchivedOrders(mapped);
+    })();
+    return () => { cancelled = true; };
+  }, [open]);
+
+  // Merge live + archived, deduped by id
+  const allOrders = useMemo(() => {
+    const seen = new Set<string>();
+    return [...orders, ...archivedOrders].filter(o => {
+      if (seen.has(o.id)) return false;
+      seen.add(o.id);
+      return true;
+    });
+  }, [orders, archivedOrders]);
 
   const driverAccounting = useMemo(() => {
     const accounting: DriverAccounting[] = [];
 
     drivers.forEach(driver => {
-      const deliveredOrders = orders.filter(
+      const deliveredOrders = allOrders.filter(
         order => order.delivery_person_id === driver.user_id && order.status === 'delivered'
       );
-      const deliveringOrders = orders.filter(
+      const deliveringOrders = allOrders.filter(
         order => order.delivery_person_id === driver.user_id && order.status === 'delivering'
       );
-      const cancelledOrders = orders.filter(
+      const cancelledOrders = allOrders.filter(
         order => order.delivery_person_id === driver.user_id && order.status === 'cancelled'
       );
 
@@ -73,7 +110,7 @@ export function DeliveryAccountingDialog({ orders, onOrdersUpdated }: DeliveryAc
     });
 
     return accounting.sort((a, b) => b.totalAmount - a.totalAmount);
-  }, [drivers, orders]);
+  }, [drivers, allOrders]);
 
   const handleResetAccount = async (driverId: string, driverUserId: string) => {
     setResettingDriver(driverId);
@@ -88,6 +125,8 @@ export function DeliveryAccountingDialog({ orders, onOrdersUpdated }: DeliveryAc
 
       toast.success('تم تصفير حساب الموظف بنجاح');
       onOrdersUpdated?.();
+      // Refresh archived list too
+      setArchivedOrders(prev => prev.filter(o => o.delivery_person_id !== driverUserId));
     } catch (error) {
       console.error('Error resetting driver account:', error);
       toast.error('حدث خطأ أثناء تصفير الحساب');
