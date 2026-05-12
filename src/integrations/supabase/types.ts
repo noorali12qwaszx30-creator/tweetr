@@ -1050,7 +1050,15 @@ export type Database = {
           order_id?: string
           quantity?: number
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "order_items_history_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "orders_history"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       orders: {
         Row: {
