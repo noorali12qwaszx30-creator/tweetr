@@ -112,45 +112,58 @@ serve(async (req) => {
     const validatedItems: OrderItem[] = [];
 
     if (menuItemIds.length > 0) {
-      const { data: menuItems, error: menuError } = await supabaseAdmin
-        .from('menu_items')
-        .select('id, name, price, is_available')
-        .in('id', menuItemIds);
-
-      if (menuError) {
-        console.error('Error fetching menu items:', menuError);
-        return new Response(
-          JSON.stringify({ error: 'خطأ في جلب بيانات القائمة' }),
-          { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-        );
+      // Retry transient backend errors (up to 3 attempts) before giving up
+      let menuItems: Array<{ id: string; name: string; price: number; is_available: boolean }> | null = null;
+      let menuError: any = null;
+      for (let attempt = 0; attempt < 3; attempt++) {
+        const res = await supabaseAdmin
+          .from('menu_items')
+          .select('id, name, price, is_available')
+          .in('id', menuItemIds);
+        menuItems = res.data as any;
+        menuError = res.error;
+        if (!menuError) break;
+        console.warn(`menu_items fetch attempt ${attempt + 1} failed:`, menuError);
+        await new Promise((r) => setTimeout(r, 200 * (attempt + 1)));
       }
 
-      const menuItemMap = new Map(menuItems?.map(m => [m.id, m]) || []);
+      const menuItemMap = new Map((menuItems || []).map((m) => [m.id, m]));
+      // If fetch failed entirely, fall back to client-provided values (still bounded by price validation below)
+      const fallbackToClient = !!menuError && menuItemMap.size === 0;
+      if (fallbackToClient) {
+        console.error('menu_items fetch failed after retries, falling back to client values:', menuError);
+      }
 
       for (const item of orderData.items) {
         if (item.menu_item_id) {
           const menuItem = menuItemMap.get(item.menu_item_id);
 
-          if (!menuItem) {
+          if (!menuItem && !fallbackToClient) {
             return new Response(
               JSON.stringify({ error: 'عنصر القائمة غير موجود: ' + item.menu_item_name }),
               { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
             );
           }
 
-          if (!menuItem.is_available) {
+          if (menuItem && !menuItem.is_available) {
             return new Response(
               JSON.stringify({ error: 'العنصر غير متوفر حالياً: ' + menuItem.name }),
               { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
             );
           }
 
-          const serverPrice = Number(menuItem.price);
+          const serverPrice = menuItem ? Number(menuItem.price) : Number(item.menu_item_price);
+          if (isNaN(serverPrice) || serverPrice < 0 || serverPrice > 1000000) {
+            return new Response(
+              JSON.stringify({ error: 'سعر غير صالح للعنصر' }),
+              { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+            );
+          }
           serverCalculatedTotal += serverPrice * item.quantity;
 
           validatedItems.push({
             menu_item_id: item.menu_item_id,
-            menu_item_name: menuItem.name,
+            menu_item_name: menuItem ? menuItem.name : sanitizeText(item.menu_item_name, 200),
             menu_item_price: serverPrice,
             quantity: item.quantity,
             notes: item.notes ? sanitizeText(item.notes, 500) : undefined,
