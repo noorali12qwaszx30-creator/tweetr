@@ -125,14 +125,24 @@ export function useOrdersQuery(options: UseOrdersQueryOptions = {}) {
       showNotification(`insert-${newOrder.id}`, 'success', 'طلب جديد!', 'newOrder');
     }
 
-    const { data: itemsData } = await supabase
-      .from('order_items')
-      .select('*')
-      .eq('order_id', newOrder.id);
+    // Retry items fetch — items are inserted right after the order, so the
+    // first read can race the insert on the writer side.
+    let itemsData: DbOrderItem[] = [];
+    for (let attempt = 0; attempt < 4; attempt++) {
+      const { data } = await supabase
+        .from('order_items')
+        .select('*')
+        .eq('order_id', newOrder.id);
+      if (data && data.length > 0) {
+        itemsData = data as DbOrderItem[];
+        break;
+      }
+      await new Promise((r) => setTimeout(r, 250 * (attempt + 1)));
+    }
 
     const orderWithItems: OrderWithItems = {
       ...newOrder,
-      items: (itemsData || []) as DbOrderItem[],
+      items: itemsData,
     };
 
     setOrders(prev => {
@@ -157,13 +167,29 @@ export function useOrdersQuery(options: UseOrdersQueryOptions = {}) {
     });
 
     if (needsInsert) {
-      const { data: itemsData } = await supabase
-        .from('order_items')
-        .select('*')
-        .eq('order_id', newOrder.id);
+      // Retry — RLS visibility for newly-assigned driver can lag a moment.
+      let itemsData: DbOrderItem[] = [];
+      let freshOrder: DbOrder = newOrder;
+      for (let attempt = 0; attempt < 4; attempt++) {
+        const { data: full } = await supabase
+          .from('orders')
+          .select('*, order_items (*)')
+          .eq('id', newOrder.id)
+          .maybeSingle();
+        const items = ((full as any)?.order_items || []) as DbOrderItem[];
+        if (items.length > 0) {
+          itemsData = items;
+          if (full) {
+            const { order_items: _oi, ...rest } = full as any;
+            freshOrder = { ...newOrder, ...rest } as DbOrder;
+          }
+          break;
+        }
+        await new Promise((r) => setTimeout(r, 250 * (attempt + 1)));
+      }
       const orderWithItems: OrderWithItems = {
-        ...newOrder,
-        items: (itemsData || []) as DbOrderItem[],
+        ...freshOrder,
+        items: itemsData,
       };
       setOrders(prev => {
         if (prev.some(o => o.id === newOrder.id)) {
