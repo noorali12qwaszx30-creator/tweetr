@@ -49,7 +49,10 @@ type TabType = 'menu' | 'tracking' | 'stats' | 'settings';
 export default function TakeawayDashboard() {
   const { role } = useRole();
   const { user } = useAuth();
-  const { orders, addOrder, updateOrder, updateOrderStatus, cancelOrder, loading, realtimeConnected } = useSupabaseOrders({ orderTypeFilter: 'takeaway' });
+  const { orders, addOrder, updateOrder, updateOrderStatus, cancelOrder, loading, realtimeConnected } = useSupabaseOrders({
+    orderTypeFilter: 'takeaway',
+    typeIn: ['takeaway', 'pickup'],
+  });
   const { menuItems, categories, loading: menuLoading, updateDisplayOrder } = useMenuItems();
   const { items: topSellingItems } = useTopSellingItems(20);
   const { 
