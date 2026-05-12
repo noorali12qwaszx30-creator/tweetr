@@ -1019,6 +1019,39 @@ export type Database = {
           },
         ]
       }
+      order_items_history: {
+        Row: {
+          created_at: string
+          id: string
+          menu_item_id: string | null
+          menu_item_name: string
+          menu_item_price: number
+          notes: string | null
+          order_id: string
+          quantity: number
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          menu_item_id?: string | null
+          menu_item_name: string
+          menu_item_price: number
+          notes?: string | null
+          order_id: string
+          quantity?: number
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          menu_item_id?: string | null
+          menu_item_name?: string
+          menu_item_price?: number
+          notes?: string | null
+          order_id?: string
+          quantity?: number
+        }
+        Relationships: []
+      }
       orders: {
         Row: {
           cancellation_reason: string | null
@@ -1132,6 +1165,105 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      orders_history: {
+        Row: {
+          cancellation_reason: string | null
+          cancelled_at: string | null
+          cashier_id: string | null
+          cashier_name: string | null
+          created_at: string
+          customer_address: string | null
+          customer_id: string | null
+          customer_name: string
+          customer_phone: string
+          delivered_at: string | null
+          delivery_area_id: string | null
+          delivery_fee: number
+          delivery_person_id: string | null
+          delivery_person_name: string | null
+          edited_at: string | null
+          has_issue: boolean | null
+          id: string
+          is_archived: boolean
+          is_edited: boolean | null
+          issue_reason: string | null
+          issue_reported_at: string | null
+          issue_reported_by: string | null
+          notes: string | null
+          order_number: number
+          order_source: string | null
+          pending_delivery_acceptance: boolean | null
+          status: Database["public"]["Enums"]["order_status"]
+          total_price: number
+          type: Database["public"]["Enums"]["order_type"]
+          updated_at: string
+        }
+        Insert: {
+          cancellation_reason?: string | null
+          cancelled_at?: string | null
+          cashier_id?: string | null
+          cashier_name?: string | null
+          created_at?: string
+          customer_address?: string | null
+          customer_id?: string | null
+          customer_name: string
+          customer_phone: string
+          delivered_at?: string | null
+          delivery_area_id?: string | null
+          delivery_fee?: number
+          delivery_person_id?: string | null
+          delivery_person_name?: string | null
+          edited_at?: string | null
+          has_issue?: boolean | null
+          id?: string
+          is_archived?: boolean
+          is_edited?: boolean | null
+          issue_reason?: string | null
+          issue_reported_at?: string | null
+          issue_reported_by?: string | null
+          notes?: string | null
+          order_number?: number
+          order_source?: string | null
+          pending_delivery_acceptance?: boolean | null
+          status?: Database["public"]["Enums"]["order_status"]
+          total_price?: number
+          type?: Database["public"]["Enums"]["order_type"]
+          updated_at?: string
+        }
+        Update: {
+          cancellation_reason?: string | null
+          cancelled_at?: string | null
+          cashier_id?: string | null
+          cashier_name?: string | null
+          created_at?: string
+          customer_address?: string | null
+          customer_id?: string | null
+          customer_name?: string
+          customer_phone?: string
+          delivered_at?: string | null
+          delivery_area_id?: string | null
+          delivery_fee?: number
+          delivery_person_id?: string | null
+          delivery_person_name?: string | null
+          edited_at?: string | null
+          has_issue?: boolean | null
+          id?: string
+          is_archived?: boolean
+          is_edited?: boolean | null
+          issue_reason?: string | null
+          issue_reported_at?: string | null
+          issue_reported_by?: string | null
+          notes?: string | null
+          order_number?: number
+          order_source?: string | null
+          pending_delivery_acceptance?: boolean | null
+          status?: Database["public"]["Enums"]["order_status"]
+          total_price?: number
+          type?: Database["public"]["Enums"]["order_type"]
+          updated_at?: string
+        }
+        Relationships: []
       }
       profiles: {
         Row: {
@@ -1271,7 +1403,16 @@ export type Database = {
     }
     Functions: {
       admin_trigger_daily_reset: { Args: never; Returns: Json }
+      archive_old_completed_orders: { Args: never; Returns: Json }
       daily_reset_orders: { Args: never; Returns: Json }
+      get_admin_stats_range: {
+        Args: { _from: string; _to: string }
+        Returns: Json
+      }
+      get_driver_accounting: {
+        Args: { _driver_id: string; _from?: string; _to?: string }
+        Returns: Json
+      }
       get_driver_total_points: { Args: { _user_id: string }; Returns: number }
       get_top_selling_items_today: {
         Args: { _limit?: number }
