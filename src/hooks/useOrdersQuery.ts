@@ -12,7 +12,7 @@ interface UseOrdersQueryOptions {
 
 const FALLBACK_POLLING_INTERVAL = 30000;
 const SILENT_REFRESH_INTERVAL = 8000;
-const ORDERS_QUERY_LIMIT = 300;
+const ORDERS_PAGE_SIZE = 1000;
 
 export function useOrdersQuery(options: UseOrdersQueryOptions = {}) {
   const { orderTypeFilter = 'all', deliveryPersonId } = options;
@@ -52,29 +52,40 @@ export function useOrdersQuery(options: UseOrdersQueryOptions = {}) {
     if (!silent) {
       setLoading((prev) => prev && true);
     }
-    let query = supabase
-      .from('orders')
-      .select(`*, order_items (*)`)
-      .eq('is_archived', false);
+    const allRows: any[] = [];
+    let from = 0;
 
-    if (deliveryPersonId) {
-      // Server-side scope: only this driver's orders + ready orders awaiting pickup
-      query = query.or(
-        `delivery_person_id.eq.${deliveryPersonId},and(status.eq.ready,pending_delivery_acceptance.eq.false,delivery_person_id.is.null)`
-      );
+    while (true) {
+      let query = supabase
+        .from('orders')
+        .select(`*, order_items (*)`)
+        .eq('is_archived', false);
+
+      if (deliveryPersonId) {
+        // Server-side scope: only this driver's orders + ready orders awaiting pickup
+        query = query.or(
+          `delivery_person_id.eq.${deliveryPersonId},and(status.eq.ready,pending_delivery_acceptance.eq.false,delivery_person_id.is.null)`
+        );
+      }
+
+      const { data, error } = await query
+        .order('created_at', { ascending: false })
+        .range(from, from + ORDERS_PAGE_SIZE - 1);
+
+      if (error) {
+        console.error('Error fetching orders:', error);
+        if (!silent) setLoading(false);
+        return;
+      }
+
+      const pageRows = data || [];
+      allRows.push(...pageRows);
+
+      if (pageRows.length < ORDERS_PAGE_SIZE) break;
+      from += ORDERS_PAGE_SIZE;
     }
 
-    const { data, error } = await query
-      .order('created_at', { ascending: false })
-      .limit(ORDERS_QUERY_LIMIT);
-
-    if (error) {
-      console.error('Error fetching orders:', error);
-      if (!silent) setLoading(false);
-      return;
-    }
-
-    const ordersWithItems: OrderWithItems[] = (data || []).map(order => ({
+    const ordersWithItems: OrderWithItems[] = allRows.map(order => ({
       ...order,
       items: (order.order_items || []) as DbOrderItem[],
     })) as OrderWithItems[];
