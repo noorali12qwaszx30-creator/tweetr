@@ -225,41 +225,14 @@ export default function CashierDashboard() {
       editingOrder,
     };
 
-    setIsSubmittingOrder(true);
     setConfirmDialogOpen(false);
 
-    toast.info(isEditing ? 'جاري حفظ التعديلات...' : 'جاري إرسال الطلب...', { duration: 1500 });
+    // Optimistic UX: clear the form immediately and process in the background
+    clearForm();
+    if (isEditing) setEditingOrder(null);
+    toast.success(isEditing ? 'تم حفظ التعديلات' : 'تم إرسال الطلب', { duration: 1200 });
 
-    try {
-      let result;
-      if (isEditing && editingOrderId) {
-        result = await updateOrder(editingOrderId, orderData);
-      } else {
-        result = await addOrder({
-          ...orderData,
-          type: orderType,
-          cashier_name: roleName,
-        });
-      }
-
-      if (result) {
-        clearForm();
-        if (isEditing) setEditingOrder(null);
-        toast.success(isEditing ? 'تم حفظ التعديلات بنجاح' : 'تم إرسال الطلب بنجاح');
-      } else {
-        setCustomerName(snapshot.customerName);
-        setCustomerPhone(snapshot.customerPhone);
-        setCustomerAddress(snapshot.customerAddress);
-        setSelectedAreaId(snapshot.selectedAreaId);
-        setOrderNotes(snapshot.orderNotes);
-        setOrderSource(snapshot.orderSource);
-        setOrderType(snapshot.orderType);
-        setCartItems(snapshot.cart);
-        setEditingOrder(snapshot.editingOrder);
-        toast.error('حدث خطأ أثناء إرسال الطلب');
-      }
-    } catch (error) {
-      console.error('Order submission error:', error);
+    const restoreSnapshot = () => {
       setCustomerName(snapshot.customerName);
       setCustomerPhone(snapshot.customerPhone);
       setCustomerAddress(snapshot.customerAddress);
@@ -269,10 +242,33 @@ export default function CashierDashboard() {
       setOrderType(snapshot.orderType);
       setCartItems(snapshot.cart);
       setEditingOrder(snapshot.editingOrder);
-      toast.error('حدث خطأ في الاتصال');
-    } finally {
-      setIsSubmittingOrder(false);
-    }
+    };
+
+    (async () => {
+      try {
+        let result;
+        if (isEditing && editingOrderId) {
+          result = await updateOrder(editingOrderId, orderData);
+        } else {
+          result = await addOrder({
+            ...orderData,
+            type: orderType,
+            cashier_name: roleName,
+          });
+        }
+
+        if (!result) {
+          toast.error('فشل إرسال الطلب، تم استرجاع البيانات', {
+            action: { label: 'حسناً', onClick: () => {} },
+          });
+          restoreSnapshot();
+        }
+      } catch (error) {
+        console.error('Order submission error:', error);
+        toast.error('خطأ في الاتصال، تم استرجاع البيانات');
+        restoreSnapshot();
+      }
+    })();
   };
 
   const handleEditOrder = (order: OrderWithItems) => {
