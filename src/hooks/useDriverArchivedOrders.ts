@@ -16,7 +16,7 @@ export function useDriverArchivedOrders(driverId: string | undefined) {
     }
     const { data, error } = await supabase
       .from('orders_history')
-      .select('*, order_items (*)')
+      .select('*, order_items_history (*)')
       .eq('delivery_person_id', driverId)
       .order('delivered_at', { ascending: false })
       .limit(2000);
@@ -29,7 +29,7 @@ export function useDriverArchivedOrders(driverId: string | undefined) {
 
     const mapped: OrderWithItems[] = (data || []).map((o: any) => ({
       ...o,
-      items: (o.order_items || []) as DbOrderItem[],
+      items: (o.order_items_history || []) as DbOrderItem[],
     })) as OrderWithItems[];
     setArchivedOrders(mapped);
     setLoading(false);
