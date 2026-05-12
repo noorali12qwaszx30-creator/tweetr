@@ -13,7 +13,9 @@ import { Capacitor } from '@capacitor/core';
 import { KeepAwake } from '@capacitor-community/keep-awake';
 
 export default function KitchenDashboard() {
-  const { orders, loading, realtimeConnected, refetch } = useSupabaseOrders();
+  const { orders, loading, realtimeConnected, refetch } = useSupabaseOrders({
+    statusIn: ['pending', 'preparing', 'ready'],
+  });
   const { audioUnlocked, unlockAudio, speak } = useArabicSpeech();
 
   // Arabic voice announcements - always on (no toggle)
