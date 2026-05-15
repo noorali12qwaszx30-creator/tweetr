@@ -177,11 +177,11 @@ export function DriverStatsTab({
       {/* Today's KPIs */}
       <div>
         <h3 className="text-xs font-bold text-muted-foreground mb-2 px-1">اليوم</h3>
-        <div className="grid grid-cols-2 gap-2 sm:gap-3 auto-rows-fr">
-          <div className="bg-card border border-success/30 rounded-2xl p-3 shadow-soft min-h-[120px] flex flex-col justify-between">
+        <div className="grid grid-cols-2 gap-2 sm:gap-3">
+          <div className="bg-emerald-50 dark:bg-emerald-950/30 border-2 border-emerald-500/40 rounded-2xl p-3 shadow-soft min-h-[120px] flex flex-col justify-between">
             <div className="flex items-center justify-between mb-1">
-              <div className="w-8 h-8 rounded-lg bg-success/15 flex items-center justify-center">
-                <CheckCircle2 className="w-4 h-4 text-success" />
+              <div className="w-8 h-8 rounded-lg bg-emerald-500/20 flex items-center justify-center">
+                <CheckCircle2 className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
               </div>
               <span className={`text-[10px] font-bold flex items-center gap-0.5 ${ordersComp.color}`}>
                 {ordersComp.icon} {ordersComp.label}
@@ -189,14 +189,14 @@ export function DriverStatsTab({
             </div>
             <div>
               <p className="text-xs text-muted-foreground">طلبات اليوم</p>
-              <p className="text-2xl font-bold text-success leading-tight">{toEnglishNumbers(stats.todayDelivered.length)}</p>
+              <p className="text-2xl font-bold text-emerald-600 dark:text-emerald-400 leading-tight">{toEnglishNumbers(stats.todayDelivered.length)}</p>
               <p className="text-[10px] text-muted-foreground mt-0.5">أمس: {toEnglishNumbers(stats.yesterdayDelivered.length)}</p>
             </div>
           </div>
 
-          <div className="bg-card border border-primary/30 rounded-2xl p-3 shadow-soft min-h-[120px] flex flex-col justify-between">
+          <div className="bg-orange-50 dark:bg-orange-950/30 border-2 border-primary/40 rounded-2xl p-3 shadow-soft min-h-[120px] flex flex-col justify-between">
             <div className="flex items-center justify-between mb-1">
-              <div className="w-8 h-8 rounded-lg bg-primary/15 flex items-center justify-center">
+              <div className="w-8 h-8 rounded-lg bg-primary/20 flex items-center justify-center">
                 <DollarSign className="w-4 h-4 text-primary" />
               </div>
               <span className={`text-[10px] font-bold flex items-center gap-0.5 ${earningsComp.color}`}>
@@ -210,10 +210,10 @@ export function DriverStatsTab({
             </div>
           </div>
 
-          <div className="bg-card border border-info/30 rounded-2xl p-3 shadow-soft min-h-[120px] flex flex-col justify-between">
+          <div className="bg-sky-50 dark:bg-sky-950/30 border-2 border-sky-500/40 rounded-2xl p-3 shadow-soft min-h-[120px] flex flex-col justify-between">
             <div className="flex items-center justify-between mb-1">
-              <div className="w-8 h-8 rounded-lg bg-info/15 flex items-center justify-center">
-                <Clock className="w-4 h-4 text-info" />
+              <div className="w-8 h-8 rounded-lg bg-sky-500/20 flex items-center justify-center">
+                <Clock className="w-4 h-4 text-sky-600 dark:text-sky-400" />
               </div>
               <span className={`text-[10px] font-bold flex items-center gap-0.5 ${timeComp.color}`}>
                 {timeComp.icon} {timeComp.label}
@@ -221,23 +221,23 @@ export function DriverStatsTab({
             </div>
             <div>
               <p className="text-xs text-muted-foreground">متوسط وقت التوصيل</p>
-              <p className="text-2xl font-bold text-info leading-tight">{toEnglishNumbers(stats.todayAvgTime)} <span className="text-sm">د</span></p>
+              <p className="text-2xl font-bold text-sky-600 dark:text-sky-400 leading-tight">{toEnglishNumbers(stats.todayAvgTime)} <span className="text-sm">د</span></p>
               <p className="text-[10px] text-muted-foreground mt-0.5">أمس: {toEnglishNumbers(stats.yesterdayAvgTime)} د</p>
             </div>
           </div>
 
-          <div className="bg-card border border-warning/30 rounded-2xl p-3 shadow-soft min-h-[120px] flex flex-col justify-between">
+          <div className="bg-amber-50 dark:bg-amber-950/30 border-2 border-amber-500/40 rounded-2xl p-3 shadow-soft min-h-[120px] flex flex-col justify-between">
             <div className="flex items-center justify-between mb-1">
-              <div className="w-8 h-8 rounded-lg bg-warning/15 flex items-center justify-center">
-                <Target className="w-4 h-4 text-warning" />
+              <div className="w-8 h-8 rounded-lg bg-amber-500/20 flex items-center justify-center">
+                <Target className="w-4 h-4 text-amber-600 dark:text-amber-400" />
               </div>
-              <span className={`text-[10px] font-bold ${stats.successRate >= 90 ? 'text-success' : stats.successRate >= 70 ? 'text-warning' : 'text-destructive'}`}>
+              <span className={`text-[10px] font-bold ${stats.successRate >= 90 ? 'text-emerald-600 dark:text-emerald-400' : stats.successRate >= 70 ? 'text-amber-600 dark:text-amber-400' : 'text-destructive'}`}>
                 {toEnglishNumbers(stats.successRate)}%
               </span>
             </div>
             <div>
               <p className="text-xs text-muted-foreground">نسبة النجاح</p>
-              <p className="text-2xl font-bold text-warning leading-tight">{toEnglishNumbers(stats.successRate)}<span className="text-sm">%</span></p>
+              <p className="text-2xl font-bold text-amber-600 dark:text-amber-400 leading-tight">{toEnglishNumbers(stats.successRate)}<span className="text-sm">%</span></p>
               <p className="text-[10px] text-muted-foreground mt-0.5">إلغاءات: {toEnglishNumbers(stats.todayCancelled.length)}</p>
             </div>
           </div>
