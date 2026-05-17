@@ -10,7 +10,6 @@ import { IssueReasonsProvider } from "@/contexts/IssueReasonsContext";
 import { ActivityLogProvider } from "@/contexts/ActivityLogContext";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
 import { NotificationsBlockOverlay } from "@/components/NotificationsBlockOverlay";
-import { GpsBlockOverlay } from "@/components/GpsBlockOverlay";
 import { OfflineOverlay } from "@/components/OfflineOverlay";
 import { ForceUpdateOverlay } from "@/components/ForceUpdateOverlay";
 import RoleSelector from "./pages/RoleSelector";
@@ -20,7 +19,6 @@ import { ChatBubble } from "@/components/chat/ChatBubble";
 import { useVersionCheck } from "@/hooks/useVersionCheck";
 import { useForceUpdateChecker } from "@/hooks/useForceUpdateCheck";
 import { usePushNotifications } from "@/hooks/usePushNotifications";
-import { useDriverLocationTrackerBridge } from "@/hooks/useDriverLocationTracker";
 import { useEffect } from "react";
 import { Capacitor } from "@capacitor/core";
 import { LocalNotifications } from "@capacitor/local-notifications";
@@ -63,7 +61,6 @@ const AppContent = () => {
                 <TooltipProvider>
                   <ErrorBoundary fallbackTitle="حدث خطأ في التطبيق">
                     <PushNotificationsBridge />
-                    <DriverLocationBridge />
                     <Toaster />
                     <Sonner />
                     <Routes>
@@ -72,7 +69,6 @@ const AppContent = () => {
                       <Route path="*" element={<NotFound />} />
                     </Routes>
                     <NotificationsBlockOverlay />
-                    <GpsBlockOverlay />
                     <OfflineOverlay />
                     <ForceUpdateOverlay />
                     <ChatBubble />
@@ -89,11 +85,6 @@ const AppContent = () => {
 
 const PushNotificationsBridge = () => {
   usePushNotifications();
-  return null;
-};
-
-const DriverLocationBridge = () => {
-  useDriverLocationTrackerBridge();
   return null;
 };
 
