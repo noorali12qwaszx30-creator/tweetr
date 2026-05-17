@@ -26,7 +26,7 @@ import {
   Archive,
 } from 'lucide-react';
 
-type TabType = 'orders' | 'ready' | 'delivering' | 'map' | 'history' | 'admin';
+type TabType = 'orders' | 'ready' | 'delivering' | 'history' | 'admin';
 
 export default function FieldDashboard() {
   const { role } = useRole();
@@ -97,7 +97,6 @@ export default function FieldDashboard() {
     { id: 'orders', label: 'الطلبات', icon: <ClipboardList className="w-5 h-5" />, count: incomingOrders.length, isPrimary: true },
     { id: 'ready', label: 'الجاهز', icon: <CheckCircle className="w-5 h-5" />, count: readyOrders.length },
     { id: 'delivering', label: 'قيد التوصيل', icon: <Truck className="w-5 h-5" />, count: deliveringOrders.length },
-    { id: 'map', label: 'الخريطة', icon: <MapIcon className="w-5 h-5" /> },
     { id: 'history', label: 'السجل', icon: <Archive className="w-5 h-5" />, count: deliveredOrders.length + cancelledOrders.length },
     { id: 'admin', label: 'الإدارة', icon: <Settings className="w-5 h-5" /> },
   ];
