@@ -13,7 +13,6 @@ import { BottomNavigation } from '@/components/shared/BottomNavigation';
 import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
 import { ROLE_LABELS } from '@/types';
-import { FieldDriversMap } from '@/components/field/FieldDriversMap';
 import {
   Users,
   ClipboardList,
@@ -25,7 +24,6 @@ import {
   Loader2,
   HandMetal,
   Archive,
-  Map as MapIcon
 } from 'lucide-react';
 
 type TabType = 'orders' | 'ready' | 'delivering' | 'map' | 'history' | 'admin';
