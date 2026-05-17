@@ -260,16 +260,6 @@ export default function FieldDashboard() {
            </div>
          )}
 
-         {activeTab === 'map' && (
-           <div className="space-y-4">
-             <h2 className="text-xl font-bold flex items-center gap-2">
-               <MapIcon className="w-5 h-5 text-primary" />
-               خريطة السائقين المباشرة
-             </h2>
-             <FieldDriversMap />
-           </div>
-         )}
-
          {activeTab === 'history' && (
            <div className="space-y-6">
              <div className="space-y-3">
