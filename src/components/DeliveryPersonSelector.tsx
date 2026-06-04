@@ -36,15 +36,15 @@ export function DeliveryPersonSelector({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-md max-h-[80vh] overflow-y-auto">
-        <DialogHeader>
+      <DialogContent className="sm:max-w-md max-h-[85vh] flex flex-col p-0 gap-0">
+        <DialogHeader className="p-4 pb-3 border-b border-border shrink-0">
           <DialogTitle className="flex items-center gap-2">
             <Truck className="w-5 h-5 text-primary" />
             اختيار دلفري للطلب <span className="text-primary px-1.5 py-0.5 border border-primary/30 rounded bg-primary/5 font-bold">{orderNumber}</span>
           </DialogTitle>
         </DialogHeader>
-        
-        <div className="space-y-2 py-4">
+
+        <div className="flex-1 overflow-y-auto px-4 py-3 space-y-2 min-h-0">
           {loading ? (
             <div className="flex items-center justify-center py-8">
               <Loader2 className="w-6 h-6 animate-spin text-primary" />
@@ -59,7 +59,14 @@ export function DeliveryPersonSelector({
             drivers.map((driver) => (
               <button
                 key={driver.user_id}
-                onClick={() => setSelectedId(driver.user_id)}
+                onClick={() => {
+                  const driver2 = drivers.find(d => d.user_id === driver.user_id);
+                  if (driver2) {
+                    onSelect(driver2.user_id, driver2.full_name);
+                    onOpenChange(false);
+                    setSelectedId(null);
+                  }
+                }}
                 className={`
                   w-full flex items-center gap-3 p-3 rounded-lg border-2 transition-all
                   ${selectedId === driver.user_id 
@@ -85,20 +92,13 @@ export function DeliveryPersonSelector({
           )}
         </div>
 
-        <div className="flex gap-2">
+        <div className="p-3 border-t border-border shrink-0 bg-background">
           <Button
             variant="outline"
-            className="flex-1"
+            className="w-full"
             onClick={() => onOpenChange(false)}
           >
             إلغاء
-          </Button>
-          <Button
-            className="flex-1"
-            onClick={handleConfirm}
-            disabled={!selectedId || drivers.length === 0}
-          >
-            تعيين موظف التوصيل
           </Button>
         </div>
       </DialogContent>
