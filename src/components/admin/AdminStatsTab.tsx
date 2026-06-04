@@ -66,9 +66,9 @@ export function AdminStatsTab({ orders }: AdminStatsTabProps) {
           </div>
 
           <div className="bg-card border border-border rounded-xl p-4 shadow-soft">
-            <h3 className="font-bold mb-3 text-success">الأكثر مبيعاً</h3>
+            <h3 className="font-bold mb-3 text-success">جميع المنتجات ({toEnglishNumbers(sortedItems.length)})</h3>
             <div className="space-y-2">
-              {sortedItems.slice(0, 5).map(([name, stats], idx) => (
+              {sortedItems.map(([name, stats], idx) => (
                 <div key={name} className="flex items-center justify-between p-2 bg-muted/50 rounded-lg">
                   <div className="flex items-center gap-2">
                     <span className="w-6 h-6 flex items-center justify-center bg-success/10 text-success rounded font-bold text-xs">
@@ -82,26 +82,9 @@ export function AdminStatsTab({ orders }: AdminStatsTabProps) {
                   </div>
                 </div>
               ))}
-            </div>
-          </div>
-
-          <div className="bg-card border border-border rounded-xl p-4 shadow-soft">
-            <h3 className="font-bold mb-3 text-destructive">الأقل مبيعاً</h3>
-            <div className="space-y-2">
-              {sortedItems.slice(-3).reverse().map(([name, stats], idx) => (
-                <div key={name} className="flex items-center justify-between p-2 bg-muted/50 rounded-lg">
-                  <div className="flex items-center gap-2">
-                    <span className="w-6 h-6 flex items-center justify-center bg-destructive/10 text-destructive rounded font-bold text-xs">
-                      {toEnglishNumbers(sortedItems.length - idx)}
-                    </span>
-                    <span className="font-medium text-sm">{name}</span>
-                  </div>
-                  <div className="text-left">
-                    <p className="text-sm font-bold">{toEnglishNumbers(stats.quantity)}</p>
-                    <p className="text-xs text-muted-foreground">{formatNumberWithCommas(stats.revenue)} د.ع</p>
-                  </div>
-                </div>
-              ))}
+              {sortedItems.length === 0 && (
+                <p className="text-center text-muted-foreground text-sm py-4">لا توجد مبيعات</p>
+              )}
             </div>
           </div>
         </TabsContent>
