@@ -6,7 +6,17 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
-import { Truck, User, Loader2 } from 'lucide-react';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
+import { Truck, User, Loader2, CheckCircle2 } from 'lucide-react';
 import { useDeliveryDrivers } from '@/hooks/useDeliveryDrivers';
 
 interface DeliveryPersonSelectorProps {
@@ -23,14 +33,13 @@ export function DeliveryPersonSelector({
   orderNumber,
 }: DeliveryPersonSelectorProps) {
   const { drivers, loading } = useDeliveryDrivers();
-  const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [pendingDriver, setPendingDriver] = useState<{ id: string; name: string } | null>(null);
 
   const handleConfirm = () => {
-    const driver = drivers.find(d => d.user_id === selectedId);
-    if (driver) {
-      onSelect(driver.user_id, driver.full_name);
+    if (pendingDriver) {
+      onSelect(pendingDriver.id, pendingDriver.name);
       onOpenChange(false);
-      setSelectedId(null);
+      setPendingDriver(null);
     }
   };
 
@@ -59,26 +68,10 @@ export function DeliveryPersonSelector({
             drivers.map((driver) => (
               <button
                 key={driver.user_id}
-                onClick={() => {
-                  const driver2 = drivers.find(d => d.user_id === driver.user_id);
-                  if (driver2) {
-                    onSelect(driver2.user_id, driver2.full_name);
-                    onOpenChange(false);
-                    setSelectedId(null);
-                  }
-                }}
-                className={`
-                  w-full flex items-center gap-3 p-3 rounded-lg border-2 transition-all
-                  ${selectedId === driver.user_id 
-                    ? 'border-primary bg-primary/10' 
-                    : 'border-border hover:border-primary/50'
-                  }
-                `}
+                onClick={() => setPendingDriver({ id: driver.user_id, name: driver.full_name })}
+                className="w-full flex items-center gap-3 p-3 rounded-lg border-2 border-border hover:border-primary/50 hover:bg-primary/5 transition-all"
               >
-                <div className={`
-                  w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0
-                  ${selectedId === driver.user_id ? 'bg-primary text-primary-foreground' : 'bg-muted'}
-                `}>
+                <div className="w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0 bg-muted">
                   <User className="w-5 h-5" />
                 </div>
                 <div className="text-right flex-1 min-w-0">
@@ -102,6 +95,27 @@ export function DeliveryPersonSelector({
           </Button>
         </div>
       </DialogContent>
+
+      <AlertDialog open={!!pendingDriver} onOpenChange={(o) => !o && setPendingDriver(null)}>
+        <AlertDialogContent className="sm:max-w-sm">
+          <AlertDialogHeader>
+            <AlertDialogTitle className="flex items-center gap-2">
+              <CheckCircle2 className="w-5 h-5 text-primary" />
+              تأكيد التعيين
+            </AlertDialogTitle>
+            <AlertDialogDescription className="text-base pt-2">
+              هل تريد تعيين <span className="font-bold text-foreground">{pendingDriver?.name}</span> لتوصيل الطلب{' '}
+              <span className="text-primary font-bold">{orderNumber}</span>؟
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter className="flex-row-reverse gap-2">
+            <AlertDialogAction onClick={handleConfirm} className="flex-1">
+              تأكيد
+            </AlertDialogAction>
+            <AlertDialogCancel className="flex-1 mt-0">إلغاء</AlertDialogCancel>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </Dialog>
   );
 }
