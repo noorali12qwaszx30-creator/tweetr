@@ -6,17 +6,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from '@/components/ui/alert-dialog';
-import { Truck, User, Loader2, CheckCircle2 } from 'lucide-react';
+import { Truck, User, Loader2, Check, X } from 'lucide-react';
 import { useDeliveryDrivers } from '@/hooks/useDeliveryDrivers';
 
 interface DeliveryPersonSelectorProps {
@@ -33,18 +23,21 @@ export function DeliveryPersonSelector({
   orderNumber,
 }: DeliveryPersonSelectorProps) {
   const { drivers, loading } = useDeliveryDrivers();
-  const [pendingDriver, setPendingDriver] = useState<{ id: string; name: string } | null>(null);
+  const [selectedId, setSelectedId] = useState<string | null>(null);
 
-  const handleConfirm = () => {
-    if (pendingDriver) {
-      onSelect(pendingDriver.id, pendingDriver.name);
-      onOpenChange(false);
-      setPendingDriver(null);
-    }
+  const handleClose = (open: boolean) => {
+    if (!open) setSelectedId(null);
+    onOpenChange(open);
+  };
+
+  const handleConfirm = (id: string, name: string) => {
+    onSelect(id, name);
+    setSelectedId(null);
+    onOpenChange(false);
   };
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
+    <Dialog open={open} onOpenChange={handleClose}>
       <DialogContent className="sm:max-w-md max-h-[85vh] flex flex-col p-0 gap-0">
         <DialogHeader className="p-4 pb-3 border-b border-border shrink-0">
           <DialogTitle className="flex items-center gap-2">
@@ -65,23 +58,52 @@ export function DeliveryPersonSelector({
               <p className="text-xs mt-1">يرجى إضافة دلفري من لوحة المدير</p>
             </div>
           ) : (
-            drivers.map((driver) => (
-              <button
-                key={driver.user_id}
-                onClick={() => setPendingDriver({ id: driver.user_id, name: driver.full_name })}
-                className="w-full flex items-center gap-3 p-3 rounded-lg border-2 border-border hover:border-primary/50 hover:bg-primary/5 transition-all"
-              >
-                <div className="w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0 bg-muted">
-                  <User className="w-5 h-5" />
-                </div>
-                <div className="text-right flex-1 min-w-0">
-                  <span className="font-medium text-foreground block truncate">{driver.full_name}</span>
-                  {driver.phone && (
-                    <span className="text-xs text-muted-foreground">{driver.phone}</span>
+            drivers.map((driver) => {
+              const isSelected = selectedId === driver.user_id;
+              return (
+                <div key={driver.user_id} className="space-y-2">
+                  <button
+                    onClick={() => setSelectedId(isSelected ? null : driver.user_id)}
+                    className={`w-full flex items-center gap-3 p-3 rounded-lg border-2 transition-all ${
+                      isSelected
+                        ? 'border-primary bg-primary/10'
+                        : 'border-border hover:border-primary/50 hover:bg-primary/5'
+                    }`}
+                  >
+                    <div className={`w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0 ${
+                      isSelected ? 'bg-primary text-primary-foreground' : 'bg-muted'
+                    }`}>
+                      <User className="w-5 h-5" />
+                    </div>
+                    <div className="text-right flex-1 min-w-0">
+                      <span className="font-medium text-foreground block truncate">{driver.full_name}</span>
+                      {driver.phone && (
+                        <span className="text-xs text-muted-foreground">{driver.phone}</span>
+                      )}
+                    </div>
+                  </button>
+                  {isSelected && (
+                    <div className="flex gap-2 animate-in fade-in slide-in-from-top-1 duration-200">
+                      <Button
+                        onClick={() => handleConfirm(driver.user_id, driver.full_name)}
+                        className="flex-1 gap-1"
+                      >
+                        <Check className="w-4 h-4" />
+                        تأكيد
+                      </Button>
+                      <Button
+                        variant="outline"
+                        onClick={() => setSelectedId(null)}
+                        className="flex-1 gap-1"
+                      >
+                        <X className="w-4 h-4" />
+                        إلغاء
+                      </Button>
+                    </div>
                   )}
                 </div>
-              </button>
-            ))
+              );
+            })
           )}
         </div>
 
@@ -89,33 +111,12 @@ export function DeliveryPersonSelector({
           <Button
             variant="outline"
             className="w-full"
-            onClick={() => onOpenChange(false)}
+            onClick={() => handleClose(false)}
           >
             إلغاء
           </Button>
         </div>
       </DialogContent>
-
-      <AlertDialog open={!!pendingDriver} onOpenChange={(o) => !o && setPendingDriver(null)}>
-        <AlertDialogContent className="sm:max-w-sm">
-          <AlertDialogHeader>
-            <AlertDialogTitle className="flex items-center gap-2">
-              <CheckCircle2 className="w-5 h-5 text-primary" />
-              تأكيد التعيين
-            </AlertDialogTitle>
-            <AlertDialogDescription className="text-base pt-2">
-              هل تريد تعيين <span className="font-bold text-foreground">{pendingDriver?.name}</span> لتوصيل الطلب{' '}
-              <span className="text-primary font-bold">{orderNumber}</span>؟
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter className="flex-row-reverse gap-2">
-            <AlertDialogAction onClick={handleConfirm} className="flex-1">
-              تأكيد
-            </AlertDialogAction>
-            <AlertDialogCancel className="flex-1 mt-0">إلغاء</AlertDialogCancel>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
     </Dialog>
   );
 }
