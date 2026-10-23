@@ -44,7 +44,7 @@ const AppContent = () => {
           sound: 'default',
           vibration: true,
           lights: true,
-          lightColor: '#F2602A',
+          lightColor: '#F35820',
         });
       } catch {
         // ignore
