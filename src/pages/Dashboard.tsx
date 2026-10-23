@@ -11,7 +11,7 @@ const KitchenDashboard = lazy(() => import('./dashboard/KitchenDashboard'));
 const AdminDashboard = lazy(() => import('./dashboard/AdminDashboard'));
 
 const DashboardFallback = () => (
-  <div className="h-dvh w-full flex items-center justify-center bg-background">
+  <div className="h-dvh w-full flex items-center justify-center">
     <Loader2 className="w-8 h-8 animate-spin text-primary" />
   </div>
 );

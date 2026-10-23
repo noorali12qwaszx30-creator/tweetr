@@ -43,8 +43,8 @@ export function BottomNavigation({ tabs, activeTab, onTabChange }: BottomNavigat
         onClick={() => handleTabChange(tab.id)}
         className={`relative flex flex-col items-center justify-center gap-0.5 py-1.5 px-1 flex-1 min-w-0 rounded-2xl mx-0.5 transition-all duration-300 ${
           isActive
-            ? 'bg-primary text-primary-foreground shadow-button'
-            : 'text-muted-foreground hover:text-primary/80 hover:bg-muted/50'
+            ? 'bg-gradient-to-br from-primary to-primary-glow text-primary-foreground shadow-button'
+            : 'text-muted-foreground hover:text-primary hover:bg-primary/10'
         }`}
         aria-label={tab.label}
         aria-current={isActive ? 'page' : undefined}
@@ -69,9 +69,9 @@ export function BottomNavigation({ tabs, activeTab, onTabChange }: BottomNavigat
   };
 
   return (
-    <nav className="relative z-50 shrink-0 pb-safe">
-      <div className="bg-card rounded-t-[1.5rem] shadow-floating border-t border-x border-border/40">
-        <div className="flex items-stretch h-[64px] px-1.5">
+    <nav className="relative z-50 shrink-0 px-2 pt-1 pb-2 pb-safe">
+      <div className="glass-panel rounded-[1.75rem]">
+        <div className="flex items-stretch h-[62px] px-1.5 py-1">
           {tabs.map(renderTab)}
         </div>
       </div>

@@ -60,9 +60,9 @@ const RoleButton = ({ role, index, mounted, onSelect, isCenter }: RoleButtonProp
   <button
     onClick={() => onSelect(role)}
     className={`
-      group relative bg-card border border-border/40 rounded-3xl p-4 sm:p-6 
+      group relative glass-card rounded-3xl p-4 sm:p-6 
       transition-all duration-500 active:scale-95 hover:scale-[1.03] hover:border-primary/30
-      shadow-card hover:shadow-elevated
+      hover:shadow-elevated
       focus:outline-none focus:ring-4 focus:ring-primary/20
       ${isCenter ? 'w-full max-w-xs' : ''}
       ${mounted ? 'opacity-100' : 'opacity-0'}
@@ -82,7 +82,7 @@ const RoleButton = ({ role, index, mounted, onSelect, isCenter }: RoleButtonProp
 
     <div className="relative flex flex-col items-center gap-2 sm:gap-4">
       {/* Icon container */}
-      <div className={`${isCenter ? 'w-16 h-16 sm:w-20 sm:h-20 md:w-24 md:h-24' : 'w-12 h-12 sm:w-16 sm:h-16 md:w-20 md:h-20'} rounded-2xl sm:rounded-3xl bg-secondary flex items-center justify-center text-primary group-hover:bg-gradient-to-br group-hover:from-primary group-hover:to-primary-glow group-hover:text-primary-foreground transition-all duration-500 group-hover:scale-110 group-hover:shadow-button`}>
+      <div className={`${isCenter ? 'w-16 h-16 sm:w-20 sm:h-20 md:w-24 md:h-24' : 'w-12 h-12 sm:w-16 sm:h-16 md:w-20 md:h-20'} rounded-2xl sm:rounded-3xl bg-primary/10 flex items-center justify-center text-primary group-hover:bg-gradient-to-br group-hover:from-primary group-hover:to-primary-glow group-hover:text-primary-foreground transition-all duration-500 group-hover:scale-110 group-hover:shadow-button`}>
         <div className={isCenter ? 'scale-100 sm:scale-125' : 'scale-75 sm:scale-100'}>{ROLE_ICONS[role]}</div>
       </div>
 
@@ -174,7 +174,7 @@ export default function RoleSelector() {
 
         <div className="w-full max-w-md relative z-10">
           <div 
-            className="bg-card border border-border/40 rounded-[2rem] p-8 shadow-floating animate-scale-in"
+            className="glass-panel rounded-[2rem] p-8 animate-scale-in"
           >
             <button
               onClick={handleBack}
@@ -202,7 +202,7 @@ export default function RoleSelector() {
                     value={username}
                     onChange={(e) => setUsername(e.target.value)}
                     placeholder="أدخل اسم المستخدم"
-                    className="pr-12 h-14 text-base bg-muted/40 border-transparent rounded-2xl focus:ring-2 focus:ring-primary/30 focus:border-primary/50 transition-all"
+                    className="pr-12 h-14 text-base bg-card/60 border-border/60 rounded-2xl focus:ring-2 focus:ring-primary/30 focus:border-primary/50 transition-all"
                     disabled={isLoading}
                   />
                 </div>
