@@ -251,14 +251,14 @@ export default function TakeawayDashboard() {
   // Show loading only on initial load
   if (menuLoading && menuItems.length === 0) {
     return (
-      <div className="min-h-screen bg-background flex items-center justify-center">
+      <div className="min-h-screen flex items-center justify-center">
         <Loader2 className="w-8 h-8 animate-spin text-warning" />
       </div>
     );
   }
 
   return (
-    <div className="flex flex-col h-dvh bg-background">
+    <div className="flex flex-col h-dvh">
       <DashboardHeader 
         title="السفري" 
         subtitle={user?.fullName || user?.username || ''} 
